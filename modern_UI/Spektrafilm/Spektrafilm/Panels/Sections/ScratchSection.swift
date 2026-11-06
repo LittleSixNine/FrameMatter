@@ -7,8 +7,8 @@ struct ScratchSection: View {
     private var available: Bool { settings.available(on: session.params.filmEdge) }
 
     var body: some View {
-        PanelSection(L("Scratches", zh: "划痕"), key: Self.key, initiallyExpanded: false,
-                     action: SectionAction(help: L("Reset scratches", zh: "重置划痕")) {
+        PanelSection(L("Scratches & Dust", zh: "划痕与灰尘"), key: Self.key, initiallyExpanded: false,
+                     action: SectionAction(help: L("Reset scratches and dust", zh: "重置划痕与灰尘")) {
                          var p = session.params
                          p.scratches = ScratchSettings()
                          session.params = p
@@ -17,27 +17,35 @@ struct ScratchSection: View {
                      toggleHelp: L("Film wear and negative-scan dust", zh: "在胶片上添加磨损和灰尘")) {
             RailRows {
                 RailSubhead(L("Sprocket friction scratches", zh: "齿孔摩擦划痕"))
-                amount(L("Amount", zh: "数量"), \.longLines, zero: 0.4)
-                amount(L("Strength", zh: "强度"), \.strength, zero: 0.35)
-                RailSubhead(L("Perforation edge marks", zh: "齿孔边缘痕迹"))
-                amount(L("Strength", zh: "强度"), \.edgeMarks, zero: 0.35)
-                RailSubhead(L("Perforation light leaks", zh: "齿孔漏光"))
-                amount(L("Strength", zh: "强度"), \.leakStrength, zero: 0)
-                amount(L("Spread", zh: "扩散范围"), \.leakSpread, zero: 0.5)
-                RailSubhead(L("Dust", zh: "灰尘"))
-                amount(L("Amount", zh: "数量"), \.dustAmount, zero: 0)
-                amount(L("Size", zh: "大小"), \.dustSize, zero: 0.5)
-                amount(L("Fiber ratio", zh: "纤维比例"), \.dustFiberRatio, zero: 0.25)
-                amount(L("Strength", zh: "强度"), \.dustStrength, zero: 0.5)
-                HStack(spacing: 0) {
-                    RowLabel(L("Area", zh: "范围"))
-                    Picker(L("Dust area", zh: "灰尘范围"), selection: bind(\.dustFullFrame)) {
-                        Text(L("Border only", zh: "仅片边")).tag(false)
-                        Text(L("Whole film", zh: "全片")).tag(true)
-                    }
-                    .labelsHidden().pickerStyle(.menu)
+                RailSubgroup {
+                    amount(L("Amount", zh: "数量"), \.longLines, zero: 0.4)
+                    amount(L("Strength", zh: "强度"), \.strength, zero: 0.35)
                 }
-                .frame(height: Theme.Metric.rowHeight)
+                RailSubhead(L("Perforation edge marks", zh: "齿孔边缘痕迹"))
+                RailSubgroup {
+                    amount(L("Strength", zh: "强度"), \.edgeMarks, zero: 0.35)
+                }
+                RailSubhead(L("Perforation light leaks", zh: "齿孔漏光"))
+                RailSubgroup {
+                    amount(L("Strength", zh: "强度"), \.leakStrength, zero: 0)
+                    amount(L("Spread", zh: "扩散范围"), \.leakSpread, zero: 0.5)
+                }
+                RailSubhead(L("Dust", zh: "灰尘"))
+                RailSubgroup {
+                    amount(L("Amount", zh: "数量"), \.dustAmount, zero: 0)
+                    amount(L("Size", zh: "大小"), \.dustSize, zero: 0.5)
+                    amount(L("Fiber ratio", zh: "纤维比例"), \.dustFiberRatio, zero: 0.25)
+                    amount(L("Strength", zh: "强度"), \.dustStrength, zero: 0.5)
+                    HStack(spacing: 0) {
+                        RowLabel(L("Area", zh: "范围"))
+                        Picker(L("Dust area", zh: "灰尘范围"), selection: bind(\.dustFullFrame)) {
+                            Text(L("Border only", zh: "仅片边")).tag(false)
+                            Text(L("Whole film", zh: "全片")).tag(true)
+                        }
+                        .labelsHidden().pickerStyle(.menu)
+                    }
+                    .frame(height: Theme.Metric.rowHeight)
+                }
                 HStack(spacing: 0) {
                     RowLabel(L("Pattern", zh: "样式"))
                     DiceButton(title: L("Another", zh: "换一组"),
@@ -50,11 +58,11 @@ struct ScratchSection: View {
                 .frame(height: Theme.Metric.rowHeight)
             }
             .rowEnabled(settings.active && available,
-                        because: available ? L("Switch Scratches on in its header.", zh: "先在标题栏开启划痕。")
+                        because: available ? L("Switch Scratches & Dust on in its header.", zh: "先在标题栏开启划痕与灰尘。")
                             : L("Enable 135, half-frame or full-width Film Edge first.", zh: "需先开启 135、半格或全宽片边。"))
             Text(available ? L("Film leader fixed left. Another changes all patterns. Wide light leaks may reach the picture.",
                    zh: "片头固定向左；“换一组”更换所有痕迹。漏光范围较大时会进入画幅。")
-                : L("Enable 135, half-frame or full-width Film Edge first.", zh: "需先开启 135、半格或全宽片边，才能显示划痕。"))
+                : L("Enable 135, half-frame or full-width Film Edge first.", zh: "需先开启 135、半格或全宽片边，才能显示划痕与灰尘。"))
                 .font(Theme.Font.caption).foregroundStyle(Theme.Ink.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
         }

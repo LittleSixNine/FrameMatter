@@ -38,6 +38,7 @@ struct SliderMetrics {
     /// Strength"), which is what made the strength rows look off-grid.
     @MainActor static var parameters: SliderMetrics { SliderMetrics(labelWidth: Theme.Metric.parameterLabelWidth) }
 
+    var labelIndent: CGFloat = 0
     var labelWidth: CGFloat = Theme.Metric.sliderLabelWidth
     var valueWidth: CGFloat = Theme.Metric.sliderValueWidth
     var rowHeight: CGFloat = Theme.Metric.rowHeight
@@ -96,6 +97,7 @@ struct ScrubSlider: View {
                     // the column wide and grows past it rather than truncate.
                     .fixedSize()
                     .padding(.trailing, 6)
+                    .padding(.leading, m.labelIndent)
                     .frame(minWidth: m.labelWidth, alignment: .leading)
                 track
                     .padding(.trailing, Theme.Metric.sliderValueGap)
@@ -107,7 +109,8 @@ struct ScrubSlider: View {
             // **under the label**, not beside the value, so they line up with
             // the label column rather than floating in the middle of the row.
             if let sublabelView {
-                sublabelView.frame(height: Theme.Metric.subRowHeight, alignment: .leading)
+                sublabelView.padding(.leading, m.labelIndent)
+                    .frame(height: Theme.Metric.subRowHeight, alignment: .leading)
             } else if let sublabel {
                 // Wraps, never widens the row (1.2.2). This line carries
                 // messages as well as units — Scene Placement's refusal is a
@@ -115,6 +118,7 @@ struct ScrubSlider: View {
                 // Parameters rail wider than the window, pushing every value
                 // off its right edge (reported from Xiaohongshu, 2026-09-30).
                 Text(sublabel).font(Theme.Font.sublabel).foregroundStyle(Theme.Ink.tertiary)
+                    .padding(.leading, m.labelIndent)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, minHeight: Theme.Metric.subRowHeight, alignment: .leading)
             }

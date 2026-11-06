@@ -550,6 +550,7 @@ enum Theme {
         /// Air above a caption that heads a group of rows inside a section
         /// (*Gate and scan*, *Light*): the drawing's 10 pt over the row pitch.
         static let subheadTop: CGFloat = 6
+        static let subrowIndent: CGFloat = 12
         /// Trailing inset of Film's own controls: v3 ends their right edges
         /// at x 231.10 on a 254 pt rail. Wider than `rowInset` on purpose —
         /// the pickers are right-aligned and the drawing holds them further

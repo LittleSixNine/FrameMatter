@@ -1190,7 +1190,7 @@ field gap (or 1.20H if missing).
 
 ## 18. Film-border scratches
 
-An independent Scratches card sits between Film Edge and Date Back. It stores
+An independent Scratches & Dust card sits between Film Edge and Date Back. It stores
 `params.scratches` with `active=false`, `longLines=.4`,
 `strength=.35`, `edgeMarks=.35`, `leakStrength=0`, `leakSpread=.5`, `seed=1`. Missing sidecars decode to these defaults. Two friction
 0–100% controls adjust sprocket-friction scratch density and strength. A separate

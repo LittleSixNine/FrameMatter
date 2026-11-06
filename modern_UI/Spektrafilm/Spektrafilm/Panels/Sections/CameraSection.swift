@@ -180,3 +180,15 @@ struct RailRows<Content: View>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
+
+/// Indent child labels while retaining the rail's track and value columns.
+struct RailSubgroup<Content: View>: View {
+    @Environment(\.railSliderMetrics) private var metrics
+    @ViewBuilder var content: () -> Content
+    var body: some View {
+        var nested = metrics
+        nested.labelIndent += Theme.Metric.subrowIndent
+        return Group { content() }
+            .environment(\.railSliderMetrics, nested)
+    }
+}

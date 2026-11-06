@@ -59,30 +59,34 @@ struct FilmEdgeSection: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 RailSubhead(L(.edgeGateAndScan))
-                if edge.format != .f135FullWidth {
-                    PillMenu(label: L(.edgeGate), options: FilmEdgeGate.allCases, title: { L($0.key) },
-                             selection: bind(\.gate))
+                RailSubgroup {
+                    if edge.format != .f135FullWidth {
+                        PillMenu(label: L(.edgeGate), options: FilmEdgeGate.allCases, title: { L($0.key) },
+                                 selection: bind(\.gate))
+                    }
+                    PillSwitchRow(label: L(.edgeHoles), options: FilmEdgeHoles.allCases,
+                                  selection: bind(\.holes), title: { L($0.key) })
+                    bodyRow
+                    advanceRow
+                    // The frame's number on the edge print. 0 reads "Auto": the
+                    // seed's draw, what a frame from before the field had.
+                    ScrubSlider(label: L(.edgeFrameNumber),
+                                value: Binding(get: { Double(edge.frameNumber) },
+                                               set: { set(\.frameNumber, Int($0.rounded())) }),
+                                range: Double(FilmEdgeSettings.frameNumberRange.lowerBound)...Double(FilmEdgeSettings.frameNumberRange.upperBound),
+                                zero: 0, snap: 1,
+                                format: { $0 < 0.5 ? L(.edgeFrameNumberAuto) : String(Int($0.rounded())) },
+                                parse: { Int($0).map(Double.init) ?? ($0.isEmpty ? 0 : nil) })
                 }
-                PillSwitchRow(label: L(.edgeHoles), options: FilmEdgeHoles.allCases,
-                              selection: bind(\.holes), title: { L($0.key) })
-                bodyRow
-                advanceRow
-                // The frame's number on the edge print. 0 reads "Auto": the
-                // seed's draw, what a frame from before the field had.
-                ScrubSlider(label: L(.edgeFrameNumber),
-                            value: Binding(get: { Double(edge.frameNumber) },
-                                           set: { set(\.frameNumber, Int($0.rounded())) }),
-                            range: Double(FilmEdgeSettings.frameNumberRange.lowerBound)...Double(FilmEdgeSettings.frameNumberRange.upperBound),
-                            zero: 0, snap: 1,
-                            format: { $0 < 0.5 ? L(.edgeFrameNumberAuto) : String(Int($0.rounded())) },
-                            parse: { Int($0).map(Double.init) ?? ($0.isEmpty ? 0 : nil) })
 
                 RailSubhead(L(.edgeLight))
-                ScrubSlider(label: L(.edgeFog), value: bind(\.fog), range: FilmEdgeSettings.fogRange,
-                            zero: FilmEdgeSettings.default.fog, snap: 0.25,
-                            format: { String(format: "%.1f", $0) })
-                ScrubSlider(label: L(.edgeLeaks), value: bind(\.leaks), range: FilmEdgeSettings.leaksRange,
-                            zero: 0, snap: 0.25, format: { String(format: "%.1f", $0) })
+                RailSubgroup {
+                    ScrubSlider(label: L(.edgeFog), value: bind(\.fog), range: FilmEdgeSettings.fogRange,
+                                zero: FilmEdgeSettings.default.fog, snap: 0.25,
+                                format: { String(format: "%.1f", $0) })
+                    ScrubSlider(label: L(.edgeLeaks), value: bind(\.leaks), range: FilmEdgeSettings.leaksRange,
+                                zero: 0, snap: 0.25, format: { String(format: "%.1f", $0) })
+                }
                 VStack(alignment: .leading, spacing: 2) {
                     note(lensNote)
                     if !edge.edgeText.isEmpty { note(edgePrintNote) }
@@ -463,12 +467,14 @@ private struct FormatGlyph: View {
 
 /// A label in the rail's column, at the rows' ink.
 struct RowLabel: View {
+    @Environment(\.railSliderMetrics) private var metrics
     let text: String
     init(_ text: String) { self.text = text }
     var body: some View {
         Text(text).font(Theme.Font.label).foregroundStyle(Theme.Ink.secondary)
             .fixedSize()
             .padding(.trailing, 6)
+            .padding(.leading, metrics.labelIndent)
             .frame(minWidth: Theme.Metric.sliderLabelWidth, alignment: .leading)
     }
 }
