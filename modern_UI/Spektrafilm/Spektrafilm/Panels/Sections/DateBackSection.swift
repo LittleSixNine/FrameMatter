@@ -111,8 +111,8 @@ struct DateBackSection: View {
                     cornerRow
                 }
                 ScrubSlider(label: L(.dateSize), value: bind(\.size), range: sizeRange,
-                            zero: DateBackSettings.default.size, snap: 0.1,
-                            format: { String(format: "%.1f×", $0) })
+                            zero: DateBackSettings.default.size, snap: 0.01,
+                            format: { String(format: "%.2f×", $0) })
                 if date.face != .data, camera?.group == .film135 {
                     ScrubSlider(label: L("Margin", zh: "边距"),
                                 value: Binding(get: { date.marginPercent ?? 20 }, set: { set(\.marginPercent, $0) }),
@@ -149,48 +149,48 @@ struct DateBackSection: View {
     /// the session's: the date from EXIF in the chosen order, or for the data
     /// face the shooting data.
     @ViewBuilder private var textRow: some View {
-        HStack(spacing: 0) {
-            RowLabel(date.face == .data ? L(.dateImprint) : L(.dateDate))
-            if date.face == .data {
-                Text(printed.isEmpty ? "—" : printed)
-                    .font(Theme.Font.value).foregroundStyle(Theme.text)
-                    .fixedSize(horizontal: false, vertical: true)
-            } else {
-                Menu {
-                    ForEach(DateBackOrder.allCases) { order in
-                        Button { session.setDateBackOrder(order) } label: {
-                            let line = "\(example(order))  ·  \(order.title)"
-                            if order == date.order { Label(line, systemImage: "checkmark") } else { Text(line) }
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 0) {
+                RowLabel(date.face == .data ? L(.dateImprint) : L(.dateDate))
+                if date.face == .data {
+                    Text(printed.isEmpty ? "—" : printed)
+                        .font(Theme.Font.value).foregroundStyle(Theme.text)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    Menu {
+                        ForEach(DateBackOrder.selectableCases) { order in
+                            Button { session.setDateBackOrder(order) } label: {
+                                let line = "\(example(order))  ·  \(order.title)"
+                                if order == date.order { Label(line, systemImage: "checkmark") } else { Text(line) }
+                            }
+                            .disabled(order.requiresRebate && camera?.group != .film135)
                         }
-                        .disabled(order.requiresRebate && camera?.group != .film135)
+                    } label: {
+                        HStack(spacing: 0) {
+                            Text(date.order.title).font(Theme.Font.label).foregroundStyle(Theme.text)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(.leading, 10)
+                            Spacer(minLength: 4)
+                            Triangle()
+                                .stroke(Theme.text, style: StrokeStyle(lineWidth: 1, lineJoin: .round))
+                                .frame(width: 8, height: 5)
+                                .padding(.trailing, 9)
+                        }
+                        .padding(.vertical, 3)
+                        .frame(maxWidth: .infinity, minHeight: Theme.Metric.controlHeight)
+                        .background(Theme.pill, in: Capsule())
+                        .contentShape(Capsule())
                     }
-                } label: {
-                    HStack(spacing: 0) {
-                        Text(printed.isEmpty ? "—" : printed).font(Theme.Font.label).foregroundStyle(Theme.text)
-                            .lineLimit(1).truncationMode(.middle)
-                            .padding(.leading, 10)
-                        Spacer(minLength: 4)
-                        Triangle()
-                            .stroke(Theme.text, style: StrokeStyle(lineWidth: 1, lineJoin: .round))
-                            .frame(width: 8, height: 5)
-                            .padding(.trailing, 9)
-                    }
-                    .frame(width: Theme.Metric.edgeFormatPillWidth, height: Theme.Metric.controlHeight)
-                    .background(Theme.pill, in: Capsule())
-                    .contentShape(Capsule())
+                    .menuStyle(.button)
+                    .buttonStyle(.plain)
+                    .menuIndicator(.hidden)
+                    .help("\(date.order.title) · \(printed)")
                 }
-                .menuStyle(.button)
-                .buttonStyle(.plain)
-                .menuIndicator(.hidden)
-                .fixedSize()
-                .help("\(date.order.title) · \(printed)")
             }
-            Spacer(minLength: 6)
-            // Wraps rather than widens the rail: "no date in EXIF" is the
-            // longer of the two and the pill before it is fixed.
             Text(date.customDateTime != nil ? L("Manual", zh: "手动")
                  : date.text.isEmpty ? L("no date/time in EXIF", zh: "EXIF 中无所需日期或时间") : L(.dateFromEXIF))
                 .font(Theme.Font.caption).foregroundStyle(Theme.Ink.tertiary)
+                .frame(maxWidth: .infinity, alignment: .trailing)
                 .multilineTextAlignment(.trailing)
                 .fixedSize(horizontal: false, vertical: true)
         }

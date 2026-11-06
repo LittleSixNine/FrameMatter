@@ -240,6 +240,7 @@ enum DateBackOrder: String, CaseIterable, Identifiable, Codable, Sendable {
     case japan
     case europe, dayTime, timeSeconds, dateTimeSeconds, yearMonthDayHour, monthDayTime, dayTimeSeconds
     var id: String { rawValue }
+    static let selectableCases: [Self] = [.japan, .us, .europe, .dayTime, .timeSeconds, .dateTimeSeconds]
     var requiresRebate: Bool { self == .dateTimeSeconds }
     var needsSeconds: Bool { [.timeSeconds, .dateTimeSeconds, .dayTimeSeconds].contains(self) }
 }
@@ -283,7 +284,7 @@ struct DateBackSettings: Codable, Equatable, Sendable {
     var corner = DateBackCorner.br
     var insetXMM = 3.0             // 0…30
     var insetYMM = 2.4             // 0…30
-    var size = 0.5                 // 0.2…3, all date faces
+    var size = 0.4                 // 0.2…1, all date faces
     var brightnessEV = 3.5         // −2…8
     /// What the engine prints, already formatted. Resolved by the session: the
     /// date from EXIF in `order` for `lcd`/`dots`, the shooting data for
@@ -320,7 +321,7 @@ struct DateBackSettings: Codable, Equatable, Sendable {
 
     static let marginRange = 0.0...100.0
     static let insetRange = 0.0...30.0
-    static let sizeRange = 0.2...3.0
+    static let sizeRange = 0.2...1.0
     static let brightnessRange = -2.0...8.0
     /// `data` between half frames has only the 1 mm gap (answer B19).
     static let halfFrameDataSizeMax = 1.0

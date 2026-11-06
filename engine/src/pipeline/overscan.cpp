@@ -2135,7 +2135,7 @@ void imprint_groups(const OverscanLayout& L, const Params& params, double frame_
     const double e = kMidGrey * std::pow(2.0, d.exposure_ev);
     for (int c = 0; c < 3; ++c) g.exposure[c] = L.date_rgb[c] * e;
     g.blur_mm = 0.015;
-    const double k = std::clamp(d.size, 0.2, 3.0);
+    const double k = std::clamp(d.size, 0.2, 1.0);
     // A face's glyphs, laid out in glyph space (x right, y up from the
     // baseline) and mapped to film mm by `place(x, y) -> (s, t)`.
     auto draw_face = [&](const std::string& text, const std::string& style, double h, auto place) {

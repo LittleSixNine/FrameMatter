@@ -177,9 +177,11 @@ or imply our endorsement.
 
 
 Date-back date/time formats include year/month/day, month/day/year,
-day/month/year, day/hour/minute, hour/minute/second, year/month/day/hour,
-month/day/hour/minute, day/hour/minute/second, and the complete
+day/month/year, day/hour/minute, hour/minute/second, and the complete
 year/month/day/hour/minute/second timestamp (135/half-frame between frames
 only; selecting it enables Film Edge). Day/hour/minute has an independent
 colon/underline option, with short marks beneath the hour and minute fields.
 Manual time includes seconds for formats that print them.
+
+Year/month/day is the first and default date format. Date size ranges from
+0.20 to 1.00, defaults to 0.40, and adjusts in 0.01 increments.

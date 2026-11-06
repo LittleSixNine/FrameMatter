@@ -232,7 +232,7 @@ struct DateImprintParams {
     // segments, slanted; dots = a dot-matrix date, upright; data = shooting
     // data in a 5x7 face between frames (135) or in the margin (645).
     std::string style = "lcd";       // lcd (original) | dseg / dseg_mini_italic / dseg_mini_regular / dseg_classic_regular | dots | data
-    double size = 0.5;               // scale on the style's own character height
+    double size = 0.4;               // scale on the style's own character height
     std::string corner = "br";       // frame placement: br | bl | tr | tl, in the film's frame (the camera held level)
     // -1 preserves the legacy millimetre insets; 0–100 is corner to center on 135.
     double margin_percent = -1.0;

@@ -251,7 +251,7 @@ NATIVE_ONLY = {
     },
     "date_imprint_size": {
         "path": "film_render.date_imprint.size", "type": "float", "layer": "shoot",
-        "default": 0.5, "live": False, "range": [0.2, 3.0],
+        "default": 0.4, "live": False, "range": [0.2, 1.0],
     },
     "date_imprint_corner": {
         "path": "film_render.date_imprint.corner", "type": "str", "layer": "shoot",

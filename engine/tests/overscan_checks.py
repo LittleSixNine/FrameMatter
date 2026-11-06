@@ -331,8 +331,8 @@ def main():
         n_tl, xt, yt = lit(render(e, img, dict(DATE, date_imprint_corner="tl")))
         check("corner tl moves the date to the upper left", n_tl > 50 and xt < 0.4 * 1200 and yt < 0.3 * 800,
               f"({xt:.0f}, {yt:.0f})")
-        n_big, _, _ = lit(render(e, img, dict(DATE, date_imprint_size=2.0)))
-        check("size 2 roughly quadruples the date's area", 2.5 * n_lcd < n_big < 6.0 * n_lcd, f"{n_lcd} -> {n_big}")
+        n_big, _, _ = lit(render(e, img, dict(DATE, date_imprint_size=0.8)))
+        check("doubling the default size roughly quadruples the date's area", 2.5 * n_lcd < n_big < 6.0 * n_lcd, f"{n_lcd} -> {n_big}")
         # The date back is part of the camera (RFC-032 §32): placed and turned in
         # the film's frame. A full frame shot turned (portrait) carries the date
         # along the film -- a tall, narrow mark at the picture's lower left,
@@ -464,13 +464,13 @@ def main():
         other = render(e, img, dict(S135, overscan_edge_text="KODAK KODAK KODAK KODA"))
         check("a long edge text is cut to the words that fit its slot",
               np.array_equal(long_, cut) and not np.array_equal(long_, other))
-        big = render(e, img, dict(DATE, date_imprint_size=3.0, date_imprint_inset_x=0.0, date_imprint_inset_y=0.0))
-        far = render(e, img, dict(DATE, date_imprint_inset_x=30.0, date_imprint_inset_y=30.0))
+        big = render(e, img, dict(DATE, date_imprint_size=1.0, date_imprint_inset_x=0.0, date_imprint_inset_y=0.0))
+        far = render(e, img, dict(DATE, date_imprint_size=1.0, date_imprint_inset_x=30.0, date_imprint_inset_y=30.0))
         bare = render(e, img, {"film_format_mm": 36.0})
-        for name, r in (("size 3 at inset 0", big), ("inset 30 mm", far)):
+        for name, r in (("maximum size at inset 0", big), ("inset 30 mm", far)):
             dd = np.abs(r.astype(int) - bare.astype(int))[..., :3].sum(-1)
             ys, xs = np.nonzero(dd > 2000)
-            # the lcd face at size 3 is ~3.9 mm tall and ~26 mm wide: all of it in the 36 x 24 frame
+            # Use the maximum size explicitly: this checks clipping independently of the default.
             check(f"the date at {name} stays inside the frame", len(xs) > 500 and xs.max() < 1200 - 2 and ys.max() < 800 - 2
                   and (xs.max() - xs.min()) * px > 6.0, f"{len(xs)} px, x {xs.min() if len(xs) else -1}-{xs.max() if len(xs) else -1}")
         # --- the panoramic long formats and the carrier (answer sheet C1-C7) ---

@@ -15,6 +15,8 @@ final class DateBackControlsTests: XCTestCase {
             .dayTimeSeconds: "16 17 : 50 : 08"
         ]
         XCTAssertEqual(Set(expected.keys), Set(DateBackOrder.allCases))
+        XCTAssertEqual(DateBackOrder.selectableCases, [.japan, .us, .europe, .dayTime, .timeSeconds, .dateTimeSeconds])
+        XCTAssertEqual(DateBackSettings().order, .japan)
         for (order, text) in expected { XCTAssertEqual(shot.dateText(order: order), text) }
         XCTAssertEqual(shot.captureDay?.second, 8)
         for order in DateBackOrder.allCases where order != .us && order != .japan && order != .europe {
@@ -121,11 +123,15 @@ final class DateBackControlsTests: XCTestCase {
     }
 
     func testAllDateFacesUseTheNewSizeDefaultAndMinimum() throws {
-        XCTAssertEqual(DateBackSettings.sizeRange, 0.2...3)
+        XCTAssertEqual(DateBackSettings.sizeRange, 0.2...1)
         for face in DateBackFace.allCases {
             var date = DateBackSettings()
             date.active = true; date.face = face
-            XCTAssertEqual(date.wireSize(on: .f135), 0.5)
+            XCTAssertEqual(date.wireSize(on: .f135), 0.4)
+            date.size = 0.41
+            XCTAssertEqual(date.wireSize(on: .f135), 0.41)
+            date.size = 1.01
+            XCTAssertEqual(date.wireSize(on: .f135), 1.0)
             date.size = 0.2
             XCTAssertEqual(date.wireSize(on: .f135), 0.2)
             XCTAssertEqual(try JSONDecoder().decode(DateBackSettings.self, from: JSONEncoder().encode(date)).size, 0.2)
@@ -133,7 +139,7 @@ final class DateBackControlsTests: XCTestCase {
         let old = try JSONDecoder().decode(DateBackSettings.self, from: Data(#"{"size":0.7}"#.utf8))
         XCTAssertEqual(old.size, 0.7)
         let missing = try JSONDecoder().decode(DateBackSettings.self, from: Data(#"{}"#.utf8))
-        XCTAssertEqual(missing.size, 0.5)
+        XCTAssertEqual(missing.size, 0.4)
     }
 
     func testDSEGFieldSpacingPersistsAndOtherFacesIgnoreIt() throws {

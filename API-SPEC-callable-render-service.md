@@ -721,7 +721,7 @@ fields. Design and measurements: RFC-032 §26–§29 and RFC-031 (the date back)
 | `date_imprint_corner` | `…date_imprint.corner` | str | `"br"` | `br` \| `bl` \| `tr` \| `tl` | frame placement, in the **film's** frame (the camera held level), never the picture's: on a turned full frame the date turns with the camera (below) |
 | `date_imprint_inset_x` | `…date_imprint.inset_x` | float | `3.0` | 0–30 | mm from the gate's side to the text |
 | `date_imprint_inset_y` | `…date_imprint.inset_y` | float | `2.4` | 0–30 | mm from the gate's top/bottom to the text |
-| `date_imprint_size` | `…date_imprint.size` | float | `1.0` | 0.4–3 | a scale on the face's own height (lcd 1.3 mm, dots 0.95 mm, data 0.50 mm on 135 / 0.55 mm on 645) |
+| `date_imprint_size` | `…date_imprint.size` | float | `0.4` | 0.2–1 | a scale on the face's own height (lcd 1.3 mm, dots 0.95 mm, data 0.50 mm on 135 / 0.55 mm on 645) |
 | `date_imprint_ev` | `…date_imprint.exposure_ev` | float | `3.5` | −2–8 | the LED's exposure, stops over 18 % grey |
 
 **Edge light: fog, spool leaks and gate flare (the random light)**
@@ -1136,8 +1136,9 @@ faces do not read the field-gap setting. The app stores it as
 slider only for the four DSEG styles. Glyph outlines and optical processing are unchanged.
 
 
-All date faces share `size`: range 0.2–3, default/reset 0.5. Explicitly saved
-sizes remain unchanged; only new or missing settings receive the new default.
+All date faces share `size`: range 0.2–1, default/reset 0.4, UI step 0.01
+with two decimal places. Saved sizes within range remain unchanged; values
+above 1 are clamped on the wire. New or missing settings receive the new default.
 The engine's default and validation range match the app. H is the actual digit height before
 optical softness; for a 135 in-picture LCD imprint the existing reference
 height is 1.3 mm × size. At size 0.5, H is 0.65 mm. Spacing scales with H,
@@ -1166,3 +1167,10 @@ the reference, not a hardware calibration. They reuse the upstream polygon
 mask and existing optical processing. DSEG field spacing moves the bars with
 their fields; other faces retain their fixed spacing. Colon layout also
 supports multiple time separators, each centered between its fields.
+
+
+The selectable date/time menu is ordered `japan` (default), `us`, `europe`,
+`dayTime`, `timeSeconds`, `dateTimeSeconds`. `yearMonthDayHour`, `monthDayTime`
+and `dayTimeSeconds` are retained for decoding/rendering saved edits only.
+The closed button fills its value column and displays the localized order
+name without example digits; the EXIF/manual note sits on the next line.

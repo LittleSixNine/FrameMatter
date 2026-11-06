@@ -180,6 +180,14 @@ with Engine() as engine:
     print('PASS hour/minute spacing tracks the full 0.20–3.00H range with centered colon')
     print('PASS DSEG field spacing, +0.20H tracking, centering and other styles unchanged')
 
+    for value in (.19, 1.01):
+        try:
+            render(date_imprint_size=value)
+        except EngineError:
+            pass
+        else:
+            raise AssertionError(("invalid date size accepted", value))
+
     for value in (-2, -0.5, 101):
         try:
             render(date_imprint_margin=value)
@@ -194,8 +202,8 @@ with Engine() as engine:
     else:
         raise AssertionError('DSEG silently substituted unsupported glyphs')
     fields = {f['name']: f for f in engine.params_schema()['fields']}
-    assert fields['date_imprint_size']['default'] == .5
-    assert fields['date_imprint_size']['range'] == [.2, 3]
+    assert fields['date_imprint_size']['default'] == .4
+    assert fields['date_imprint_size']['range'] == [.2, 1]
     assert fields['date_imprint_field_gap']['default'] == 1.2
     assert fields['date_imprint_field_gap']['range'] == [.2, 3]
     for style in ('lcd', 'dseg', 'dots'):
@@ -209,5 +217,5 @@ with Engine() as engine:
             assert len(xs), ('small date vanished', style)
             return ys.max()-ys.min()
         assert height(small) < height(larger), ('minimum size was clamped', style)
-    print('PASS shared size default 0.5 and minimum 0.2 across date faces')
+    print('PASS shared size default 0.4 and minimum 0.2 across date faces')
     print('PASS margin validation and no silent glyph substitution')

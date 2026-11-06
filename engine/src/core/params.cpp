@@ -167,7 +167,7 @@ const SchemaField kFields[] = {
     {"date_imprint_placement",   "film_render.date_imprint.placement",    S, SHOOT, false, 0, 0, false},
     {"date_imprint_ev",          "film_render.date_imprint.exposure_ev",  F, SHOOT, true, -2.0, 8.0, false},
     {"date_imprint_style",       "film_render.date_imprint.style",        S, SHOOT, false, 0, 0, false},
-    {"date_imprint_size",        "film_render.date_imprint.size",         F, SHOOT, true, 0.2, 3.0, false},
+    {"date_imprint_size",        "film_render.date_imprint.size",         F, SHOOT, true, 0.2, 1.0, false},
     {"date_imprint_corner",      "film_render.date_imprint.corner",       S, SHOOT, false, 0, 0, false},
     {"date_imprint_time_underline", "film_render.date_imprint.time_underline", B, SHOOT, false, 0, 0, false},
     {"date_imprint_field_gap",   "film_render.date_imprint.field_gap_h",   F, SHOOT, true, 0.20, 3.00, false},
