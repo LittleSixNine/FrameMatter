@@ -181,7 +181,7 @@ final class MCPTests: XCTestCase {
         XCTAssertEqual(hello["id"], 1)
         XCTAssertEqual(hello["result"]?["protocolVersion"], "2025-06-18")
         XCTAssertNotNil(hello["result"]?["capabilities"]?["tools"])
-        XCTAssertEqual(hello["result"]?["serverInfo"]?["name"], "spektralab")
+        XCTAssertEqual(hello["result"]?["serverInfo"]?["name"], "framematter")
 
         let none = await server.handle(#"{"jsonrpc":"2.0","method":"notifications/initialized"}"#)
         XCTAssertNil(none, "a notification gets no reply")

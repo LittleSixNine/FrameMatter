@@ -36,7 +36,7 @@ final class LicensingTests: XCTestCase {
     /// four times would pass the existence check above.
     func testEachTextIsTheLicenceItClaimsToBe() throws {
         let expected = [
-            "SpektraLab-GPL-3.0.txt": "GNU GENERAL PUBLIC LICENSE",
+            "FrameMatter-GPL-3.0.txt": "GNU GENERAL PUBLIC LICENSE",
             "Profiles-and-LUTs-CC-BY-SA-4.0.txt": "Attribution-ShareAlike 4.0 International",
             "FilmDamageSimulator-Data-CC-BY-4.0.txt": "Attribution 4.0 International",
             "FilmDamageSimulator-Dust-Attribution.txt": "Daniela Ivanova",
@@ -79,13 +79,16 @@ final class LicensingTests: XCTestCase {
         // The product is named as itself, not as the project it builds on —
         // which is what SPEKTRAFILM_LICENSE.txt asks for and the reason the
         // app was renamed in the first place.
-        XCTAssertTrue(readme.contains("SpektraLab is free software"),
+        XCTAssertTrue(readme.contains("FrameMatter is free software"),
                       "the shipped licence file does not call the product by its name")
         // And the upstream credit is still there: this is a two-link file and
         // fixing one must not delete the other.
         XCTAssertTrue(readme.contains(AboutWindow.upstreamURL),
                       "the shipped licence file lost the upstream attribution")
         XCTAssertTrue(readme.contains("Andrea Volpato"))
+        XCTAssertTrue(readme.contains("Hanze Qiu"))
+        XCTAssertTrue(readme.contains(AboutWindow.originalAppURL))
+        XCTAssertEqual(AboutWindow.sourceURL, "https://github.com/LittleSixNine/FrameMatter")
     }
 
     /// The attribution CC BY-SA requires: the author, the canonical source,
@@ -140,7 +143,7 @@ final class EngineMessageTests: XCTestCase {
 
     func testAnIncompleteInstallDoesNotTellTheUserToRunABuildScript() {
         let message = EngineMessage.userFacing(Engine(
-            description: "the engine's resources are missing at /Applications/SpektraLab.app; "
+            description: "the engine's resources are missing at /Applications/FrameMatter.app; "
                        + "run engine/build.sh bundle"))
         XCTAssertFalse(message.hasPrefix("the engine's resources"),
                        "the developer text was passed through unchanged")

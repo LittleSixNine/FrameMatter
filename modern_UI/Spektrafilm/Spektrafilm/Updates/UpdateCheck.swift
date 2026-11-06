@@ -6,7 +6,7 @@
 //  user that a newer build exists and open its release page.
 //
 //  The request is made only when the Settings button is pressed. It is an
-//  unauthenticated read of the public SpektraLab release endpoint; no
+//  unauthenticated read of the public FrameMatter release endpoint; no
 //  identifier, version or local state is sent.
 
 import Foundation
@@ -47,7 +47,7 @@ struct URLSessionUpdateTransport: UpdateTransport {
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         // GitHub asks API clients to identify themselves. This is the product
         // name, not a machine identifier and not the app version.
-        request.setValue("SpektraLab", forHTTPHeaderField: "User-Agent")
+        request.setValue("FrameMatter", forHTTPHeaderField: "User-Agent")
 
         let (data, response) = try await Self.session.data(for: request)
         guard let http = response as? HTTPURLResponse else {
@@ -62,7 +62,7 @@ struct URLSessionUpdateTransport: UpdateTransport {
 
 enum UpdateCheck {
     static let latestReleaseURL = URL(
-        string: "https://api.github.com/repos/JamesQiu2005/SpektraLab/releases/latest")!
+        string: "https://api.github.com/repos/LittleSixNine/FrameMatter/releases/latest")!
 
     enum Status: Equatable, Sendable {
         case idle
@@ -83,23 +83,14 @@ enum UpdateCheck {
     }
 
     private struct Version: Comparable {
-        let fields: [Int]
-
-        var display: String { fields.map(String.init).joined(separator: ".") }
-
-        static func < (lhs: Version, rhs: Version) -> Bool {
-            for i in 0..<max(lhs.fields.count, rhs.fields.count) {
-                let left = i < lhs.fields.count ? lhs.fields[i] : 0
-                let right = i < rhs.fields.count ? rhs.fields[i] : 0
-                if left != right { return left < right }
-            }
-            return false
-        }
+        let build: Int
+        var display: String { "Build \(build)" }
+        static func < (lhs: Version, rhs: Version) -> Bool { lhs.build < rhs.build }
     }
 
     /// Production entry point. The version comes from the bundle, never a
     /// literal in this file.
-    static func check(currentVersion: String = Diagnostics.bundleInfo.version) async -> Status {
+    static func check(currentVersion: String = Diagnostics.bundleInfo.build) async -> Status {
         await check(currentVersion: currentVersion, transport: URLSessionUpdateTransport())
     }
 
@@ -113,7 +104,7 @@ enum UpdateCheck {
                     return .failed(reason: "GitHub's unauthenticated rate limit was reached. Try again later.")
                 }
                 if response.status == 404 {
-                    return .failed(reason: "No published SpektraLab release was found.")
+                    return .failed(reason: "No published FrameMatter release was found.")
                 }
                 return .failed(reason: "GitHub returned HTTP \(response.status).")
             }
@@ -126,7 +117,7 @@ enum UpdateCheck {
             }
 
             guard let latest = version(fromTag: release.tagName) else {
-                return .failed(reason: "The latest release tag '\(release.tagName)' is not in the expected spektralab-vX.Y.Z form.")
+                return .failed(reason: "The latest release tag '\(release.tagName)' is not in the expected build-N form.")
             }
             guard let installed = version(fromString: currentVersion) else {
                 return .failed(reason: "This build's version '\(currentVersion)' could not be read.")
@@ -143,17 +134,15 @@ enum UpdateCheck {
     }
 
     private static func version(fromTag tag: String) -> Version? {
-        let prefix = "spektralab-v"
+        let prefix = "build-"
         guard tag.hasPrefix(prefix) else { return nil }
         return version(fromString: String(tag.dropFirst(prefix.count)))
     }
 
     private static func version(fromString text: String) -> Version? {
-        let parts = text.split(separator: ".", omittingEmptySubsequences: false)
-        guard parts.count == 3 else { return nil }
-        let fields = parts.compactMap { Int($0) }
-        guard fields.count == parts.count else { return nil }
-        return Version(fields: fields)
+        guard !text.isEmpty, text.utf8.allSatisfy({ $0 >= 48 && $0 <= 57 }),
+              let build = Int(text), build > 0 else { return nil }
+        return Version(build: build)
     }
 
     private static func failureReason(_ error: Error) -> String {

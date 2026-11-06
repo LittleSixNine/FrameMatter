@@ -513,7 +513,7 @@ struct Sidecar: Codable, Equatable, Sendable {
 }
 
 /// Follows writes to the store made by anything other than this window — the
-/// `spektralab` CLI, the MCP server, a script — so the frame on the canvas can
+/// `framematter` CLI, the MCP server, a script — so the frame on the canvas can
 /// adopt an edit without a relaunch (issue #29).
 ///
 /// Two descriptors, because the two ways a sidecar changes are different

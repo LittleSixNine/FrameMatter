@@ -1,5 +1,5 @@
 #!/bin/bash
-# package.sh -- build, sign, notarise and wrap SpektraLab in a DMG.
+# package.sh -- build, sign, notarise and wrap FrameMatter in a DMG.
 #
 # HANDOFF-DISTRIBUTION §2.1 and §2.5: there was no archive step, no `.dmg`, no
 # `exportOptions.plist` and no notarisation, and an ad-hoc signature is refused
@@ -50,12 +50,18 @@ signed=false
 # The version comes out of gen-project.py, which is the one place it lives.
 # Read rather than passed in, so the DMG's name cannot disagree with the
 # bundle's `CFBundleShortVersionString`.
-version=$(sed -n 's/^MARKETING_VERSION = "\(.*\)"$/\1/p' "$here/gen-project.py")
-if [[ -z "$version" ]]; then
+marketing_version=$(sed -n 's/^MARKETING_VERSION = "\(.*\)"$/\1/p' "$here/gen-project.py")
+if [[ -z "$marketing_version" ]]; then
   echo "error: could not read MARKETING_VERSION from $here/gen-project.py" >&2
   exit 1
 fi
-dmg="$out/SpektraLab-$version-arm64.dmg"
+build_number=$(sed -n 's/^BUILD_NUMBER = "\(.*\)"$/\1/p' "$here/gen-project.py")
+if [[ ! "$build_number" =~ ^[1-9][0-9]*$ ]]; then
+  echo "error: BUILD_NUMBER must be a positive integer" >&2
+  exit 1
+fi
+version="Build $build_number"
+dmg="$out/FrameMatter-Build-$build_number-arm64.dmg"
 
 say() { printf '\n=== %s\n' "$*"; }
 run() { if $dry; then printf '  would run: %s\n' "$*"; else "$@"; fi; }
@@ -88,7 +94,7 @@ run python3 "$here/gen-project.py"
 # --- 2. archive ------------------------------------------------------------
 say "archive"
 mkdir -p "$out"
-archive="$out/SpektraLab.xcarchive"
+archive="$out/FrameMatter.xcarchive"
 run rm -rf "$archive"
 run xcodebuild -project "$proj/Spektrafilm.xcodeproj" -scheme Spektrafilm \
     -configuration Release -destination 'generic/platform=macOS' \
@@ -114,7 +120,7 @@ fi
 run rm -rf "$out/export"
 run xcodebuild -exportArchive -archivePath "$archive" \
     -exportOptionsPlist "$plist" -exportPath "$out/export"
-app="$out/export/SpektraLab.app"
+app="$out/export/FrameMatter.app"
 
 # --- 4. verify the signature ----------------------------------------------
 # Checked, not assumed. `--options runtime` is what makes the hardened
@@ -170,14 +176,60 @@ run rm -f "$dmg"
 staging="$out/dmg"
 if ! $dry; then
   rm -rf "$staging"
-  mkdir -p "$staging"
+  mkdir -p "$staging/.background"
   cp -R "$app" "$staging/"
   ln -s /Applications "$staging/Applications"
+  cp "$here/dmg/background.tiff" "$staging/.background/background.tiff"
   # The licence texts are inside the bundle, where the obligation is met; a
   # copy at the top of the DMG is so somebody can read them before installing.
   cp -R "$app/Contents/Resources/Resources/Licenses" "$staging/Licences"
-  hdiutil create -volname "SpektraLab $version" -srcfolder "$staging" \
-      -ov -format UDZO "$dmg" >/dev/null
+  chflags hidden "$staging/Licences"
+  # Finder needs a writable image to persist the background and icon positions.
+  (
+    writable="$out/dmg-layout.dmg"
+    mountpoint=$(mktemp -d "$out/dmg-mount.XXXXXX")
+    trap 'hdiutil detach "$mountpoint" >/dev/null 2>&1 || true; rmdir "$mountpoint" 2>/dev/null || true' EXIT
+    hdiutil create -volname "FrameMatter $version" -srcfolder "$staging" \
+        -ov -format UDRW "$writable" >/dev/null
+    hdiutil attach "$writable" -nobrowse -noautoopen -mountpoint "$mountpoint" >/dev/null
+    osascript - "$mountpoint" <<'APPLESCRIPT'
+on run argv
+  tell application "Finder"
+    set imageFolder to folder (POSIX file (item 1 of argv) as text)
+    set imageWindow to make new Finder window to imageFolder
+    tell imageWindow
+      set current view to icon view
+      set toolbar visible to false
+      set statusbar visible to false
+      set pathbar visible to false
+      set bounds to {160, 140, 820, 612}
+      set viewOptions to icon view options of imageWindow
+      set arrangement of viewOptions to not arranged
+      set icon size of viewOptions to 104
+      set text size of viewOptions to 13
+      set label position of viewOptions to bottom
+      set background picture of viewOptions to file ".background:background.tiff" of imageFolder
+    end tell
+    set position of item "FrameMatter.app" of imageFolder to {180, 218}
+    set position of item "Applications" of imageFolder to {480, 218}
+    set extension hidden of item "FrameMatter.app" of imageFolder to true
+    update imageFolder without registering applications
+    delay 2
+    close imageWindow
+  end tell
+end run
+APPLESCRIPT
+    # Finder writes .DS_Store asynchronously after closing the window.
+    for attempt in {1..10}; do
+      [[ -s "$mountpoint/.DS_Store" ]] && break
+      sleep 1
+    done
+    [[ -s "$mountpoint/.DS_Store" ]] || { echo "error: Finder did not save the DMG layout" >&2; exit 1; }
+    sync
+    hdiutil detach "$mountpoint" >/dev/null
+    hdiutil convert "$writable" -ov -format UDZO -o "$dmg" >/dev/null
+    rm -f "$writable"
+  )
   rm -rf "$staging"
   # The image is signed as well as the app inside it. Notarisation accepts an
   # unsigned image, and `spctl` then answers "no usable signature" for it:

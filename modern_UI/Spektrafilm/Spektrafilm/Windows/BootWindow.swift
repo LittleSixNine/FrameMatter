@@ -25,7 +25,7 @@ struct BootWindow: View {
     var body: some View {
         VStack(spacing: 0) {
             Spacer(minLength: 0)
-            Text("SpektraLab")
+            Text("FrameMatter")
                 .font(.system(size: 26, weight: .semibold))
                 .foregroundStyle(Theme.text)
             Text("film simulation")

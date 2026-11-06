@@ -15,7 +15,7 @@ import SwiftUI
 /// icon in the Dock; anything else is the app. This file is the one the test
 /// target leaves out, which is why the switch lives here.
 @main
-enum SpektraLabEntry {
+enum FrameMatterEntry {
     static func main() {
         let args = Array(CommandLine.arguments.dropFirst())
         guard let door = args.first, door == "cli" || door == "mcp" else {
@@ -42,7 +42,7 @@ struct SpektrafilmApp: App {
     private let snapshot = SnapshotRequest.parse(CommandLine.arguments)
 
     var body: some Scene {
-        Window("SpektraLab", id: "editor") {
+        Window("FrameMatter", id: "editor") {
             EditorWindow(session: session)
                 .id(InterfaceScaleStore.shared.scale)
                 .environment(\.snapshotMode, snapshot != nil)
@@ -59,7 +59,7 @@ struct SpektrafilmApp: App {
         // require something visible, and CC BY-SA 4.0 names an About screen
         // by example as a place the attribution has to survive. See
         // `AboutWindow`.
-        Window("About SpektraLab", id: "about") {
+        Window("About FrameMatter", id: "about") {
             AboutWindow()
         }
         .windowResizability(.contentSize)
@@ -69,7 +69,7 @@ struct SpektrafilmApp: App {
         // menu's "Settings…" item for free, and in this app it stops SwiftUI
         // from ever creating the *editor* window. Bisected: with a `Settings`
         // scene the app has one window at the boot handover (the boot window)
-        // and the `Window("SpektraLab", id: "editor")` scene's window is never
+        // and the `Window("FrameMatter", id: "editor")` scene's window is never
         // made; without it there are two, the second being SwiftUI's
         // `TUINSWindow`. The app launched to a boot screen that never went
         // away.
@@ -112,7 +112,7 @@ struct EditorCommands: Commands {
 
     var body: some Commands {
         CommandGroup(replacing: .appInfo) {
-            Button("About SpektraLab") { openAbout() }
+            Button("About FrameMatter") { openAbout() }
         }
         // Hand-declared because the page is a `Window` and not a `Settings`
         // scene — see the comment on that scene. Same slot, same shortcut.
@@ -173,7 +173,7 @@ struct EditorCommands: Commands {
             }.keyboardShortcut("b", modifiers: [.command, .shift])
             // Capture One uses Y for its single Before/After toggle. The
             // split-view mode is a separate affordance in Capture One, but
-            // SpektraLab exposes one comparison state, so Y owns that toggle.
+            // FrameMatter exposes one comparison state, so Y owns that toggle.
             Button(session.comparing ? "Hide Before / After" : "Before / After") { session.comparing.toggle() }
                 .keyboardShortcut("y", modifiers: [])
                 .disabled(!session.canCompare)

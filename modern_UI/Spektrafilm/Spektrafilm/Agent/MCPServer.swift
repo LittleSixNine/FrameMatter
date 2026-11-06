@@ -1,4 +1,4 @@
-//  MCPServer.swift — `spektralab mcp`: the Model Context Protocol over stdio
+//  MCPServer.swift — `framematter mcp`: the Model Context Protocol over stdio
 //  (RFC-026 §5).
 //
 //  Newline-delimited JSON-RPC 2.0 on stdin/stdout. One workspace for the
@@ -32,7 +32,7 @@ final class MCPServer {
                 if let reply = await handle(line) { send(reply) }
             }
         } catch {
-            FileHandle.standardError.write(Data("spektralab mcp: \(error)\n".utf8))
+            FileHandle.standardError.write(Data("framematter mcp: \(error)\n".utf8))
             return 1
         }
         workspace.session.flushSave()
@@ -60,7 +60,7 @@ final class MCPServer {
             return result(id, [
                 "protocolVersion": .string(asked ?? Self.protocolVersion),
                 "capabilities": ["tools": [:], "prompts": [:]],
-                "serverInfo": ["name": "spektralab", "title": "SpektraLab", "version": .string(AgentCLI.appVersion)],
+                "serverInfo": ["name": "framematter", "title": "FrameMatter", "version": .string(AgentCLI.appVersion)],
                 "instructions": .string(Self.instructions),
             ])
         case "ping":
@@ -113,7 +113,7 @@ final class MCPServer {
     // MARK: guidance for the model
 
     static let instructions = """
-    SpektraLab simulates analogue film: a photograph is exposed onto a film stock, developed, and printed \
+    FrameMatter simulates analogue film: a photograph is exposed onto a film stock, developed, and printed \
     onto a paper through an enlarger, then graded like a scan of the print. Every edit here is the same \
     edit the app's window makes, saved where the app reads it; nothing is ever written over the original.
 
@@ -128,7 +128,7 @@ final class MCPServer {
     static let editPrompt: JSONValue = [
         "name": "edit_photo",
         "title": "Edit a photo from one sentence",
-        "description": "Edit a photograph in SpektraLab to match a description, the way a printer would.",
+        "description": "Edit a photograph in FrameMatter to match a description, the way a printer would.",
         "arguments": [
             ["name": "path", "description": "The image file.", "required": true],
             ["name": "instruction", "description": "What the print should look like.", "required": true],
@@ -137,7 +137,7 @@ final class MCPServer {
 
     static func editPromptMessages(path: String, instruction: String) -> JSONValue {
         let text = """
-        Edit the photograph at \(path) in SpektraLab so that: \(instruction)
+        Edit the photograph at \(path) in FrameMatter so that: \(instruction)
 
         Work like a printer, not a filter: pick the film and paper that carry the look, get the exposure \
         and the scene's placement right, and only then grade. Start with describe_image, get_schema and \

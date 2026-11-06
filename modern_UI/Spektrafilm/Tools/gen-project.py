@@ -12,11 +12,9 @@ this twice produces a byte-identical file. Every Swift/Metal file under
 the unit-test target. `Resources/` is added as a folder reference so anything
 dropped in it ships in the bundle without touching this script.
 
-`Spektrafilm/SpektraLab.icon` is the Icon Composer document and is treated as
-one opaque file, not as the directory of SVG layers it really is: it goes
-through `actool` like an asset catalogue (`folder.iconcomposer.icon` is
-`BasedOn = folder.abstractassetcatalog`), and `ASSETCATALOG_COMPILER_APPICON_NAME`
-picks it by base name.
+The approved FrameMatter PNG renditions live in
+`Spektrafilm/Assets.xcassets/FrameMatter.appiconset`; `actool` selects that
+set through `ASSETCATALOG_COMPILER_APPICON_NAME`.
 
 **The C++ render engine** (RFC-014) joins the app target too, as sources
 rather than as a prebuilt library: `ENGINE_SOURCES` below lists every
@@ -54,7 +52,7 @@ ENGINE = ROOT.parents[1] / "engine"
 # `SpektrafilmTests.xcscheme` reference by `BlueprintName`, the Swift module is
 # named from it, and renaming it buys nothing a user can see.
 #
-# `PRODUCT_NAME` is what the user sees: `SpektraLab.app`, the menu bar title,
+# `PRODUCT_NAME` is what the user sees: `FrameMatter.app`, the menu bar title,
 # the About panel, the DMG. The product was renamed to Filmify, and then to
 # SpektraLab (2026-09-16), because `SPEKTRAFILM_LICENSE.txt` asks that
 # "spektrafilm" not be used in product branding without asking first — this
@@ -69,7 +67,8 @@ ENGINE = ROOT.parents[1] / "engine"
 # reverse-DNS id is a separate, larger decision than renaming what the user
 # sees.
 APP = "Spektrafilm"
-PRODUCT_NAME = "SpektraLab"
+PRODUCT_NAME = "FrameMatter"
+ICON_NAME = "FrameMatter"
 TESTS = "SpektrafilmTests"
 BUNDLE_ID = "com.hanze.filmify"
 MACOS = "15.0"
@@ -80,8 +79,8 @@ MACOS = "15.0"
 # they were still `0.2` and `2` — nothing derived them and nothing noticed.
 # They are build settings now and the plist references them, so a release
 # bumps one line here (HANDOFF-DISTRIBUTION §2.6).
-MARKETING_VERSION = "1.3.5"
-BUILD_NUMBER = "20"
+MARKETING_VERSION = "1.0.0"
+BUILD_NUMBER = "1"
 
 # Signing, from the environment, because a Developer ID certificate is not in
 # this repository and must not be.
@@ -286,12 +285,8 @@ def build() -> str:
         "MTL_ENABLE_DEBUG_INFO": "INCLUDE_SOURCE",
         "MTL_FAST_MATH": "YES",
         "COMBINE_HIDPI_IMAGES": "YES",
-        # The Icon Composer document, `Spektrafilm/SpektraLab.icon`, whose base
-        # name this must match -- `actool` selects the app icon by name, and a
-        # name with no document behind it compiles to a bundle with no icon
-        # rather than to an error. It reads PRODUCT_NAME because the icon is
-        # named for the product, which is the one place those two must agree.
-        "ASSETCATALOG_COMPILER_APPICON_NAME": PRODUCT_NAME,
+        # Must match the app icon set inside Assets.xcassets.
+        "ASSETCATALOG_COMPILER_APPICON_NAME": ICON_NAME,
         "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
     }
     app_cfg = {

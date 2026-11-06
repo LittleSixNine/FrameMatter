@@ -1271,36 +1271,58 @@ with optional decoding for old edits, and use native `scratch_leak_strength`
 They share the existing scratch seed and full/half/full-width-135 availability. The
 existing friction and edge-mark strength sliders do not affect this exposure.
 
-The existing raw overscan-canvas exposure stage adapts the spool-leak
-Gaussian model to a subset of perforation inner-edge centres. Low-frequency
-seeded value noise groups affected holes. Both perforation rows share the
-selected hole indices, slow exposure trend and per-hole exposure weights;
-each row then adds a bounded .85–1.15 local multiplier. This avoids independent
-thresholds blanking an entire row while retaining local variation. A
-three-neighbour sum avoids cell seams. Spread maps to a
-0.15–1.80 mm across-film Gaussian sigma; along-film sigma is .55+.55×spread mm.
-Peak raw exposure is .36×strength×cluster×per-hole weight×row multiplier. The existing 2800K
-fog-light weights pass through the film's spectral sensitivity, development,
-print and scan; there is no fixed RGB overlay. These are visual parameters,
-not measured film-base light-piping calibration.
+The raw overscan-canvas exposure stage combines narrow lit arcs and a softer
+halo (2026-11-06, local-light revision). It reuses the spool-leak event model,
+the scratch envelope's smooth threshold and the scan-wall directional weight.
+Each hole gets one to three seeded light events in a wrapped angular coordinate
+around its nominal rounded outline. Event centres, widths (.035–.125 turns)
+and exposure amplitudes (2^(-.7–.7)) vary. A smoothstep(.15,.85) envelope fades
+arcs to unlit stretches rather than imposing a positive brightness floor.
+A row-level light direction varies up to .75 radians per hole; the outward
+normal weights the lit side by .15+.85×max(dot(normal,direction),0). Per-hole
+strength is .35–1, modulated by a .4–1 slow trend over three hole pitches;
+25% of holes receive only 5% of that contribution. All draws use the saved
+scratch seed, never a fresh render seed.
 
-No exposure is injected into hole interiors or outside the film. The leak
-may extend into the picture at wider spreads: unlike friction and contact
-marks, it is intentionally additional exposure, not a border-only damage mask.
-Subsequent halation/scan processing may spread it further. Zero strength is
-an exact bypass, including when Spread or the saved seed changes with all
-other scratch strengths zero. No dust or development-surge simulation.
+The narrow rim follows the actual perforation SDF, including local wear.
+Its thickness varies per light event (2026-11-06 thickness/visibility revision):
+event sigma is .007+.058×hash² mm, tapered along its arc by a smooth, randomly
+shifted Gaussian factor (.55–1). Overlapping events blend their sigma by their
+local exposure weights, keeping thickness continuous through overlaps. The
+profile peaks half that local sigma onto the film, and its pixel footprint
+adds the existing .31-pixel sigma in quadrature. The maximum search reach
+includes the full .065 mm sigma, so thicker patches are not clipped.
 
-A narrow exposure rim follows the actual perforation SDF in addition to the
-wide leak. It shares Strength and the saved seed; no new wire/UI controls.
-Its peak is 0.012 mm onto the film, Gaussian sigma 0.012 mm plus the existing
-0.31-pixel footprint, and amplitude .80×strength×seeded per-hole/local weight.
-The weight varies around each outline and between holes instead of drawing
-a uniform RGB stroke. It uses the same 2800K spectral exposure and subsequent
-film/print/scan response. The rim remains narrow when Spread changes; it is
-not cut off by the wide leak's inner-edge distance window. Hole interiors
-still receive no added exposure. Dimensions/intensity are visual estimates
-from the supplied overscan reference, not an identified physical mechanism.
+Peak raw exposure is 6×Strength times the event, direction and hole weights,
+with an additional (1+.75×envelope) gain. Fully lit centres gain 75%; unlit
+stretches remain unlit. The halo's strength and light-event locations are
+unchanged. Pixel broadening keeps the exposure peak: normalising its integral
+before nonlinear development made small previews visibly dimmer. This is a
+visual approximation, not exact sampling of subpixel photochemistry.
+
+The halo shares the same light events, with angular widths multiplied by
+1.3+.7×Spread, so it fades more gently around each lit arc. Its spatial sigma
+remains .06+.54×Spread² mm (80% core, 20% tail at three times that sigma).
+Peak raw exposure is 1.4×Strength×smoothstep(0,1,Spread), modulated by the shared
+hole/direction weights and .04+.96×(1-exp(-event_field)). Three neighbouring
+nominal hole profiles are summed; their longitudinal support smoothly vanishes
+between one and 1.4 hole pitches, preventing nearest-cell amplitude jumps.
+The final actual-film mask keeps holes clear. Negligible Gaussian tails beyond
+six tail sigmas are skipped before generating events. Spread zero removes the
+broad term entirely and does not change the narrow rim. The original scan-wall
+baseline is unchanged.
+
+Both profiles still use the existing 2800K fog-light weights through the
+film's spectral sensitivity, development, print and scan. No fixed RGB tint
+or extra scan-wall amplification is introduced. L21's red and L01's yellow-
+green colours are appearance references, not measured incident-light spectra.
+No exposure is injected into hole interiors; the final film mask keeps hole
+interiors and outside-film areas clean. Wider halos may enter the picture.
+Zero Strength remains an exact bypass, including when Spread or the saved
+seed changes with all other scratch strengths zero. Wire fields, saved-edit
+shape, format gating and the original scan-wall treatment are unchanged;
+existing nonzero edits acquire the revised appearance. The parameters are
+visual estimates, not calibrated film-base light-piping measurements.
 
 ## 19. Full-width 135 exposure
 

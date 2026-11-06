@@ -35,12 +35,13 @@ mkdir -p "$out"
 # application and the licence file still pointing at the upstream project,
 # which is the source of the profiles and not of this app. If the repository is
 # renamed, change it in both places and re-run this script.
-source_url="https://github.com/JamesQiu2005/SpektraLab"
+source_url="https://github.com/LittleSixNine/FrameMatter"
 # The upstream project, whose profiles and print model this application uses.
 # A different work under a different licence; not a substitute for the above.
 upstream_url="https://github.com/andreavolpato/spektrafilm"
 
-cp "$root/license/LICENSE" "$out/SpektraLab-GPL-3.0.txt"
+cp "$root/license/LICENSE" "$out/FrameMatter-GPL-3.0.txt"
+cp "$root/engine/resources/fonts/DSEG-LICENSE.txt" "$out/DSEG-OFL-1.1.txt"
 cp "$root/license/SPEKTRAFILM_LICENSE.txt" "$out/Profiles-and-LUTs-CC-BY-SA-4.0.txt"
 cp "$root/engine/third_party/metal-cpp/LICENSE.txt" "$out/metal-cpp-Apache-2.0.txt"
 cp "$root/engine/third_party/film_damage_simulator/LICENSE" "$out/FilmDamageSimulator-MIT.txt"
@@ -115,11 +116,15 @@ cat > "$out/README.txt" <<README
 Licences and credits
 ====================
 
-SpektraLab is free software. This directory carries the full text of every
+FrameMatter is independently developed by LittleSixNine from SpektraLab,
+by Hanze Qiu (https://github.com/JamesQiu2005/SpektraLab). The original app,
+native engine port and four black-and-white profiles retain their attribution.
+
+FrameMatter is free software. This directory carries the full text of every
 licence the application is distributed under, because a binary that ships
 without them is not licensed to be shipped.
 
-  SpektraLab-GPL-3.0.txt
+  FrameMatter-GPL-3.0.txt
       The application and the C++ render engine, GPL-3.0-or-later. You have
       the right to the corresponding source code of this application:
       $source_url
@@ -147,11 +152,14 @@ without them is not licensed to be shipped.
   FilmDamageSimulator-MIT.txt
       Daniela Ivanova (2022), MIT. Reference for scratch-mask shape generation.
 
-Two projects, two links, and they are not interchangeable. SpektraLab is a
-native macOS application and a C++ render engine, and the first link above is
-where its source is. The film simulation, the measured profiles and the
-print+scan model are Andrea Volpato's spektrafilm, and the second link is
-where that lives. SpektraLab is not affiliated with or endorsed by it.
+FrameMatter's source link identifies this independently developed application.
+SpektraLab's source identifies Hanze Qiu's original application and engine port;
+spektrafilm identifies Andrea Volpato's film, profile and print model work.
+These works keep their authorship. FrameMatter is not affiliated with or
+endorsed by either upstream project.
+
+  DSEG-OFL-1.1.txt
+      DSEG date-back fonts by Keshikan, SIL Open Font License 1.1.
 README
 
 printf 'licences   -> %s\n' "$out"

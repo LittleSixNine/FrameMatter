@@ -20,7 +20,7 @@ enum AgentAccess {
         set { UserDefaults.standard.set(newValue, forKey: key) }
     }
 
-    static let refusal = "Command line and agent access is off. Turn it on in SpektraLab ▸ Settings ▸ Agents."
+    static let refusal = "Command line and agent access is off. Turn it on in FrameMatter ▸ Settings ▸ Agents."
 
     /// The app's own executable: what the MCP configuration names, and what
     /// the installed command runs.
@@ -31,7 +31,7 @@ enum AgentAccess {
     /// Where Install puts the command. `~/.local/bin` needs no administrator
     /// password and is on the PATH of most shells set up for developer tools.
     static var installURL: URL {
-        FileManager.default.homeDirectoryForCurrentUser.appending(path: ".local/bin/spektralab")
+        FileManager.default.homeDirectoryForCurrentUser.appending(path: ".local/bin/framematter")
     }
 
     /// The command is a two-line script, not a symlink to the executable.
@@ -41,7 +41,7 @@ enum AgentAccess {
     static var script: String {
         """
         #!/bin/sh
-        # SpektraLab command line (RFC-026). Installed by Settings ▸ Agents.
+        # FrameMatter command line (RFC-026). Installed by Settings ▸ Agents.
         exec '\(executable.replacingOccurrences(of: "'", with: "'\\''"))' cli "$@"
         """ + "\n"
     }
@@ -61,7 +61,7 @@ enum AgentAccess {
         let fm = FileManager.default
         if let text = try? String(contentsOf: installURL, encoding: .utf8),
            !text.contains("Installed by Settings ▸ Agents") {
-            throw AgentError.refused("\(installURL.path) exists and is not SpektraLab's; it was left alone.")
+            throw AgentError.refused("\(installURL.path) exists and is not FrameMatter's; it was left alone.")
         }
         try fm.createDirectory(at: installURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         try script.write(to: installURL, atomically: true, encoding: .utf8)
@@ -72,18 +72,18 @@ enum AgentAccess {
         guard installState != .absent else { return }
         guard let text = try? String(contentsOf: installURL, encoding: .utf8),
               text.contains("Installed by Settings ▸ Agents") else {
-            throw AgentError.refused("\(installURL.path) is not SpektraLab's; it was left alone.")
+            throw AgentError.refused("\(installURL.path) is not FrameMatter's; it was left alone.")
         }
         try FileManager.default.removeItem(at: installURL)
     }
 
     /// The configuration lines Settings shows with a Copy button.
     static var claudeCodeCommand: String {
-        "claude mcp add spektralab -- '\(executable)' mcp"
+        "claude mcp add framematter -- '\(executable)' mcp"
     }
 
     static var desktopConfig: String {
-        let v: JSONValue = ["mcpServers": ["spektralab": ["command": .string(executable), "args": ["mcp"]]]]
+        let v: JSONValue = ["mcpServers": ["framematter": ["command": .string(executable), "args": ["mcp"]]]]
         return v.text(pretty: true)
     }
 }

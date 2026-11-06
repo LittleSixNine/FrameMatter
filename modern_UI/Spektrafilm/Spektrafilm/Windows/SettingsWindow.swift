@@ -1,4 +1,4 @@
-//  SettingsWindow.swift — SpektraLab ▸ Settings… (⌘,).
+//  SettingsWindow.swift — FrameMatter ▸ Settings… (⌘,).
 //
 //  RFC-016 §6 specifies a diagnostics column and names the controls it needs
 //  to exist. This is that page, plus the two render settings that were
@@ -275,7 +275,7 @@ struct SettingsWindow: View {
                                             set: { diagnostics.memoryCapIsUnlimited = $0 }))
                     caption(L(Diagnostics.memoryCapNote, zh: Self.zh[Diagnostics.memoryCapNote] ?? ""))
                     Divider().overlay(Theme.plotGrid).padding(.vertical, 4)
-                    readout(L("Held by SpektraLab", zh: "SpektraLab 占用"),
+                    readout(L("Held by FrameMatter", zh: "FrameMatter 占用"),
                             bytes(UInt64(max(0, diagnostics.arena.totalBytes))),
                             help: arenaBreakdown())
                     readout(L("Evictable", zh: "可释放"),
@@ -300,7 +300,7 @@ struct SettingsWindow: View {
     /// line in the record.
     ///
     /// It sits under Memory rather than under Logs because it answers the same
-    /// question — what is SpektraLab holding, and what may it hold — for the
+    /// question — what is FrameMatter holding, and what may it hold — for the
     /// other kind of storage. The unit differs and so does the consequence:
     /// over the memory cap the app evicts to keep working, over this one it
     /// evicts to stop growing.
@@ -323,7 +323,7 @@ struct SettingsWindow: View {
                     labelled(L("Location", zh: "位置")) {
                         Text(Session.diskCacheRoot.path)
                             .font(Theme.Font.caption).foregroundStyle(Theme.text)
-                            // A path in full, wrapping; never "…/SpektraLab".
+                            // A path in full, wrapping; never "…/FrameMatter".
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 8)
@@ -371,7 +371,7 @@ struct SettingsWindow: View {
                     labelled(L("Destination", zh: "存放位置")) {
                         Text(diagnostics.logDirectory.path)
                             .font(Theme.Font.caption).foregroundStyle(Theme.text)
-                            // A path in full, wrapping; never "…/SpektraLab".
+                            // A path in full, wrapping; never "…/FrameMatter".
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 8)
@@ -433,7 +433,7 @@ struct SettingsWindow: View {
         SettingsGroup(L("This session", zh: "本次会话")) {
             SettingsRows {
                 VStack(alignment: .leading, spacing: 3) {
-                    readout(L("App", zh: "应用"), Diagnostics.bundleInfo.version)
+                    readout(L("App", zh: "应用"), "Build \(Diagnostics.bundleInfo.build)")
                     readout(L("Engine", zh: "引擎"), diagnostics.engineVersion ?? L("not reported yet", zh: "尚未报告"))
                     readout(L("Render core", zh: "渲染核心"), session.renderCore ?? L("not reported yet", zh: "尚未报告"))
                     readout(L("Log file", zh: "日志文件"), diagnostics.currentLogFile?.lastPathComponent ?? L("none", zh: "无"))
@@ -458,7 +458,7 @@ struct SettingsWindow: View {
                     if case .failed(let reason) = updateStatus {
                         warning(L("Could not check: \(reason)", zh: "无法检查：\(reason)"))
                     }
-                    caption(L("One unauthenticated request to GitHub's public SpektraLab release API, only when you press this. It sends no identifier and no app version.", zh: "仅在你按下时，向 GitHub 公开的 SpektraLab 发布接口发送一次匿名请求。不发送任何标识符或应用版本。"))
+                    caption(L("One unauthenticated request to GitHub's public FrameMatter release API, only when you press this. It sends no identifier and no app version.", zh: "仅在你按下时，向 GitHub 公开的 FrameMatter 发布接口发送一次匿名请求。不发送任何标识符或应用版本。"))
                     if diagnostics.previousSessionChecked {
                         if let p = diagnostics.previousSession {
                             readout(L("Last session", zh: "上次会话"), p.endedCleanly
@@ -487,11 +487,11 @@ struct SettingsWindow: View {
         Diagnostics.exportJobLogNote:
             "在每个导出文件旁写入一个 .joblog.jsonl：配方、引擎版本、耗时和实际应用的曝光。无论是否打开，会话日志都会记录每次导出。",
         Diagnostics.memoryReserveNote:
-            "SpektraLab 为其他程序留出的空闲内存。预计峰值放不进这一预留的照片会收到一条可以忽略的警告，绝不会被拒绝。下方的选项只会关掉警告，不会影响释放。",
+            "FrameMatter 为其他程序留出的空闲内存。预计峰值放不进这一预留的照片会收到一条可以忽略的警告，绝不会被拒绝。下方的选项只会关掉警告，不会影响释放。",
         Diagnostics.memoryCapNote:
-            "SpektraLab 可在缓存和临时缓冲区中占用的内存。正在查看的照片永远不会被释放，无论此处如何设置。可用内存由本机的其他应用决定；这里是 SpektraLab 自己能决定的部分。",
+            "FrameMatter 可在缓存和临时缓冲区中占用的内存。正在查看的照片永远不会被释放，无论此处如何设置。可用内存由本机的其他应用决定；这里是 FrameMatter 自己能决定的部分。",
         Diagnostics.diskCacheCapNote:
-            "SpektraLab 用于存放解码后的照片和完成的印放的磁盘空间，这样重新打开照片时不必再次解码。这里没有任何你的作品——每一项都能从原始文件重新生成，清空的唯一代价是下次打开这些照片时要多等一会儿。价值最低的条目先被清除，依据是使用频率与生成成本。",
+            "FrameMatter 用于存放解码后的照片和完成的印放的磁盘空间，这样重新打开照片时不必再次解码。这里没有任何你的作品——每一项都能从原始文件重新生成，清空的唯一代价是下次打开这些照片时要多等一会儿。价值最低的条目先被清除，依据是使用频率与生成成本。",
         Diagnostics.logDirectoryNote:
             "会话日志的写入位置。更改在下次启动时生效；本次会话继续写入已打开的文件。",
         DiagnosticBundle.fileNamesNote:
@@ -590,7 +590,7 @@ struct SettingsWindow: View {
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = false
         panel.prompt = L("Choose", zh: "选择")
-        panel.message = L("Where should SpektraLab write its logs?", zh: "SpektraLab 应把日志写到哪里？")
+        panel.message = L("Where should FrameMatter write its logs?", zh: "FrameMatter 应把日志写到哪里？")
         panel.directoryURL = diagnostics.logDirectory
         guard panel.runModal() == .OK, let url = panel.url else { return }
         diagnostics.logDirectory = url
@@ -598,7 +598,7 @@ struct SettingsWindow: View {
 
     private func saveBundle() {
         let panel = NSSavePanel()
-        panel.nameFieldStringValue = "SpektraLab-diagnostics.zip"
+        panel.nameFieldStringValue = "FrameMatter-diagnostics.zip"
         panel.allowedContentTypes = [.zip]
         // §7: "the bundle dialog says so plainly before saving". The message
         // is the same sentence the checkbox above carries, so what the user

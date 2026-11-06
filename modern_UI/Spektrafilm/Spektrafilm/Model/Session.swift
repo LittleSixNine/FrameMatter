@@ -1895,7 +1895,7 @@ final class Session: CanvasHost {
     ///    which is why it is added here rather than living in the sidecar: a
     ///    frame copied to another library must not carry the resolution its
     ///    author happened to be using.
-    ///  - `product_defaults` asks the engine for SpektraLab's defaults rather
+    ///  - `product_defaults` asks the engine for FrameMatter's defaults rather
     ///    than the reference's — today, that Camera Exp. Comp. moves the
     ///    finished print's brightness instead of only the negative's placement
     ///    on the film curve. The engine used to infer this from the presence

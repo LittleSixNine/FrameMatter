@@ -1,4 +1,4 @@
-//  AgentCLI.swift — `spektralab <command>` (RFC-026 §4).
+//  AgentCLI.swift — `framematter <command>` (RFC-026 §4).
 //
 //  Each command is an `AgentTools` call with its arguments spelled as flags.
 //  Output is one JSON object on stdout; exit 0 is done, 1 is failed (ours),
@@ -8,7 +8,7 @@ import Foundation
 
 enum AgentCLI {
     static let usage = """
-    usage: spektralab <command> [file] [options]
+    usage: framematter <command> [file] [options]
 
       status                                 is access on, and where is the app
       schema                                 every editable field, with ranges
@@ -25,8 +25,8 @@ enum AgentCLI {
       export   <file> [--recipe NAME] [--to DIR]  export with a recipe
       mcp                                    serve MCP over stdio
 
-    Edits are saved where SpektraLab reads them. Access is off until it is
-    turned on in SpektraLab ▸ Settings ▸ Agents.
+    Edits are saved where FrameMatter reads them. Access is off until it is
+    turned on in FrameMatter ▸ Settings ▸ Agents.
     """
 
     /// Parse and run; returns the exit code.
@@ -72,7 +72,7 @@ enum AgentCLI {
     /// A command line as a tool call. Pure, so it is testable without an engine.
     static func parse(_ argv: [String]) throws -> (tool: String, args: JSONValue, preview: URL?) {
         guard let command = argv.first, let tool = AgentTools.command(command) else {
-            throw AgentError.refused("Unknown command \(argv.first ?? ""). `spektralab help` lists them.")
+            throw AgentError.refused("Unknown command \(argv.first ?? ""). `framematter help` lists them.")
         }
         var rest = Array(argv.dropFirst())
         var args: [String: JSONValue] = [:]

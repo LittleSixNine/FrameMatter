@@ -56,7 +56,7 @@ final class AgentWorkspace {
         }
         if url == target, session.selection == target { return }
         guard !Library.frames(from: [target]).isEmpty else {
-            throw AgentError.refused("\(target.lastPathComponent) is not an image SpektraLab opens.")
+            throw AgentError.refused("\(target.lastPathComponent) is not an image FrameMatter opens.")
         }
         if url != nil { session.flushSave() }
         session.lastError = nil
@@ -217,7 +217,7 @@ final class AgentWorkspace {
     func preview(to out: URL? = nil, longEdge: Int = 1024) async throws -> URL {
         guard (64...4096).contains(longEdge) else { throw AgentError.refused("The long edge must be within 64…4096.") }
         try await develop()
-        let dir = FileManager.default.temporaryDirectory.appending(path: "spektralab-preview-\(UUID().uuidString)")
+        let dir = FileManager.default.temporaryDirectory.appending(path: "framematter-preview-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: dir) }
         var recipe = ExportRecipe()
         recipe.name = "Agent preview"
@@ -231,7 +231,7 @@ final class AgentWorkspace {
         let files = try await write(recipe)
         guard let file = files.first else { throw AgentError.failed("The preview wrote nothing.") }
         let target = out ?? FileManager.default.temporaryDirectory
-            .appending(path: "spektralab-\(url?.deletingPathExtension().lastPathComponent ?? "preview")-\(UUID().uuidString.prefix(8)).jpg")
+            .appending(path: "framematter-\(url?.deletingPathExtension().lastPathComponent ?? "preview")-\(UUID().uuidString.prefix(8)).jpg")
         try? FileManager.default.removeItem(at: target)
         try FileManager.default.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
         try FileManager.default.moveItem(at: file, to: target)

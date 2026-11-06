@@ -157,14 +157,14 @@ enum CineonLUT {
 
         var fileName: String {
             switch self {
-            case .proPhoto: "SpektraLab DI view, Cineon to ProPhoto RGB.cube"
-            case .rec709: "SpektraLab DI view, Cineon to Rec709.cube"
+            case .proPhoto: "FrameMatter DI view, Cineon to ProPhoto RGB.cube"
+            case .rec709: "FrameMatter DI view, Cineon to Rec709.cube"
             }
         }
         var title: String {
             switch self {
-            case .proPhoto: "SpektraLab DI view: Cineon log (ProPhoto primaries) to ProPhoto RGB"
-            case .rec709: "SpektraLab DI view: Cineon log (ProPhoto primaries) to Rec.709 gamma 2.4"
+            case .proPhoto: "FrameMatter DI view: Cineon log (ProPhoto primaries) to ProPhoto RGB"
+            case .rec709: "FrameMatter DI view: Cineon log (ProPhoto primaries) to Rec.709 gamma 2.4"
             }
         }
     }

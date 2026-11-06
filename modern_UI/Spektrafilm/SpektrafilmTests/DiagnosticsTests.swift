@@ -639,7 +639,7 @@ final class DiagnosticsTests: XCTestCase {
             appVersion: "1.2.3", buildNumber: "45",
             engineVersion: "spektrafilm-0.9",
             capabilitiesJSON: #"{"version":"1.2.3"}"#,
-            lastError: "This frame is larger than SpektraLab can render.",
+            lastError: "This frame is larger than FrameMatter can render.",
             machine: ["model": "Mac16,7", "gpu": "Apple M4 Max"],
             settings: ["log_level": "normal"],
             previousSession: PreviousSessionReport(file: "spektralab-x.jsonl", endedCleanly: false, ageSeconds: 12)))
@@ -897,7 +897,7 @@ final class DiagnosticsTests: XCTestCase {
         XCTAssertEqual(session.refusal?.kind, .size)
         XCTAssertEqual(session.canvasBadges.filter { $0.hasPrefix("refused") }.count, 1,
                        "no badge for a refused frame: \(session.canvasBadges)")
-        XCTAssertTrue(session.status.contains("larger than SpektraLab"))
+        XCTAssertTrue(session.status.contains("larger than FrameMatter"))
         XCTAssertEqual(session.lastError, session.status)
 
         let error = try XCTUnwrap(log.records().first { $0.category == .error })

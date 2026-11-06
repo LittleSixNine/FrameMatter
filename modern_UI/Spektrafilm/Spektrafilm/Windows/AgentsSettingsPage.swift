@@ -1,7 +1,7 @@
 //  AgentsSettingsPage.swift — Settings ▸ Agents (RFC-026 §6).
 //
 //  Three groups: the switch (off by default, and the only thing standing
-//  between another program and the person's frames), the `spektralab`
+//  between another program and the person's frames), the `framematter`
 //  command, and the lines that add the MCP server to an agent. Everything an
 //  agent could be told to type is shown here with a Copy button, because a
 //  configuration line retyped from a screenshot is how a path with a space in

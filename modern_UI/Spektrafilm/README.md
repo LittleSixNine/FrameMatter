@@ -1,4 +1,4 @@
-# SpektraLab — the SwiftUI frontend
+# FrameMatter — the SwiftUI frontend
 
 > **Read §1, §3, §4 and §7 with this one correction.** This document was
 > written 2026-09-08, when the app talked to a Python render service over

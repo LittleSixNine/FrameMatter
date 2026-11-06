@@ -1,22 +1,12 @@
 //  render-icon.swift — the app's icon as macOS draws it, to a PNG.
 //
 //      swiftc -O Tools/render-icon.swift -o /tmp/render-icon
-//      /tmp/render-icon "$PWD/build/DerivedData/Build/Products/Debug/SpektraLab.app" \
+//      /tmp/render-icon "$PWD/build/DerivedData/Build/Products/Debug/FrameMatter.app" \
 //                       /tmp/app-icon.png 1024
 //
-//  Why the built app and not `Spektrafilm/SpektraLab.icon`: the Icon Composer
-//  document is layers, a shadow and a translucency value, not a picture. What
-//  a person sees is `actool`'s composite of it — the shape mask, the material,
-//  the specular edge — and that only exists after a build. Reading it back out
-//  of the bundle also proves the icon reached the bundle, which is the half of
-//  this that can silently fail: a name with no document behind it compiles to
-//  an app with no icon and no error.
-//
-//  `NSWorkspace.icon(forFile:)` is deliberate too. It is the same call the
-//  Finder and the Dock make, so the file this writes is what they show; the
-//  `.icns` beside it in the bundle stops at 256 px, while the catalogue holds
-//  renditions up to 2048. The size printed on stderr is the largest one there,
-//  so a request above it is an upscale and says so.
+//  Read the built bundle, rather than the source PNG, to prove that the
+//  asset catalogue reached the app and that Finder resolves the new icon.
+//  NSWorkspace uses the same icon lookup as Finder and the Dock.
 
 import AppKit
 

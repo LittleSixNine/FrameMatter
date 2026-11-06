@@ -46,7 +46,7 @@ struct AboutWindow: View {
     /// `bundle-licenses.sh`, then re-run that script.** GitHub redirects a
     /// renamed repository, so the old link keeps resolving and nothing breaks
     /// loudly — which is exactly why it needs saying.
-    static let sourceURL = "https://github.com/JamesQiu2005/SpektraLab"
+    static let sourceURL = "https://github.com/LittleSixNine/FrameMatter"
     /// The same URL as the panel shows it, without the scheme.
     static var sourceLabel: String {
         sourceURL.replacingOccurrences(of: "https://", with: "")
@@ -55,10 +55,12 @@ struct AboutWindow: View {
     /// The upstream project: the profiles, the print model and the engine's
     /// science. A different work under a different licence, and the reason
     /// two source links appear on this panel rather than one.
+    static let originalAppURL = "https://github.com/JamesQiu2005/SpektraLab"
     static let upstreamURL = "https://github.com/andreavolpato/spektrafilm"
 
     static let licences = [
-        Licence(id: "SpektraLab-GPL-3.0.txt", title: "GNU GPL v3 — the application and the engine"),
+        Licence(id: "DSEG-OFL-1.1.txt", title: "SIL OFL 1.1 — DSEG fonts by Keshikan"),
+        Licence(id: "FrameMatter-GPL-3.0.txt", title: "GNU GPL v3 — the application and the engine"),
         Licence(id: "Profiles-and-LUTs-CC-BY-SA-4.0.txt", title: "CC BY-SA 4.0 — the profiles and the print LUTs"),
         Licence(id: "Profiles-and-LUTs-CHANGELOG.txt", title: "What this build changed about the profiles and LUTs"),
         Licence(id: "FilmDamageSimulator-Data-CC-BY-4.0.txt", title: "CC BY 4.0 — FilmDamageSimulator dust and fiber scans"),
@@ -78,9 +80,8 @@ struct AboutWindow: View {
 
     private static var version: String {
         let info = Bundle(for: BundleToken.self).infoDictionary
-        let short = info?["CFBundleShortVersionString"] as? String ?? "?"
         let build = info?["CFBundleVersion"] as? String ?? "?"
-        return "Version \(short) (\(build))"
+        return "Build \(build)"
     }
 
     var body: some View {
@@ -103,7 +104,7 @@ struct AboutWindow: View {
             Image(nsImage: NSApp.applicationIconImage)
                 .resizable().frame(width: 64, height: 64)
             VStack(alignment: .leading, spacing: 3) {
-                Text("SpektraLab").font(.system(size: 20, weight: .semibold))
+                Text("FrameMatter").font(.system(size: 20, weight: .semibold))
                 Text(AboutWindow.version).font(Theme.Font.sublabel).foregroundStyle(.secondary)
                 Text("A spectral film and print simulation for macOS.")
                     .font(Theme.Font.sublabel).foregroundStyle(.secondary)
@@ -116,12 +117,20 @@ struct AboutWindow: View {
     private var credits: some View {
         VStack(alignment: .leading, spacing: 10) {
             // The one line that says which name belongs to which thing. This
-            // app is SpektraLab; the engine, the profiles and the LUTs it uses
+            // app is FrameMatter; the engine, the profiles and the LUTs it uses
             // are spektrafilm's, and `SPEKTRAFILM_LICENSE.txt` asks that the
             // product branding be kept apart from the factual reference —
             // which it welcomes. Saying so on the About panel is where that
             // distinction is legible.
-            Text("SpektraLab uses the spektrafilm engine, film and paper profiles, and the print-preview LUTs baked from them.")
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Based on SpektraLab by Hanze Qiu")
+                    .font(Theme.Font.groupHeader).foregroundStyle(Theme.text)
+                Text("Independent development by LittleSixNine. The original application, native engine port and black-and-white profiles are credited to Hanze Qiu.")
+                    .font(Theme.Font.sublabel).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                link("github.com/JamesQiu2005/SpektraLab", AboutWindow.originalAppURL)
+            }
+            Text("FrameMatter uses the spektrafilm engine, film and paper profiles, and the print-preview LUTs baked from them.")
                 .font(Theme.Font.sublabel).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             // The attribution the CC BY-SA licence requires, in the form it
@@ -135,7 +144,7 @@ struct AboutWindow: View {
                      AboutWindow.upstreamURL)
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text("SpektraLab and its render engine")
+                Text("FrameMatter and its render engine")
                     .font(Theme.Font.groupHeader).foregroundStyle(Theme.text)
                 // The GPL's written offer, and the only form of it that is
                 // any use: a place to get the code. It points at this
