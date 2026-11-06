@@ -580,15 +580,18 @@ spk_engine* spk_engine_create(const char* resources_dir, void* device) {
 
     if (!engine->print_luts.init(engine->resources_dir, error)) { g_error = error; return nullptr; }
 #ifdef __APPLE__
-    // Optional for legacy resources; choosing LCD Style 1 (DSEG7) checks the resolved font.
-    const std::string font_path = engine->resources_dir + "/fonts/DSEG7ClassicMini-BoldItalic.ttf";
-    CFURLRef font_url = CFURLCreateFromFileSystemRepresentation(nullptr,
-        reinterpret_cast<const UInt8*>(font_path.data()), font_path.size(), false);
-    if (font_url) {
-        CFErrorRef font_error = nullptr;
-        CTFontManagerRegisterFontsForURL(font_url, kCTFontManagerScopeProcess, &font_error);
-        if (font_error) CFRelease(font_error); // A second engine may register the same face.
-        CFRelease(font_url);
+    // Legacy resource sets can omit these; selecting a DSEG face checks it explicitly.
+    for (const char* file : {"DSEG7ClassicMini-BoldItalic.ttf", "DSEG7ClassicMini-Italic.ttf",
+                             "DSEG7ClassicMini-Regular.ttf", "DSEG7Classic-Regular.ttf"}) {
+        const std::string font_path = engine->resources_dir + "/fonts/" + file;
+        CFURLRef font_url = CFURLCreateFromFileSystemRepresentation(nullptr,
+            reinterpret_cast<const UInt8*>(font_path.data()), font_path.size(), false);
+        if (font_url) {
+            CFErrorRef font_error = nullptr;
+            CTFontManagerRegisterFontsForURL(font_url, kCTFontManagerScopeProcess, &font_error);
+            if (font_error) CFRelease(font_error); // A second engine may register the same face.
+            CFRelease(font_url);
+        }
     }
 #endif
 

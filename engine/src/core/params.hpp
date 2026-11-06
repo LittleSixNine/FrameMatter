@@ -231,12 +231,12 @@ struct DateImprintParams {
     // RFC-031 §8 (2026-10-01): three faces of one mechanism. lcd = seven
     // segments, slanted; dots = a dot-matrix date, upright; data = shooting
     // data in a 5x7 face between frames (135) or in the margin (645).
-    std::string style = "lcd";       // lcd (Style 2) | dseg (Style 1) | dots | data
+    std::string style = "lcd";       // lcd (original) | dseg / dseg_mini_italic / dseg_mini_regular / dseg_classic_regular | dots | data
     double size = 0.5;               // scale on the style's own character height
     std::string corner = "br";       // frame placement: br | bl | tr | tl, in the film's frame (the camera held level)
     // -1 preserves the legacy millimetre insets; 0–100 is corner to center on 135.
     double margin_percent = -1.0;
-    double field_gap_h = 1.20;       // LCD Style 1 only, in digit heights
+    double field_gap_h = 1.20;       // DSEG LCD styles only, in digit heights
     double inset_x = 3.0;            // mm from the gate's side to the text (frame placement)
     double inset_y = 2.4;            // mm from the gate's top/bottom to the text (frame placement)
 };

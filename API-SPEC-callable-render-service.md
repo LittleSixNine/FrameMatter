@@ -1083,16 +1083,25 @@ clipboard group. Reset Grain restores only grain settings and enables grain.
 No schema-version bump: these are additive native-product wire fields.
 
 
-## 17. Date Back: LCD Style 1, capture clock and diagonal margin
+## 17. Date Back: DSEG fonts, capture clock and diagonal margin
 
-LCD Style 2 remains `date_imprint_style = lcd`. Style 1 maps to `dseg`, using
-unmodified DSEG7 Classic Mini Bold Italic v0.46 (Keshikan, OFL-1.1), bundled
-under `engine/resources/fonts/` with its license and source. Display numbering
-does not migrate persisted IDs: `style2` remains DSEG (displayed Style 1), and
-`style1` remains the original face (displayed Style 2). CoreText supplies
+The LCD submenu lists four unmodified DSEG v0.46 fonts by their original names,
+followed by LCD Style 2 (the original `lcd` face). All fonts are by Keshikan,
+OFL-1.1, bundled under `engine/resources/fonts/` with license and source.
+
+| Menu title | Persisted `lcdStyle` | `date_imprint_style` |
+|---|---|---|
+| DSEG7 Classic Mini Bold Italic | `style2` | `dseg` |
+| DSEG7 Classic Mini Italic | `classicMiniItalic` | `dseg_mini_italic` |
+| DSEG7 Classic Mini Regular | `classicMiniRegular` | `dseg_mini_regular` |
+| DSEG7 Classic Regular | `classicRegular` | `dseg_classic_regular` |
+| LCD Style 2 | `style1` | `lcd` |
+
+Existing IDs keep their faces; missing `lcdStyle` retains the original.
+The four DSEG choices share the same sizing and spacing controls. CoreText supplies
 the glyph masks; no extra italic shear is applied. Missing fonts and unsupported
 characters fail explicitly. DSEG7 lacks an apostrophe: the existing apostrophe
-mask is reused. Both LCD styles support a colon. Projection blur, lamp exposure,
+mask is reused. All LCD styles support a colon. Projection blur, lamp exposure,
 halation, film development and grain remain the existing date-imprint chain.
 
 `date_imprint_margin`: float, shoot layer, non-live, range −1…100, default −1.
@@ -1111,19 +1120,19 @@ and the original date style stay unchanged. New settings round-trip in the
 sidecar and participate in the existing render stamp and undo path. Random
 date-back illumination is intentionally deferred.
 
-The app removes the year apostrophe for LCD Style 1 before sending either frame's date text. Style 2 and dot-matrix text are unchanged; day/hour/minute retains its colon.
+The app removes the year apostrophe for all four DSEG fonts before sending either frame's date text. Style 2 and dot-matrix text are unchanged; day/hour/minute retains its colon.
 
 
-LCD Style 1 spacing: `date_imprint_field_gap` maps to
+DSEG spacing: `date_imprint_field_gap` maps to
 `film_render.date_imprint.field_gap_h` (float, shoot, non-live, 0.20–3.00,
 default 1.20). It replaces the font's space width between adjacent numeric
 fields, in digit-height units H. Consecutive digits receive fixed +0.20H
 tracking. Hour/minute clear spacing is split equally around the colon’s visible glyph, so the colon remains centered as spacing changes.
 The same glyph layout measures and draws the text, so alignment includes the
-spacing. These changes apply only to `dseg`; LCD Style 2 and dot-matrix/data
+spacing. These changes apply only to the four DSEG styles; LCD Style 2 and dot-matrix/data
 faces do not read the field-gap setting. The app stores it as
 `params.dateBack.fieldGapH`, defaults missing values to 1.20, and exposes its
-slider only for LCD Style 1. Glyph outlines and optical processing are unchanged.
+slider only for the four DSEG styles. Glyph outlines and optical processing are unchanged.
 
 
 All date faces share `size`: range 0.2–3, default/reset 0.5. Explicitly saved

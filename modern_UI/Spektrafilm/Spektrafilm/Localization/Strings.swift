@@ -917,8 +917,13 @@ extension DateBackFace {
 
 extension DateBackLCDStyle {
     @MainActor var title: String {
-        self == .dseg ? L("LCD Style 1 (DSEG7)", zh: "LCD 样式 1（DSEG7）")
-                     : L("LCD Style 2", zh: "LCD 样式 2")
+        switch self {
+        case .dseg: "DSEG7 Classic Mini Bold Italic"
+        case .classicMiniItalic: "DSEG7 Classic Mini Italic"
+        case .classicMiniRegular: "DSEG7 Classic Mini Regular"
+        case .classicRegular: "DSEG7 Classic Regular"
+        case .original: L("LCD Style 2", zh: "LCD 样式 2")
+        }
     }
 }
 

@@ -321,11 +321,17 @@ double seven_seg_width(const std::string& text, double h) {
 }
 
 
-constexpr const char* kDateFont = "DSEG7ClassicMini-BoldItalic";
+const char* date_font(const std::string& style) {
+    if (style == "dseg") return "DSEG7ClassicMini-BoldItalic";
+    if (style == "dseg_mini_italic") return "DSEG7ClassicMini-Italic";
+    if (style == "dseg_mini_regular") return "DSEG7ClassicMini-Regular";
+    if (style == "dseg_classic_regular") return "DSEG7Classic-Regular";
+    return nullptr;
+}
 
 // Read glyph geometry from the unmodified font; keep the old apostrophe mask,
 // which DSEG7 does not supply, rather than allowing a system-font fallback.
-double dseg_face(const std::string& text, double h, double field_gap_h, std::vector<Op>* out = nullptr) {
+double dseg_face(const std::string& text, double h, double field_gap_h, const char* font_name, std::vector<Op>* out = nullptr) {
     const size_t colon = text.find(':');
     if (colon != std::string::npos && text.find(':', colon + 1) == std::string::npos) {
         std::string before = text.substr(0, colon), after = text.substr(colon + 1);
@@ -334,7 +340,7 @@ double dseg_face(const std::string& text, double h, double field_gap_h, std::vec
             before.resize(end + 1); after.erase(0, start);
             auto append = [&](const std::string& part, double x) {
                 const size_t first = out ? out->size() : 0;
-                const double width = dseg_face(part, h, field_gap_h, out);
+                const double width = dseg_face(part, h, field_gap_h, font_name, out);
                 if (out) for (size_t i = first; i < out->size(); ++i) {
                     Op& op = (*out)[i];
                     if (op.kind == Op::Poly) {
@@ -350,14 +356,16 @@ double dseg_face(const std::string& text, double h, double field_gap_h, std::vec
             return left + gap + middle + right;
         }
     }
-    CTFontRef unit = CTFontCreateWithName(CFSTR("DSEG7ClassicMini-BoldItalic"), 1, nullptr);
+    CFStringRef name = CFStringCreateWithCString(nullptr, font_name, kCFStringEncodingUTF8);
+    CTFontRef unit = CTFontCreateWithName(name, 1, nullptr);
     const UniChar eight = '8';
     CGGlyph g8;
     CTFontGetGlyphsForCharacters(unit, &eight, &g8, 1);
     const CGRect bounds = CTFontGetBoundingRectsForGlyphs(unit, kCTFontOrientationHorizontal, &g8, nullptr, 1);
     const double size = h / bounds.size.height;
     CFRelease(unit);
-    CTFontRef font = CTFontCreateWithName(CFSTR("DSEG7ClassicMini-BoldItalic"), size, nullptr);
+    CTFontRef font = CTFontCreateWithName(name, size, nullptr);
+    CFRelease(name);
     double x = 0, xmin = 1e30, xmax = -1e30;
     const size_t first = out ? out->size() : 0;
     const double baseline = bounds.origin.y * size;
@@ -390,7 +398,7 @@ double dseg_face(const std::string& text, double h, double field_gap_h, std::vec
         }
         if (out && ch != ' ') {
             Op op;
-            op.font = kDateFont; op.text = std::string(1, ch);
+            op.font = font_name; op.text = std::string(1, ch);
             op.size_mm = size; op.s = x; op.t = baseline;
             out->push_back(op);
         }
@@ -2125,9 +2133,9 @@ void imprint_groups(const OverscanLayout& L, const Params& params, double frame_
     // A face's glyphs, laid out in glyph space (x right, y up from the
     // baseline) and mapped to film mm by `place(x, y) -> (s, t)`.
     auto draw = [&](const std::string& text, const std::string& style, double h, auto place) {
-        if (style == "dseg") {
+        if (const char* font_name = date_font(style)) {
             std::vector<Op> glyphs;
-            dseg_face(text, h, d.field_gap_h, &glyphs);
+            dseg_face(text, h, d.field_gap_h, font_name, &glyphs);
             for (Op& op : glyphs) {
                 if (op.kind == Op::Poly) {
                     for (size_t i = 0; i + 1 < op.pts.size(); i += 2) {
@@ -2188,7 +2196,7 @@ void imprint_groups(const OverscanLayout& L, const Params& params, double frame_
     };
     auto text_width = [&](const std::string& text, const std::string& style, double h) {
         if (style == "lcd") return seven_seg_width(text, h);
-        if (style == "dseg") return dseg_face(text, h, d.field_gap_h);
+        if (const char* font_name = date_font(style)) return dseg_face(text, h, d.field_gap_h, font_name);
         return dot_matrix(text, h, [](double, double, double) {});
     };
 
@@ -2323,19 +2331,21 @@ std::string Pipeline::overscan_geometry_json() const {
 bool Pipeline::node_overscan(const Image& in, Image& out, std::string& error) {
     const DateImprintParams& di = params_.film_render.date_imprint;
     if (di.active) {
-        if (di.style != "lcd" && di.style != "dseg" && di.style != "dots" && di.style != "data") {
-            error = "date_imprint: unknown style '" + di.style + "' (lcd, dseg, dots, data)";
+        const char* font_name = date_font(di.style);
+        if (di.style != "lcd" && !font_name && di.style != "dots" && di.style != "data") {
+            error = "date_imprint: unknown style '" + di.style + "' (lcd, dseg, dseg_mini_italic, dseg_mini_regular, dseg_classic_regular, dots, data)";
             return false;
         }
-        if (di.style == "dseg") {
-            CTFontRef font = CTFontCreateWithName(CFSTR("DSEG7ClassicMini-BoldItalic"), 1, nullptr);
+        if (font_name) {
+            CFStringRef expected = CFStringCreateWithCString(nullptr, font_name, kCFStringEncodingUTF8);
+            CTFontRef font = CTFontCreateWithName(expected, 1, nullptr);
             CFStringRef name = CTFontCopyPostScriptName(font);
-            const bool found = CFEqual(name, CFSTR("DSEG7ClassicMini-BoldItalic"));
-            CFRelease(name); CFRelease(font);
-            if (!found) { error = "LCD Style 1 requires bundled DSEG7ClassicMini-BoldItalic.ttf"; return false; }
+            const bool found = CFEqual(name, expected);
+            CFRelease(name); CFRelease(font); CFRelease(expected);
+            if (!found) { error = std::string("Date imprint requires bundled ") + font_name + ".ttf"; return false; }
             for (const std::string* text : {&di.text, &di.text_b}) {
                 for (char ch : *text) if (!(ch >= '0' && ch <= '9') && ch != ' ' && ch != ':' && ch != '\'') {
-                    error = "LCD Style 1 supports digits, spaces, apostrophes and colons"; return false;
+                    error = "DSEG date imprint supports digits, spaces, apostrophes and colons"; return false;
                 }
             }
         }

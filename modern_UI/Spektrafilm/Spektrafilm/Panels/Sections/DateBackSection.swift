@@ -62,10 +62,10 @@ struct DateBackSection: View {
                     PillMenu(label: L("LCD style", zh: "LCD 样式"), options: DateBackLCDStyle.allCases,
                              title: { $0.title },
                              selection: bind(\.lcdStyle))
-                        .help(L("Style 1: DSEG7 Classic Mini Bold Italic. Style 2: original segments.",
-                                zh: "样式 1：DSEG7 Classic Mini Bold Italic。样式 2：原有七段数字。"))
+                        .truncationMode(.middle)
+                        .help(date.lcdStyle.title)
                 }
-                if date.face == .lcd, date.lcdStyle == .dseg {
+                if date.face == .lcd, date.lcdStyle != .original {
                     ScrubSlider(label: L("Field spacing", zh: "字段间距"), value: bind(\.fieldGapH),
                                 range: DateBackSettings.fieldGapRange, zero: 1.20, snap: 0.05,
                                 format: { String(format: "%.2fH", $0) })

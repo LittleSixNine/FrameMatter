@@ -6,6 +6,8 @@ BASE = {'auto_exposure': False, 'grain_active': False, 'glare_active': False,
         'halation_active': False, 'film_format_mm': 36.0,
         'date_imprint_size': 1.0, 'date_imprint_style': 'dseg', 'date_imprint_text': '15 12 : 37'}
 
+DSEG_STYLES = ('dseg', 'dseg_mini_italic', 'dseg_mini_regular', 'dseg_classic_regular')
+
 with Engine() as engine:
     def render(w=1200, h=800, **extra):
         frame = np.full((h, w, 3), 0.18, dtype=np.float32)
@@ -21,7 +23,7 @@ with Engine() as engine:
 
     for w, h, fmt in ((1200, 800, '135'), (800, 1200, '135'), (800, 1200, '135_half')):
         bare = render(w, h, overscan_format=fmt)
-        for style in ('lcd', 'dseg'):
+        for style in ('lcd', *DSEG_STYLES):
             for corner in ('br', 'bl', 'tr', 'tl'):
                 a = render(w, h, overscan_format=fmt, date_imprint_active=True,
                            date_imprint_style=style, date_imprint_margin=100, date_imprint_corner=corner)
@@ -32,7 +34,34 @@ with Engine() as engine:
                            date_imprint_style=style, date_imprint_margin=0, date_imprint_corner=corner)
                 x0, y0, x1, y1 = box(a, bare)
                 assert 0 <= x0 < x1 < w and 0 <= y0 < y1 < h
-        print('PASS full/half frame, portrait/landscape, both LCD styles, all corners:', fmt, w, h)
+        print('PASS full/half frame, portrait/landscape, all LCD styles, all corners:', fmt, w, h)
+
+    # Each choice must reach its actual bundled font, rather than share a fallback.
+    bare = render()
+    faces = []
+    for style in DSEG_STYLES:
+        a = render(date_imprint_active=True, date_imprint_style=style,
+                   date_imprint_text='88 : 88', date_imprint_margin=100, date_imprint_field_gap=.2)
+        b = render(date_imprint_active=True, date_imprint_style=style,
+                   date_imprint_text='88 : 88', date_imprint_margin=100, date_imprint_field_gap=3)
+        assert box(b, bare)[2]-box(b, bare)[0] > box(a, bare)[2]-box(a, bare)[0], style
+        # At the minimum gap, optical softness can join the colon to a digit.
+        # Measure centering where the visible glyphs remain separate.
+        middle = render(date_imprint_active=True, date_imprint_style=style,
+                        date_imprint_text='88 : 88', date_imprint_margin=100, date_imprint_field_gap=1.2)
+        for image in (middle, b):
+            columns = np.flatnonzero(np.any(np.max(np.abs(image[..., :3].astype(float)-bare[..., :3]), axis=2) > 512, axis=0))
+            groups = np.split(columns, np.flatnonzero(np.diff(columns) > 1)+1)
+            assert len(groups) == 5, ('digits/colon merged', style)
+            assert abs((groups[2][0]+groups[2][-1]-groups[1][-1]-groups[3][0])/2) < 2, ('colon off-center', style)
+        assert all(not np.array_equal(a, previous) for previous in faces), ('font selection has no effect', style)
+        faces.append(a)
+        with engine.open(np.full((800, 1200, 3), .18, dtype=np.float32),
+                         dict(BASE, date_imprint_active=True, date_imprint_style=style)) as session:
+            full, _ = session.render('full')
+            reprint, _ = session.render('full', reprint=True)
+            assert np.array_equal(full, reprint), ('font changed in export reprint', style)
+    print('PASS four distinct bundled DSEG faces, shared spacing/centered colon and export reprint')
 
     # 120 places dates in the film margin: the 135-only control must do nothing.
     params = dict(overscan_active=True, overscan_format='120_645', date_imprint_active=True)
@@ -114,7 +143,7 @@ with Engine() as engine:
     assert separations[0] < separations[1] < separations[2]
     assert abs((separations[2]-separations[0])/h_pixels - 2.80) < .08
     print('PASS hour/minute spacing tracks the full 0.20–3.00H range with centered colon')
-    print('PASS Style 1 field spacing, +0.20H tracking, centering and other styles unchanged')
+    print('PASS DSEG field spacing, +0.20H tracking, centering and other styles unchanged')
 
     for value in (-2, -0.5, 101):
         try:
@@ -128,7 +157,7 @@ with Engine() as engine:
     except EngineError:
         pass
     else:
-        raise AssertionError('LCD Style 1 silently substituted unsupported glyphs')
+        raise AssertionError('DSEG silently substituted unsupported glyphs')
     fields = {f['name']: f for f in engine.params_schema()['fields']}
     assert fields['date_imprint_size']['default'] == .5
     assert fields['date_imprint_size']['range'] == [.2, 3]

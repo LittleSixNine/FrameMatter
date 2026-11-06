@@ -5,20 +5,42 @@ import XCTest
 
 @MainActor
 final class DateBackControlsTests: XCTestCase {
-    func testStyleRenumberingPreservesSavedFaces() throws {
-        XCTAssertEqual(DateBackLCDStyle.allCases, [.dseg, .original])
-        for (stored, style, wireStyle) in [("style1", DateBackLCDStyle.original, "lcd"), ("style2", .dseg, "dseg")] {
+    func testLCDMenuOrderAndSavedFaces() throws {
+        XCTAssertEqual(DateBackLCDStyle.allCases, [.dseg, .classicMiniItalic, .classicMiniRegular, .classicRegular, .original])
+        for (stored, style, wireStyle) in [("style1", DateBackLCDStyle.original, "lcd"), ("style2", .dseg, "dseg"),
+                                           ("classicMiniItalic", .classicMiniItalic, "dseg_mini_italic"),
+                                           ("classicMiniRegular", .classicMiniRegular, "dseg_mini_regular"),
+                                           ("classicRegular", .classicRegular, "dseg_classic_regular")] {
             let json = Data("{\"active\":true,\"lcdStyle\":\"\(stored)\"}".utf8)
             let date = try JSONDecoder().decode(DateBackSettings.self, from: json)
             XCTAssertEqual(date.lcdStyle, style)
             XCTAssertEqual(date.lcdStyle.rawValue, stored)
+            XCTAssertEqual(try JSONDecoder().decode(DateBackSettings.self, from: JSONEncoder().encode(date)), date)
             XCTAssertEqual(date.wire(filmEdge: FilmEdgeSettings()).first { $0.name == "date_imprint_style" }?.value, .string(wireStyle))
         }
         let savedLanguage = Localization.shared.language
         defer { Localization.shared.language = savedLanguage }
         Localization.shared.language = .simplifiedChinese
-        XCTAssertEqual(DateBackLCDStyle.dseg.title, "LCD 样式 1（DSEG7）")
+        XCTAssertEqual(DateBackLCDStyle.dseg.title, "DSEG7 Classic Mini Bold Italic")
+        XCTAssertEqual(DateBackLCDStyle.classicMiniItalic.title, "DSEG7 Classic Mini Italic")
+        XCTAssertEqual(DateBackLCDStyle.classicMiniRegular.title, "DSEG7 Classic Mini Regular")
+        XCTAssertEqual(DateBackLCDStyle.classicRegular.title, "DSEG7 Classic Regular")
         XCTAssertEqual(DateBackLCDStyle.original.title, "LCD 样式 2")
+    }
+
+    func testAllDSEGChoicesKeepSpacingYearMarkAndRenderInvalidation() {
+        var previous = FilmParams.default
+        previous.dateBack.active = true
+        for style in DateBackLCDStyle.allCases where style != .original {
+            var p = previous
+            p.dateBack.lcdStyle = style
+            p.dateBack.fieldGapH = 2.5
+            p.dateBack.text = "'26 9 15"
+            XCTAssertEqual(p.fullDelta["date_imprint_field_gap"], .double(2.5))
+            XCTAssertEqual(p.fullDelta["date_imprint_text"], .string("26 9 15"))
+            XCTAssertEqual(p.delta(from: previous).layers, [.shoot])
+            previous = p
+        }
     }
 
     func testAllDateFacesUseTheNewSizeDefaultAndMinimum() throws {
@@ -149,12 +171,14 @@ final class DateBackControlsTests: XCTestCase {
         let session = Session()
         for language in [LanguageSetting.english, .simplifiedChinese] {
             Localization.shared.language = language
-            for format in [FilmEdgeFormat.f135, .f135Half, .f645] {
+            for (format, style) in [FilmEdgeFormat.f135, .f135Half, .f645].flatMap({ format in
+                DateBackLCDStyle.allCases.map { (format, $0) }
+            }) {
                 var p = session.params
                 p.filmEdge.active = true
                 p.filmEdge.format = format
                 p.dateBack.active = true
-                p.dateBack.lcdStyle = .dseg
+                p.dateBack.lcdStyle = style
                 p.dateBack.order = .dayTime
                 p.dateBack.customDateTime = "2026:09:15 12:37:00"
                 session.params = p
@@ -163,7 +187,7 @@ final class DateBackControlsTests: XCTestCase {
                 let size = host.sizeThatFits(in: CGSize(width: offered, height: 4000))
                 XCTAssertLessThanOrEqual(size.width, offered + 0.5, "\(language), \(format)")
                 XCTAssertGreaterThan(size.height, Theme.Metric.headerHeight)
-                if language == .simplifiedChinese, format == .f135,
+                if language == .simplifiedChinese, format == .f135, style == .dseg,
                    let directory = ProcessInfo.processInfo.environment["SPK_RENDER_DIR"] {
                     let view = host.view
                     view.appearance = NSAppearance(named: .darkAqua)

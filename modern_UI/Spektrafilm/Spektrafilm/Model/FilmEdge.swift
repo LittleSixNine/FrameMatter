@@ -245,8 +245,18 @@ enum DateBackOrder: String, CaseIterable, Identifiable, Codable, Sendable {
 enum DateBackLCDStyle: String, CaseIterable, Identifiable, Codable, Sendable {
     // Keep stored IDs stable when the displayed style numbers change.
     case dseg = "style2"
+    case classicMiniItalic, classicMiniRegular, classicRegular
     case original = "style1"
     var id: String { rawValue }
+    var engineStyle: String {
+        switch self {
+        case .dseg: "dseg"
+        case .classicMiniItalic: "dseg_mini_italic"
+        case .classicMiniRegular: "dseg_mini_regular"
+        case .classicRegular: "dseg_classic_regular"
+        case .original: "lcd"
+        }
+    }
 }
 
 struct DateBackSettings: Codable, Equatable, Sendable {
@@ -359,7 +369,7 @@ struct DateBackSettings: Codable, Equatable, Sendable {
     }
 
     func imprintText(_ value: String) -> String {
-        face == .lcd && lcdStyle == .dseg ? value.replacingOccurrences(of: "'", with: "") : value
+        face == .lcd && lcdStyle != .original ? value.replacingOccurrences(of: "'", with: "") : value
     }
 
     var printedText: String { imprintText(customText ?? text) }
@@ -419,11 +429,11 @@ struct DateBackSettings: Codable, Equatable, Sendable {
             fields.append(("overscan_format", .string(camera.rawValue), .shoot))
         }
         fields += [
-            ("date_imprint_style", .string(face == .lcd && lcdStyle == .dseg ? "dseg" : face.rawValue), .shoot),
+            ("date_imprint_style", .string(face == .lcd ? lcdStyle.engineStyle : face.rawValue), .shoot),
             ("date_imprint_text", .string(printedText), .shoot),
             ("date_imprint_placement", .string(placement.rawValue), .shoot),
             ("date_imprint_corner", .string(corner.rawValue), .shoot),
-            ("date_imprint_field_gap", .double(face == .lcd && lcdStyle == .dseg
+            ("date_imprint_field_gap", .double(face == .lcd && lcdStyle != .original
                 ? fieldGapH.clamped(to: Self.fieldGapRange) : Self.default.fieldGapH), .shoot),
             ("date_imprint_margin", .double(marginPercent?.clamped(to: Self.marginRange) ?? -1), .shoot),
             ("date_imprint_inset_x", .double((insetXMM * scale).clamped(to: Self.insetRange)), .shoot),
