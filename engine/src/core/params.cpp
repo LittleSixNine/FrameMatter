@@ -169,6 +169,7 @@ const SchemaField kFields[] = {
     {"date_imprint_style",       "film_render.date_imprint.style",        S, SHOOT, false, 0, 0, false},
     {"date_imprint_size",        "film_render.date_imprint.size",         F, SHOOT, true, 0.2, 3.0, false},
     {"date_imprint_corner",      "film_render.date_imprint.corner",       S, SHOOT, false, 0, 0, false},
+    {"date_imprint_time_underline", "film_render.date_imprint.time_underline", B, SHOOT, false, 0, 0, false},
     {"date_imprint_field_gap",   "film_render.date_imprint.field_gap_h",   F, SHOOT, true, 0.20, 3.00, false},
     {"date_imprint_margin",      "film_render.date_imprint.margin_percent", F, SHOOT, true, -1.0, 100.0, false},
     {"date_imprint_inset_x",     "film_render.date_imprint.inset_x",      F, SHOOT, true, 0.0, 30.0, false},
@@ -315,6 +316,7 @@ bool* bool_slot(Params& p, const std::string& path) {
     if (path == "film_render.overscan.active") return &p.film_render.overscan.active;
     if (path == "film_render.overscan.pair") return &p.film_render.overscan.pair;
     if (path == "film_render.date_imprint.active") return &p.film_render.date_imprint.active;
+    if (path == "film_render.date_imprint.time_underline") return &p.film_render.date_imprint.time_underline;
     return nullptr;
 }
 

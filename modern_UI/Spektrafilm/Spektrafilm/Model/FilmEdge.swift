@@ -238,7 +238,14 @@ enum DateBackOrder: String, CaseIterable, Identifiable, Codable, Sendable {
     case us
     /// Year, month, day: `'26 10 1`.
     case japan
-    case dayTime
+    case europe, dayTime, timeSeconds, dateTimeSeconds, yearMonthDayHour, monthDayTime, dayTimeSeconds
+    var id: String { rawValue }
+    var requiresRebate: Bool { self == .dateTimeSeconds }
+    var needsSeconds: Bool { [.timeSeconds, .dateTimeSeconds, .dayTimeSeconds].contains(self) }
+}
+
+enum DateBackTimeMark: String, CaseIterable, Identifiable, Codable, Sendable {
+    case colon, underline
     var id: String { rawValue }
 }
 
@@ -271,6 +278,7 @@ struct DateBackSettings: Codable, Equatable, Sendable {
     // EXIF-style local wall time: moving between time zones cannot change the imprint.
     var customDateTime: String?
     var order = DateBackOrder.japan
+    var timeMark = DateBackTimeMark.colon
     var placement = DateBackPlacement.frame
     var corner = DateBackCorner.br
     var insetXMM = 3.0             // 0…30
@@ -327,6 +335,7 @@ struct DateBackSettings: Codable, Equatable, Sendable {
         active = try c.decodeIfPresent(Bool.self, forKey: .active) ?? d.active
         face = (try? c.decodeIfPresent(DateBackFace.self, forKey: .face)) ?? d.face
         order = (try? c.decodeIfPresent(DateBackOrder.self, forKey: .order)) ?? d.order
+        timeMark = (try? c.decodeIfPresent(DateBackTimeMark.self, forKey: .timeMark)) ?? .colon
         lcdStyle = (try? c.decodeIfPresent(DateBackLCDStyle.self, forKey: .lcdStyle)) ?? .original
         fieldGapH = try c.decodeIfPresent(Double.self, forKey: .fieldGapH) ?? d.fieldGapH
         marginPercent = try c.decodeIfPresent(Double.self, forKey: .marginPercent)
@@ -347,16 +356,27 @@ struct DateBackSettings: Codable, Equatable, Sendable {
         frameScale = try c.decodeIfPresent(Double.self, forKey: .frameScale) ?? d.frameScale
     }
 
-    /// The date as a date back writes it: no leading zeros, a two-digit year
-    /// behind an apostrophe.
-    static func format(year: Int, month: Int, day: Int, hour: Int? = nil, minute: Int? = nil, order: DateBackOrder) -> String {
+    /// Keep legacy date-only spacing; pad clock formats and use a two-digit year.
+    static func format(year: Int, month: Int, day: Int, hour: Int? = nil, minute: Int? = nil,
+                       second: Int? = nil, order: DateBackOrder) -> String {
         let yy = String(format: "'%02d", ((year % 100) + 100) % 100)
         switch order {
         case .us: return "\(month) \(day) \(yy)"
         case .japan: return "\(yy) \(month) \(day)"
-        case .dayTime:
-            guard let hour, let minute, (0...23).contains(hour), (0...59).contains(minute) else { return "" }
-            return String(format: "%02d %02d : %02d", day, hour, minute)
+        case .europe: return "\(day) \(month) \(yy)"
+        default: break
+        }
+        guard let hour, (0...23).contains(hour) else { return "" }
+        if order == .yearMonthDayHour { return String(format: "%@ %02d %02d %02d", yy, month, day, hour) }
+        guard let minute, (0...59).contains(minute) else { return "" }
+        if order == .dayTime { return String(format: "%02d %02d : %02d", day, hour, minute) }
+        if order == .monthDayTime { return String(format: "%02d %02d %02d : %02d", month, day, hour, minute) }
+        guard let second, (0...59).contains(second) else { return "" }
+        switch order {
+        case .timeSeconds: return String(format: "%02d : %02d : %02d", hour, minute, second)
+        case .dateTimeSeconds: return String(format: "%@ %02d %02d %02d : %02d : %02d", yy, month, day, hour, minute, second)
+        case .dayTimeSeconds: return String(format: "%02d %02d : %02d : %02d", day, hour, minute, second)
+        default: return ""
         }
     }
 
@@ -370,9 +390,13 @@ struct DateBackSettings: Codable, Equatable, Sendable {
     }
 
     func imprintText(_ value: String) -> String {
-        face == .lcd && lcdStyle != .original ? value.replacingOccurrences(of: "'", with: "") : value
+        var value = face == .lcd && lcdStyle != .original ? value.replacingOccurrences(of: "'", with: "") : value
+        if underlinesTime { value = value.replacingOccurrences(of: " : ", with: " ") }
+        return value
     }
 
+    var underlinesTime: Bool { face != .data && order == .dayTime && timeMark == .underline }
+    var effectivePlacement: DateBackPlacement { order.requiresRebate && face != .data ? .between : placement }
     var printedText: String { imprintText(customText ?? text) }
 
     /// The size the wire carries: capped where the face has no room.
@@ -399,7 +423,8 @@ struct DateBackSettings: Codable, Equatable, Sendable {
     /// to print, and — between frames — a film edge to print it on.
     func effective(filmEdge: FilmEdgeSettings) -> Bool {
         guard active, prints(face, filmEdge: filmEdge) else { return false }
-        return face == .data || placement == .frame || filmEdge.effective
+        if order.requiresRebate, face != .data, cameraFormat(filmEdge: filmEdge)?.group != .film135 { return false }
+        return face == .data || effectivePlacement == .frame || filmEdge.effective
     }
 
     /// The camera that prints: the film edge's format while it is on, the
@@ -432,7 +457,8 @@ struct DateBackSettings: Codable, Equatable, Sendable {
         fields += [
             ("date_imprint_style", .string(face == .lcd ? lcdStyle.engineStyle : face.rawValue), .shoot),
             ("date_imprint_text", .string(printedText), .shoot),
-            ("date_imprint_placement", .string(placement.rawValue), .shoot),
+            ("date_imprint_placement", .string(effectivePlacement.rawValue), .shoot),
+            ("date_imprint_time_underline", .bool(underlinesTime), .shoot),
             ("date_imprint_corner", .string(corner.rawValue), .shoot),
             ("date_imprint_field_gap", .double(face == .lcd && lcdStyle != .original
                 ? fieldGapH.clamped(to: Self.fieldGapRange) : Self.default.fieldGapH), .shoot),

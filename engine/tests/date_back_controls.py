@@ -21,6 +21,41 @@ with Engine() as engine:
         assert len(xs) > 100, 'date did not render'
         return (xs.min(), ys.min(), xs.max(), ys.max())
 
+    # Real raster checks: two separate baseline marks, each centered on its field.
+    bare = render()
+    for style in ('lcd', 'dots', *DSEG_STYLES):
+        params = dict(date_imprint_active=True, date_imprint_style=style,
+                      date_imprint_text='16 17 50', date_imprint_time_underline=True,
+                      date_imprint_margin=100)
+        image = render(**params)
+        x0, y0, x1, y1 = box(image, bare)
+        assert abs((x0+x1)/2-600) < 3 and abs((y0+y1)/2-400) < 3, (style, (x0,y0,x1,y1))
+        delta = np.max(np.abs(image[..., :3].astype(float)-bare[..., :3]), axis=2)
+        # Near the bottom of the imprint, only the two short bars remain.
+        columns = np.flatnonzero(np.any(delta[y1-2:y1+1] > 512, axis=0))
+        groups = np.split(columns, np.flatnonzero(np.diff(columns)>1)+1)
+        assert len(groups) == 2, ('expected two field underlines', style, len(groups))
+        assert groups[0][0] > x0 + (x1-x0)*.3, ('day was underlined', style)
+        for margin in (0, 100):
+            for corner in ('br', 'bl', 'tr', 'tl'):
+                box(render(**dict(params, date_imprint_margin=margin, date_imprint_corner=corner)), bare)
+    for text in ('16 17 : 50', 'bad', '16 1750'):
+        try:
+            render(date_imprint_active=True, date_imprint_time_underline=True, date_imprint_text=text)
+        except EngineError:
+            pass
+        else:
+            raise AssertionError(('malformed underline text accepted', text))
+    for text in ('17 : 50 : 08', '26 09 16 17 : 50 : 08'):
+        with engine.open(np.full((800,1200,3), .18, dtype=np.float32),
+                         dict(BASE, date_imprint_active=True, date_imprint_text=text,
+                              overscan_active=True, date_imprint_placement='rebate')) as session:
+            full, _ = session.render('full')
+            reprint, _ = session.render('full', reprint=True)
+            assert np.array_equal(full, reprint), 'multiple-colon export changed'
+    assert {f['name']:f for f in engine.params_schema()['fields']}['date_imprint_time_underline']['default'] is False
+    print('PASS two hour/minute underlines, placement, validation and multiple-colon export')
+
     for w, h, fmt in ((1200, 800, '135'), (800, 1200, '135'), (800, 1200, '135_half')):
         bare = render(w, h, overscan_format=fmt)
         for style in ('lcd', *DSEG_STYLES):

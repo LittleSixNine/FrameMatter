@@ -329,11 +329,17 @@ const char* date_font(const std::string& style) {
     return nullptr;
 }
 
+bool is_day_time(const std::string& text) {
+    if (text.size() != 8 || text[2] != ' ' || text[5] != ' ') return false;
+    for (size_t i : {0, 1, 3, 4, 6, 7}) if (text[i] < '0' || text[i] > '9') return false;
+    return true;
+}
+
 // Read glyph geometry from the unmodified font; keep the old apostrophe mask,
 // which DSEG7 does not supply, rather than allowing a system-font fallback.
 double dseg_face(const std::string& text, double h, double field_gap_h, const char* font_name, std::vector<Op>* out = nullptr) {
     const size_t colon = text.find(':');
-    if (colon != std::string::npos && text.find(':', colon + 1) == std::string::npos) {
+    if (colon != std::string::npos) {
         std::string before = text.substr(0, colon), after = text.substr(colon + 1);
         const size_t end = before.find_last_not_of(' '), start = after.find_first_not_of(' ');
         if (end != std::string::npos && start != std::string::npos) {
@@ -2132,7 +2138,7 @@ void imprint_groups(const OverscanLayout& L, const Params& params, double frame_
     const double k = std::clamp(d.size, 0.2, 3.0);
     // A face's glyphs, laid out in glyph space (x right, y up from the
     // baseline) and mapped to film mm by `place(x, y) -> (s, t)`.
-    auto draw = [&](const std::string& text, const std::string& style, double h, auto place) {
+    auto draw_face = [&](const std::string& text, const std::string& style, double h, auto place) {
         if (const char* font_name = date_font(style)) {
             std::vector<Op> glyphs;
             dseg_face(text, h, d.field_gap_h, font_name, &glyphs);
@@ -2194,10 +2200,44 @@ void imprint_groups(const OverscanLayout& L, const Params& params, double frame_
             }
         });
     };
-    auto text_width = [&](const std::string& text, const std::string& style, double h) {
+    auto face_width = [&](const std::string& text, const std::string& style, double h) {
         if (style == "lcd") return seven_seg_width(text, h);
         if (const char* font_name = date_font(style)) return dseg_face(text, h, d.field_gap_h, font_name);
         return dot_matrix(text, h, [](double, double, double) {});
+    };
+
+    auto underlined = [&](const std::string& text, const std::string& style) {
+        return d.time_underline && style != "data" && is_day_time(text);
+    };
+    auto field_gap = [&](const std::string& style, double h) { return (date_font(style) ? d.field_gap_h : 0.45) * h; };
+    auto text_width = [&](const std::string& text, const std::string& style, double h) {
+        if (!underlined(text, style)) return face_width(text, style, h);
+        double width = 2 * field_gap(style, h);
+        for (size_t i = 0; i < 3; ++i) width += face_width(text.substr(3 * i, 2), style, h);
+        return width;
+    };
+    auto draw = [&](const std::string& text, const std::string& style, double h, auto place) {
+        if (!underlined(text, style)) { draw_face(text, style, h, place); return; }
+        double offset = 0;
+        for (size_t i = 0; i < 3; ++i) {
+            const std::string field = text.substr(3 * i, 2);
+            const double width = face_width(field, style, h);
+            draw_face(field, style, h, [&](double x, double y, double& ss, double& tt) { place(offset + x, y, ss, tt); });
+            if (i > 0) {
+                // Short field marks estimated from the supplied FE2 scan;
+                // reuse the upstream polygon mask and its unchanged optical chain.
+                Op bar; bar.kind = Op::Poly;
+                const double center = offset + 0.5 * width;
+                const double xs[4] = {center - 0.225 * h, center + 0.225 * h, center + 0.225 * h, center - 0.225 * h};
+                const double ys[4] = {-0.12 * h, -0.12 * h, -0.22 * h, -0.22 * h};
+                for (size_t j = 0; j < 4; ++j) {
+                    double ss, tt; place(xs[j], ys[j], ss, tt);
+                    bar.pts.push_back(ss); bar.pts.push_back(tt);
+                }
+                g.ops.push_back(bar);
+            }
+            offset += width + field_gap(style, h);
+        }
     };
 
     const double gw = L.valid ? L.gate_along : frame_w_mm, gh = L.valid ? L.gate_across : frame_h_mm;
@@ -2230,7 +2270,7 @@ void imprint_groups(const OverscanLayout& L, const Params& params, double frame_
         const double w = text_width(text, style, h);
         const double s_c = after ? gs + gw + L.pair_adv + 0.5 * gap : gs - 0.5 * gap;
         const double t_c = gt + 0.5 * gh + 0.5 * w;
-        draw(text, style, h, [&](double x, double y, double& ss, double& tt) { ss = s_c + 0.5 * h - y; tt = t_c - x; });
+        draw(text, style, h, [&](double x, double y, double& ss, double& tt) { ss = s_c + (underlined(text, style) ? 0.39 : 0.5) * h - y; tt = t_c - x; });
     };
     const bool data_drawn = !data_text.empty() && L.valid;
     if (data_drawn) between(data_text, "data", 0.50 * k, false);
@@ -2241,6 +2281,7 @@ void imprint_groups(const OverscanLayout& L, const Params& params, double frame_
         // as the camera's back sees it, held level), inset from the gate.
         const double h = (d.style == "dots" ? 0.95 : 1.3) * k;
         const double w = text_width(date_text, d.style, h);
+        const double descent = underlined(date_text, d.style) ? 0.22 * h : 0;
         const bool right = d.corner == "br" || d.corner == "tr", bottom = d.corner == "br" || d.corner == "bl";
         // With overscan the layout is already in film mm. The date alone draws
         // on the bare frame, so the film's direction comes from its shape: a
@@ -2260,7 +2301,8 @@ void imprint_groups(const OverscanLayout& L, const Params& params, double frame_
         // the frame starts at its left and is clipped by the gate.
         const double over = (d.style == "lcd" ? h * std::tan(8.0 * M_PI / 180.0) : 0.0) + 0.1;   // the slant, and the blur
         double s0 = std::clamp(right ? fs + fw - d.inset_x - w : fs + d.inset_x, fs + 0.1, std::max(fs + 0.1, fs + fw - w - over));
-        double base = std::clamp(bottom ? ft + fh - d.inset_y : ft + d.inset_y + h, std::min(ft + h + 0.1, ft + fh - 0.1), ft + fh - 0.1);
+        double base = std::clamp(bottom ? ft + fh - d.inset_y - descent : ft + d.inset_y + h,
+                                 std::min(ft + h + 0.1, ft + fh - 0.1 - descent), ft + fh - 0.1 - descent);
         if (d.margin_percent >= 0) {
             // Only this 135 in-picture path uses the margin; the 120 margin
             // and between-frame paths above keep their camera-defined positions.
@@ -2269,7 +2311,14 @@ void imprint_groups(const OverscanLayout& L, const Params& params, double frame_
             if (d.style == "lcd") {
                 Op proto; proto.skew = std::tan(8.0 * M_PI / 180.0);
                 std::vector<Op> glyphs;
-                seven_seg_polys(date_text, h, 0, 0, proto, glyphs);
+                if (underlined(date_text, d.style)) {
+                    double offset = 0;
+                    for (size_t i = 0; i < 3; ++i) {
+                        const std::string field = date_text.substr(3 * i, 2);
+                        seven_seg_polys(field, h, offset, 0, proto, glyphs);
+                        offset += face_width(field, d.style, h) + field_gap(d.style, h);
+                    }
+                } else seven_seg_polys(date_text, h, 0, 0, proto, glyphs);
                 double xmin = 1e30, xmax = -1e30;
                 for (const Op& op : glyphs) for (size_t i = 0; i < op.pts.size(); i += 2) {
                     xmin = std::min(xmin, op.pts[i]); xmax = std::max(xmax, op.pts[i]);
@@ -2277,9 +2326,9 @@ void imprint_groups(const OverscanLayout& L, const Params& params, double frame_
                 if (xmax >= xmin) { left = xmin; ink_width = xmax - xmin; }
             }
             const double start_s = right ? std::max(0.1, fw - ink_width - 0.1) : 0.1;
-            const double start_t = bottom ? fh - 0.1 : std::min(h + 0.1, fh - 0.1);
+            const double start_t = bottom ? fh - 0.1 - descent : std::min(h + 0.1, fh - 0.1 - descent);
             s0 = fs + start_s + q * ((fw - ink_width) * 0.5 - start_s) - left;
-            base = ft + start_t + q * ((fh + h) * 0.5 - start_t);
+            base = ft + start_t + q * ((fh + h - descent) * 0.5 - start_t);
         }
         draw(date_text, d.style, h, [&](double x, double y, double& ss, double& tt) {
             const double sf = s0 + x, tf = base - y;
@@ -2347,6 +2396,11 @@ bool Pipeline::node_overscan(const Image& in, Image& out, std::string& error) {
                 for (char ch : *text) if (!(ch >= '0' && ch <= '9') && ch != ' ' && ch != ':' && ch != '\'') {
                     error = "DSEG date imprint supports digits, spaces, apostrophes and colons"; return false;
                 }
+            }
+        }
+        if (di.time_underline && di.style != "data") {
+            for (const std::string* text : {&di.text, &di.text_b}) if (!text->empty() && !is_day_time(*text)) {
+                error = "date_imprint_time_underline requires DD HH MM text"; return false;
             }
         }
         if (di.corner != "br" && di.corner != "bl" && di.corner != "tr" && di.corner != "tl") {

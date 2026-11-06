@@ -1121,7 +1121,7 @@ and the original date style stay unchanged. New settings round-trip in the
 sidecar and participate in the existing render stamp and undo path. Random
 date-back illumination is intentionally deferred.
 
-The app removes the year apostrophe for all four DSEG fonts before sending either frame's date text. Style 2 and dot-matrix text are unchanged; day/hour/minute retains its colon.
+The app removes the year apostrophe for all four DSEG fonts before sending either frame's date text. Legacy LCD and dot-matrix year marks are unchanged.
 
 
 DSEG spacing: `date_imprint_field_gap` maps to
@@ -1143,3 +1143,26 @@ optical softness; for a 135 in-picture LCD imprint the existing reference
 height is 1.3 mm × size. At size 0.5, H is 0.65 mm. Spacing scales with H,
 and raster pixel counts follow image resolution and the film-format pixel
 pitch. These are typography controls, not universal camera calibrations.
+
+
+Date/time orders additionally include `europe` (day/month/year), `timeSeconds`
+(hour/minute/second), `dateTimeSeconds` (year/month/day/hour/minute/second),
+`yearMonthDayHour`, `monthDayTime`, and `dayTimeSeconds`. The existing `us`,
+`japan`, and `dayTime` values remain compatible. Clock fields are zero-padded;
+EXIF seconds are retained and manual time exposes a seconds control where needed.
+Missing capture clocks are not invented. `dateTimeSeconds` is labelled as
+between-frames only: selecting it enables the 135/full or half-frame edge and
+selects rebate placement; 120 disables it. The wire enforces rebate placement
+and suppresses this order on unsupported formats even for saved edits.
+
+`date_imprint_time_underline` maps to `film_render.date_imprint.time_underline`
+(bool, default false, shoot, non-live). The app stores `dateBack.timeMark`
+(`colon` or `underline`, missing = colon); it only applies to `dayTime`.
+Underline text is sent as `DD HH MM`. The native boundary rejects malformed
+nonempty underline text. Two short bars sit under the hour and minute fields,
+following the supplied Nikon FE2 scan: each is 0.45H wide and 0.10H high,
+with its top 0.12H below the digit baseline. These are visual estimates from
+the reference, not a hardware calibration. They reuse the upstream polygon
+mask and existing optical processing. DSEG field spacing moves the bars with
+their fields; other faces retain their fixed spacing. Colon layout also
+supports multiple time separators, each centered between its fields.

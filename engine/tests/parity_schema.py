@@ -257,6 +257,10 @@ NATIVE_ONLY = {
         "path": "film_render.date_imprint.corner", "type": "str", "layer": "shoot",
         "default": 'br', "live": False, "range": None,
     },
+    "date_imprint_time_underline": {
+        "path": "film_render.date_imprint.time_underline", "type": "bool", "layer": "shoot",
+        "default": False, "live": False, "range": None,
+    },
     "date_imprint_field_gap": {
         "path": "film_render.date_imprint.field_gap_h", "type": "float", "layer": "shoot",
         "default": 1.20, "live": False, "range": [0.20, 3.00],

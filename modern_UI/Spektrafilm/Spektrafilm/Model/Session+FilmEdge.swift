@@ -41,6 +41,7 @@ struct ShootingData: Equatable, Sendable {
         var year: Int, month: Int, day: Int
         var hour: Int? = nil
         var minute: Int? = nil
+        var second: Int? = nil
     }
 
     /// `DateTimeOriginal`: when the shutter fired.
@@ -79,7 +80,7 @@ struct ShootingData: Equatable, Sendable {
         if clock.count == 2 {
             let time = clock[1].split(separator: ":").compactMap { Int($0) }
             if time.count == 3, (0...23).contains(time[0]), (0...59).contains(time[1]), (0...59).contains(time[2]) {
-                result.hour = time[0]; result.minute = time[1]
+                result.hour = time[0]; result.minute = time[1]; result.second = time[2]
             }
         }
         return result
@@ -94,7 +95,7 @@ struct ShootingData: Equatable, Sendable {
     /// (an empty text prints nothing).
     func dateText(order: DateBackOrder) -> String {
         guard let d = captureDay else { return "" }
-        return DateBackSettings.format(year: d.year, month: d.month, day: d.day, hour: d.hour, minute: d.minute, order: order)
+        return DateBackSettings.format(year: d.year, month: d.month, day: d.day, hour: d.hour, minute: d.minute, second: d.second, order: order)
     }
 
     /// The longest line Nikon's between-frames imprint holds (RFC-033 §5):
@@ -608,6 +609,20 @@ extension DateBackSettings {
         guard Self.timeFormatter().date(from: customDateTime) != nil,
               let d = ShootingData.day(customDateTime) else { return "" }
         return Self.format(year: d.year, month: d.month, day: d.day,
-                           hour: d.hour, minute: d.minute, order: chosen)
+                           hour: d.hour, minute: d.minute, second: d.second, order: chosen)
+    }
+}
+
+extension Session {
+    func setDateBackOrder(_ order: DateBackOrder) {
+        var p = params
+        if order.requiresRebate {
+            guard let camera = p.dateBack.cameraFormat(filmEdge: p.filmEdge), camera.group == .film135 else { return }
+            p.dateBack.placement = .between
+            if !p.filmEdge.effective { p.filmEdge.format = camera; p.filmEdge.active = true }
+        }
+        p.dateBack.order = order
+        p.dateBack.customText = nil
+        params = p
     }
 }

@@ -932,12 +932,24 @@ extension DateBackPlacement {
 }
 
 extension DateBackOrder {
-    var key: S {
+    @MainActor var title: String {
         switch self {
-        case .japan: .dateOrderJapan
-        case .us: .dateOrderUS
-        case .dayTime: .dateOrderDayTime
+        case .japan: L(.dateOrderJapan)
+        case .us: L(.dateOrderUS)
+        case .europe: L("Day Month Year", zh: "日 月 年")
+        case .dayTime: L("Day Hour Minute", zh: "日 时 分")
+        case .timeSeconds: L("Hour Minute Second", zh: "时 分 秒")
+        case .dateTimeSeconds: L("Year Month Day Hour Minute Second (between frames only)", zh: "年 月 日 时 分 秒（仅片间）")
+        case .yearMonthDayHour: L("Year Month Day Hour", zh: "年 月 日 时")
+        case .monthDayTime: L("Month Day Hour Minute", zh: "月 日 时 分")
+        case .dayTimeSeconds: L("Day Hour Minute Second", zh: "日 时 分 秒")
         }
+    }
+}
+
+extension DateBackTimeMark {
+    @MainActor var title: String {
+        self == .colon ? L("Colon", zh: "冒号") : L("Underlines", zh: "下划线")
     }
 }
 

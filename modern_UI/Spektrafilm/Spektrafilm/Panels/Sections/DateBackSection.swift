@@ -73,6 +73,12 @@ struct DateBackSection: View {
                                 zh: "H 为数字高度。调整日期字段及小时、分钟之间的间距，冒号保持居中；字段内数字额外字距固定为 0.20H。"))
                 }
                 textRow
+                if date.face != .data, date.order == .dayTime {
+                    PillSwitchRow(label: L("Time marks", zh: "时分标记"), options: DateBackTimeMark.allCases,
+                                  selection: bind(\.timeMark), title: { $0.title })
+                        .help(L("Underline places a short bar beneath each hour/minute field, following the reference photograph.",
+                                zh: "下划线模式按参考照片，在小时、分钟字段下方各放一条短横线。"))
+                }
                 if date.face != .data { manualTimeRows }
                 if date.face != .data {
                     ToggleRow(label: L(.dateWithData), isOn: bind(\.withData),
@@ -91,8 +97,10 @@ struct DateBackSection: View {
                 } else if date.face != .data {
                     PillSwitchRow(label: L(.dateWhere), options: DateBackPlacement.allCases,
                                   selection: bind(\.placement), title: { L($0.key) },
-                                  enabled: { $0 == .frame || edge.effective },
-                                  reason: { _ in L(.reasonBetweenNeedsFilmEdge) })
+                                  enabled: { ($0 == .between || !date.order.requiresRebate) && ($0 == .frame || edge.effective) },
+                                  reason: { _ in date.order.requiresRebate
+                                      ? L("This format prints only between frames.", zh: "该格式仅支持片间打印。")
+                                      : L(.reasonBetweenNeedsFilmEdge) })
                     if !edge.effective {
                         Text(L(.reasonBetweenNeedsFilmEdge))
                             .font(Theme.Font.sublabel).foregroundStyle(Theme.Ink.tertiary)
@@ -150,15 +158,16 @@ struct DateBackSection: View {
             } else {
                 Menu {
                     ForEach(DateBackOrder.allCases) { order in
-                        Button { set(\.order, order) } label: {
-                            let line = "\(example(order))  ·  \(L(order.key))"
+                        Button { session.setDateBackOrder(order) } label: {
+                            let line = "\(example(order))  ·  \(order.title)"
                             if order == date.order { Label(line, systemImage: "checkmark") } else { Text(line) }
                         }
+                        .disabled(order.requiresRebate && camera?.group != .film135)
                     }
                 } label: {
                     HStack(spacing: 0) {
                         Text(printed.isEmpty ? "—" : printed).font(Theme.Font.label).foregroundStyle(Theme.text)
-                            .lineLimit(1).fixedSize()
+                            .lineLimit(1).truncationMode(.middle)
                             .padding(.leading, 10)
                         Spacer(minLength: 4)
                         Triangle()
@@ -174,7 +183,7 @@ struct DateBackSection: View {
                 .buttonStyle(.plain)
                 .menuIndicator(.hidden)
                 .fixedSize()
-                .help(L("The order the date is written in", zh: "日期的书写顺序"))
+                .help("\(date.order.title) · \(printed)")
             }
             Spacer(minLength: 6)
             // Wraps rather than widens the rail: "no date in EXIF" is the
@@ -213,7 +222,7 @@ struct DateBackSection: View {
                           let d = session.shootingData.captureDay
                           let components = DateComponents(calendar: Calendar(identifier: .gregorian),
                                                           year: d?.year, month: d?.month, day: d?.day,
-                                                          hour: d?.hour, minute: d?.minute)
+                                                          hour: d?.hour, minute: d?.minute, second: d?.second)
                           let value = d == nil ? Date() : components.date ?? Date()
                           p.dateBack.customDateTime = DateBackSettings.timeFormatter().string(from: value)
                       } else { p.dateBack.customDateTime = nil }
@@ -226,6 +235,16 @@ struct DateBackSection: View {
                        displayedComponents: [.date, .hourAndMinute])
                 .labelsHidden().datePickerStyle(.field).controlSize(.small)
                 .frame(maxWidth: .infinity, alignment: .leading)
+            if date.order.needsSeconds {
+                ScrubSlider(label: L("Seconds", zh: "秒"),
+                            value: Binding(get: { Double(ShootingData.day(date.customDateTime ?? "")?.second ?? 0) },
+                                           set: { value in
+                                guard let time = DateBackSettings.timeFormatter().date(from: date.customDateTime ?? ""),
+                                      let changed = Calendar(identifier: .gregorian).date(bySetting: .second, value: Int(value.rounded()), of: time) else { return }
+                                set(\.customDateTime, DateBackSettings.timeFormatter().string(from: changed))
+                            }), range: 0...59, zero: 0, snap: 1,
+                            format: { String(format: "%02d", Int($0.rounded())) })
+            }
         }
     }
 
@@ -298,8 +317,9 @@ struct DateBackSection: View {
     /// apostrophe — so the fields can be moved without the date itself.
     private func example(_ order: DateBackOrder) -> String {
         let resolved = date.resolvedDateText(shooting: session.shootingData, order: order)
-        return date.imprintText(resolved.isEmpty
-            ? DateBackSettings.format(year: 2026, month: 9, day: 15, hour: 12, minute: 37, order: order)
+        var sample = date; sample.order = order
+        return sample.imprintText(resolved.isEmpty
+            ? DateBackSettings.format(year: 2026, month: 9, day: 15, hour: 12, minute: 37, second: 8, order: order)
             : resolved)
     }
 

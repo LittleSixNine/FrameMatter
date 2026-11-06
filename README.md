@@ -174,3 +174,12 @@ based on SpektraLab, as long as it is clear that your project is unofficial.
 
 We reserve the right to act against builds that pass themselves off as official
 or imply our endorsement.
+
+
+Date-back date/time formats include year/month/day, month/day/year,
+day/month/year, day/hour/minute, hour/minute/second, year/month/day/hour,
+month/day/hour/minute, day/hour/minute/second, and the complete
+year/month/day/hour/minute/second timestamp (135/half-frame between frames
+only; selecting it enables Film Edge). Day/hour/minute has an independent
+colon/underline option, with short marks beneath the hour and minute fields.
+Manual time includes seconds for formats that print them.

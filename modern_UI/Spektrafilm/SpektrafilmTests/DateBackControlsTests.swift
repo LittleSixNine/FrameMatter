@@ -5,6 +5,76 @@ import XCTest
 
 @MainActor
 final class DateBackControlsTests: XCTestCase {
+    func testDateTimeFormatsAndMissingClock() throws {
+        let shot = ShootingData(exif: [kCGImagePropertyExifDateTimeOriginal: "2026:09:16 17:50:08"])
+        let expected: [DateBackOrder: String] = [
+            .japan: "'26 9 16", .us: "9 16 '26", .europe: "16 9 '26",
+            .dayTime: "16 17 : 50", .timeSeconds: "17 : 50 : 08",
+            .dateTimeSeconds: "'26 09 16 17 : 50 : 08",
+            .yearMonthDayHour: "'26 09 16 17", .monthDayTime: "09 16 17 : 50",
+            .dayTimeSeconds: "16 17 : 50 : 08"
+        ]
+        XCTAssertEqual(Set(expected.keys), Set(DateBackOrder.allCases))
+        for (order, text) in expected { XCTAssertEqual(shot.dateText(order: order), text) }
+        XCTAssertEqual(shot.captureDay?.second, 8)
+        for order in DateBackOrder.allCases where order != .us && order != .japan && order != .europe {
+            XCTAssertEqual(ShootingData(exif: [kCGImagePropertyExifDateTimeOriginal: "2026:09:16"]).dateText(order: order), "")
+        }
+        XCTAssertEqual(DateBackSettings.format(year: 2026, month: 9, day: 16, hour: 17, minute: 50, second: 60, order: .timeSeconds), "")
+        XCTAssertEqual(try JSONDecoder().decode(DateBackSettings.self, from: Data("{}".utf8)).timeMark, .colon)
+    }
+
+    func testUnderlineRoutingAndManualSeconds() throws {
+        var p = FilmParams.default
+        p.dateBack.active = true
+        p.dateBack.order = .dayTime
+        p.dateBack.timeMark = .underline
+        p.dateBack.customDateTime = "2026:09:16 17:50:08"
+        p.dateBack.text = p.dateBack.resolvedDateText(shooting: ShootingData())
+        XCTAssertEqual(p.fullDelta["date_imprint_text"], .string("16 17 50"))
+        XCTAssertEqual(p.fullDelta["date_imprint_time_underline"], .bool(true))
+        let previous = p
+        p.dateBack.timeMark = .colon
+        XCTAssertEqual(p.delta(from: previous).layers, [.shoot])
+        XCTAssertEqual(p.fullDelta["date_imprint_text"], .string("16 17 : 50"))
+        p.dateBack.order = .timeSeconds
+        p.dateBack.timeMark = .underline
+        XCTAssertFalse(p.dateBack.underlinesTime)
+        XCTAssertEqual(p.dateBack.resolvedDateText(shooting: ShootingData()), "17 : 50 : 08")
+        XCTAssertEqual(try JSONDecoder().decode(FilmParams.self, from: JSONEncoder().encode(p)), p)
+    }
+
+    func testFullTimestampRequiresAndSelectsBetweenFrames() {
+        let session = Session()
+        for camera in [FilmEdgeFormat.f135, .f135Half] {
+            var p = session.params
+            p.filmEdge.active = camera == .f135Half
+            p.filmEdge.format = camera
+            p.dateBack.camera = camera
+            p.dateBack.active = true
+            p.dateBack.order = .japan
+            p.dateBack.placement = .frame
+            session.params = p
+            session.setDateBackOrder(.dateTimeSeconds)
+            XCTAssertTrue(session.params.filmEdge.effective)
+            XCTAssertEqual(session.params.filmEdge.format, camera)
+            XCTAssertEqual(session.params.dateBack.placement, .between)
+            var date = session.params.dateBack
+            date.placement = .frame
+            XCTAssertEqual(date.effectivePlacement, .between)
+            XCTAssertTrue(date.effective(filmEdge: session.params.filmEdge))
+            XCTAssertFalse(date.effective(filmEdge: FilmEdgeSettings()))
+        }
+        var p = session.params
+        p.filmEdge.format = .f645
+        p.dateBack.order = .japan
+        session.params = p
+        session.setDateBackOrder(.dateTimeSeconds)
+        XCTAssertEqual(session.params.dateBack.order, .japan)
+        p.dateBack.order = .dateTimeSeconds
+        XCTAssertFalse(p.dateBack.effective(filmEdge: p.filmEdge))
+    }
+
     func testLCDMenuOrderAndSavedFaces() throws {
         XCTAssertEqual(DateBackLCDStyle.allCases, [.classicRegular, .classicMiniRegular, .classicMiniItalic, .dseg, .original])
         XCTAssertEqual(DateBackLCDStyle.selectableCases, [.classicRegular, .classicMiniRegular, .classicMiniItalic, .dseg])
@@ -187,7 +257,8 @@ final class DateBackControlsTests: XCTestCase {
                 p.filmEdge.format = format
                 p.dateBack.active = true
                 p.dateBack.lcdStyle = style
-                p.dateBack.order = .dayTime
+                p.dateBack.order = style == .classicRegular ? .dateTimeSeconds : .dayTime
+                p.dateBack.timeMark = .underline
                 p.dateBack.customDateTime = "2026:09:15 12:37:00"
                 session.params = p
                 let host = NSHostingController(rootView: DateBackSection(session: session).background(Theme.card))
