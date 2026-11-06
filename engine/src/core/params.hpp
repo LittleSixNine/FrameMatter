@@ -237,7 +237,7 @@ struct DateImprintParams {
     // -1 preserves the legacy millimetre insets; 0–100 is corner to center on 135.
     double margin_percent = -1.0;
     bool time_underline = false;      // DD HH MM: short bars under the hour and minute fields
-    double field_gap_h = 1.20;       // DSEG LCD styles only, in digit heights
+    double field_gap_h = 1.20;       // DSEG and dot-matrix dates, in digit heights
     double inset_x = 3.0;            // mm from the gate's side to the text (frame placement)
     double inset_y = 2.4;            // mm from the gate's top/bottom to the text (frame placement)
 };

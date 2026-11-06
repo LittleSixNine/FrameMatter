@@ -152,10 +152,21 @@ with Engine() as engine:
     wide = date_width('26 09 15', 1.20)
     assert abs((wide-narrow)/h_pixels - 2.0) < .07
     assert date_width('26', .20) == date_width('26', 1.20)
-    for style in ('lcd', 'dots'):
+    for style in ('lcd',):
         a = render(date_imprint_active=True, date_imprint_style=style, date_imprint_field_gap=.20)
         b = render(date_imprint_active=True, date_imprint_style=style, date_imprint_field_gap=1.20)
         assert np.array_equal(a, b), ('spacing changed another style', style)
+    for text in ('26 09 16', '16 17 : 50', '17 : 50 : 08'):
+        widths = []
+        for gap in (.2, 1.2, 3):
+            image = render(date_imprint_active=True, date_imprint_style='dots',
+                           date_imprint_text=text, date_imprint_field_gap=gap, date_imprint_margin=100)
+            x0, y0, x1, y1 = box(image, bare)
+            widths.append(x1-x0)
+        assert widths[0] < widths[1] < widths[2], ('dot spacing did not move fields', text)
+    assert date_width('26', .2, 'dots') == date_width('26', 3, 'dots'), 'dot digit pitch changed'
+    print('PASS dot-matrix field spacing, clock separators and unchanged digit pitch')
+
     for value in (.19, 3.01):
         try:
             render(date_imprint_field_gap=value)

@@ -270,7 +270,11 @@ enum DateBackLCDStyle: String, CaseIterable, Identifiable, Codable, Sendable {
 
 struct DateBackSettings: Codable, Equatable, Sendable {
     var active = false
-    var face = DateBackFace.lcd
+    var face = DateBackFace.lcd {
+        didSet {
+            if size == Self.defaultSize(for: oldValue) { size = Self.defaultSize(for: face) }
+        }
+    }
     var lcdStyle = DateBackLCDStyle.classicRegular
     var fieldGapH = 1.20
     static let fieldGapRange = 0.20...3.00
@@ -321,6 +325,7 @@ struct DateBackSettings: Codable, Equatable, Sendable {
 
     static let marginRange = 0.0...100.0
     static let insetRange = 0.0...30.0
+    static func defaultSize(for face: DateBackFace) -> Double { face == .dots ? 0.6 : 0.4 }
     static let sizeRange = 0.2...1.0
     static let brightnessRange = -2.0...8.0
     /// `data` between half frames has only the 1 mm gap (answer B19).
@@ -345,7 +350,7 @@ struct DateBackSettings: Codable, Equatable, Sendable {
         corner = (try? c.decodeIfPresent(DateBackCorner.self, forKey: .corner)) ?? d.corner
         insetXMM = try c.decodeIfPresent(Double.self, forKey: .insetXMM) ?? d.insetXMM
         insetYMM = try c.decodeIfPresent(Double.self, forKey: .insetYMM) ?? d.insetYMM
-        size = try c.decodeIfPresent(Double.self, forKey: .size) ?? d.size
+        size = try c.decodeIfPresent(Double.self, forKey: .size) ?? Self.defaultSize(for: face)
         brightnessEV = try c.decodeIfPresent(Double.self, forKey: .brightnessEV) ?? d.brightnessEV
         text = try c.decodeIfPresent(String.self, forKey: .text) ?? d.text
         textB = try c.decodeIfPresent(String.self, forKey: .textB) ?? d.textB
@@ -461,7 +466,7 @@ struct DateBackSettings: Codable, Equatable, Sendable {
             ("date_imprint_placement", .string(effectivePlacement.rawValue), .shoot),
             ("date_imprint_time_underline", .bool(underlinesTime), .shoot),
             ("date_imprint_corner", .string(corner.rawValue), .shoot),
-            ("date_imprint_field_gap", .double(face == .lcd && lcdStyle != .original
+            ("date_imprint_field_gap", .double((face == .dots || (face == .lcd && lcdStyle != .original))
                 ? fieldGapH.clamped(to: Self.fieldGapRange) : Self.default.fieldGapH), .shoot),
             ("date_imprint_margin", .double(marginPercent?.clamped(to: Self.marginRange) ?? -1), .shoot),
             ("date_imprint_inset_x", .double((insetXMM * scale).clamped(to: Self.insetRange)), .shoot),

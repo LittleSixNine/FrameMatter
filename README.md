@@ -185,3 +185,6 @@ Manual time includes seconds for formats that print them.
 
 Year/month/day is the first and default date format. Date size ranges from
 0.20 to 1.00, defaults to 0.40, and adjusts in 0.01 increments.
+
+Dot-matrix date size defaults/resets to 0.60 and has the same field-spacing
+slider as DSEG, while keeping its original dot and digit pitch.

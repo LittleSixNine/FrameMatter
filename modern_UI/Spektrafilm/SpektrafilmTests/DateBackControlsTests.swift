@@ -77,6 +77,21 @@ final class DateBackControlsTests: XCTestCase {
         XCTAssertFalse(p.dateBack.effective(filmEdge: p.filmEdge))
     }
 
+    func testDotDefaultAndExistingSizes() throws {
+        var date = DateBackSettings()
+        date.face = .dots
+        XCTAssertEqual(date.size, 0.6)
+        date.face = .lcd
+        XCTAssertEqual(date.size, 0.4)
+        date.size = 0.57
+        date.face = .dots
+        XCTAssertEqual(date.size, 0.57)
+        let missing = try JSONDecoder().decode(DateBackSettings.self, from: Data(#"{"face":"dots"}"#.utf8))
+        XCTAssertEqual(missing.size, 0.6)
+        let saved = try JSONDecoder().decode(DateBackSettings.self, from: Data(#"{"face":"dots","size":0.4}"#.utf8))
+        XCTAssertEqual(saved.size, 0.4)
+    }
+
     func testLCDMenuOrderAndSavedFaces() throws {
         XCTAssertEqual(DateBackLCDStyle.allCases, [.classicRegular, .classicMiniRegular, .classicMiniItalic, .dseg, .original])
         XCTAssertEqual(DateBackLCDStyle.selectableCases, [.classicRegular, .classicMiniRegular, .classicMiniItalic, .dseg])
@@ -127,7 +142,7 @@ final class DateBackControlsTests: XCTestCase {
         for face in DateBackFace.allCases {
             var date = DateBackSettings()
             date.active = true; date.face = face
-            XCTAssertEqual(date.wireSize(on: .f135), 0.4)
+            XCTAssertEqual(date.wireSize(on: .f135), face == .dots ? 0.6 : 0.4)
             date.size = 0.41
             XCTAssertEqual(date.wireSize(on: .f135), 0.41)
             date.size = 1.01
@@ -142,7 +157,7 @@ final class DateBackControlsTests: XCTestCase {
         XCTAssertEqual(missing.size, 0.4)
     }
 
-    func testDSEGFieldSpacingPersistsAndOtherFacesIgnoreIt() throws {
+    func testFieldSpacingPersistsForDSEGAndDots() throws {
         var p = FilmParams.default
         p.dateBack.active = true
         p.dateBack.lcdStyle = .dseg
@@ -162,8 +177,8 @@ final class DateBackControlsTests: XCTestCase {
         XCTAssertEqual(p.fullDelta["date_imprint_field_gap"], .double(1.20))
         p.dateBack.face = .dots
         p.dateBack.lcdStyle = .dseg
-        XCTAssertEqual(p.fullDelta["date_imprint_field_gap"], .double(1.20))
-        XCTAssertEqual(p.dateBack.wire(filmEdge: p.filmEdge, scale: 0.5).first { $0.name == "date_imprint_field_gap" }?.value, .double(1.20))
+        XCTAssertEqual(p.fullDelta["date_imprint_field_gap"], .double(1.10))
+        XCTAssertEqual(p.dateBack.wire(filmEdge: p.filmEdge, scale: 0.5).first { $0.name == "date_imprint_field_gap" }?.value, .double(1.10))
     }
 
     func testOnlyDSEGOmitsTheYearMarkIncludingBothPairFrames() {
@@ -263,6 +278,7 @@ final class DateBackControlsTests: XCTestCase {
                 p.filmEdge.format = format
                 p.dateBack.active = true
                 p.dateBack.lcdStyle = style
+                p.dateBack.face = style == .original ? .dots : .lcd
                 p.dateBack.order = style == .classicRegular ? .dateTimeSeconds : .dayTime
                 p.dateBack.timeMark = .underline
                 p.dateBack.customDateTime = "2026:09:15 12:37:00"

@@ -1130,10 +1130,10 @@ default 1.20). It replaces the font's space width between adjacent numeric
 fields, in digit-height units H. Consecutive digits receive fixed +0.20H
 tracking. Hour/minute clear spacing is split equally around the colon’s visible glyph, so the colon remains centered as spacing changes.
 The same glyph layout measures and draws the text, so alignment includes the
-spacing. These changes apply only to the four DSEG styles; the legacy `lcd` face and dot-matrix/data
-faces do not read the field-gap setting. The app stores it as
+spacing. The four DSEG styles and dot-matrix date face use this control; legacy `lcd`
+and shooting-data faces do not read the field-gap setting. The app stores it as
 `params.dateBack.fieldGapH`, defaults missing values to 1.20, and exposes its
-slider only for the four DSEG styles. Glyph outlines and optical processing are unchanged.
+slider for the four DSEG styles and dot-matrix dates. Glyph outlines and optical processing are unchanged.
 
 
 All date faces share `size`: range 0.2–1, default/reset 0.4, UI step 0.01
@@ -1174,3 +1174,15 @@ The selectable date/time menu is ordered `japan` (default), `us`, `europe`,
 and `dayTimeSeconds` are retained for decoding/rendering saved edits only.
 The closed button fills its value column and displays the localized order
 name without example digits; the EXIF/manual note sits on the next line.
+
+
+Dot-matrix dates now use `date_imprint_field_gap` too (0.20–3.00H,
+default 1.20H). The upstream 5×7 glyphs and digit/dot pitch are unchanged;
+only field advances change, including split spacing around centered colons
+and underlined time fields. Legacy LCD and shooting-data spacing stay fixed.
+The dot-matrix app default/reset size is 0.60; other faces stay at 0.40.
+Switching faces adopts the new face default only while still at the old
+face's default. Explicit saved sizes are preserved; missing dot sizes decode
+to 0.60. The common native size default remains 0.40; the app sends its
+face-specific size explicitly. Existing dot edits now use their saved shared
+field gap (or 1.20H if missing).

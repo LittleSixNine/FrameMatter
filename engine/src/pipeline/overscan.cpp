@@ -1133,16 +1133,21 @@ const uint8_t* glyph5x7(char ch) {
 // baseline at glyph (0, 0), y up; each lit cell becomes a dot (`round`) or a
 // square, handed to `emit(x, y, pitch)` at its centre.
 template <class Emit>
-double dot_matrix(const std::string& text, double h, Emit emit) {
+double dot_matrix(const std::string& text, double h, Emit emit, double field_gap_h = -1) {
     const double pitch = h / 7.0;
     double x = 0.0;
-    for (char ch : text) {
-        if (ch == ' ') { x += 4.0 * pitch; continue; }
+    for (size_t i = 0; i < text.size(); ++i) {
+        const char ch = text[i];
+        if (ch == ' ') {
+            const bool beside_colon = (i > 0 && text[i - 1] == ':') || (i + 1 < text.size() && text[i + 1] == ':');
+            x += field_gap_h < 0 ? 4.0 * pitch : field_gap_h * h * (beside_colon ? 0.5 : 1.0) - pitch;
+            continue;
+        }
         const uint8_t* g = glyph5x7(ch);
         if (!g) { x += 4.0 * pitch; continue; }
         for (int row = 0; row < 7; ++row)
             for (int col = 0; col < 5; ++col)
-                if (g[row] & (0x10 >> col)) emit(x + (col + 0.5) * pitch, (6 - row + 0.5) * pitch, pitch);
+                if (g[row] & (0x10 >> col)) emit(x + (col + 0.5 + (field_gap_h >= 0 && ch == ':' ? 0.5 : 0)) * pitch, (6 - row + 0.5) * pitch, pitch);
         x += 6.0 * pitch;
     }
     return std::max(0.0, x - pitch);
@@ -2198,18 +2203,18 @@ void imprint_groups(const OverscanLayout& L, const Params& params, double frame_
                 }
                 g.ops.push_back(q);
             }
-        });
+        }, dots ? d.field_gap_h : -1);
     };
     auto face_width = [&](const std::string& text, const std::string& style, double h) {
         if (style == "lcd") return seven_seg_width(text, h);
         if (const char* font_name = date_font(style)) return dseg_face(text, h, d.field_gap_h, font_name);
-        return dot_matrix(text, h, [](double, double, double) {});
+        return dot_matrix(text, h, [](double, double, double) {}, style == "dots" ? d.field_gap_h : -1);
     };
 
     auto underlined = [&](const std::string& text, const std::string& style) {
         return d.time_underline && style != "data" && is_day_time(text);
     };
-    auto field_gap = [&](const std::string& style, double h) { return (date_font(style) ? d.field_gap_h : 0.45) * h; };
+    auto field_gap = [&](const std::string& style, double h) { return ((date_font(style) || style == "dots") ? d.field_gap_h : 0.45) * h; };
     auto text_width = [&](const std::string& text, const std::string& style, double h) {
         if (!underlined(text, style)) return face_width(text, style, h);
         double width = 2 * field_gap(style, h);

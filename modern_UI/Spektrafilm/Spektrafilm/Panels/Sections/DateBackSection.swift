@@ -65,12 +65,12 @@ struct DateBackSection: View {
                         .truncationMode(.middle)
                         .help(date.lcdStyle.title)
                 }
-                if date.face == .lcd, date.lcdStyle != .original {
+                if date.face == .dots || (date.face == .lcd && date.lcdStyle != .original) {
                     ScrubSlider(label: L("Field spacing", zh: "字段间距"), value: bind(\.fieldGapH),
                                 range: DateBackSettings.fieldGapRange, zero: 1.20, snap: 0.05,
                                 format: { String(format: "%.2fH", $0) })
-                        .help(L("H is the digit height. Spacing between date fields, including hour and minute; the colon stays centered. Extra spacing inside each number is fixed at 0.20H.",
-                                zh: "H 为数字高度。调整日期字段及小时、分钟之间的间距，冒号保持居中；字段内数字额外字距固定为 0.20H。"))
+                        .help(L("H is the digit height. Spacing between date fields, including hour and minute; the colon stays centered. DSEG adds 0.20H inside each number; dot-matrix digit pitch stays unchanged.",
+                                zh: "H 为数字高度。调整日期字段及小时、分钟之间的间距，冒号保持居中；DSEG 字段内额外字距固定为 0.20H，点阵数字内部点距保持不变。"))
                 }
                 textRow
                 if date.face != .data, date.order == .dayTime {
@@ -111,7 +111,7 @@ struct DateBackSection: View {
                     cornerRow
                 }
                 ScrubSlider(label: L(.dateSize), value: bind(\.size), range: sizeRange,
-                            zero: DateBackSettings.default.size, snap: 0.01,
+                            zero: DateBackSettings.defaultSize(for: date.face), snap: 0.01,
                             format: { String(format: "%.2f×", $0) })
                 if date.face != .data, camera?.group == .film135 {
                     ScrubSlider(label: L("Margin", zh: "边距"),
