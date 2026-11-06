@@ -9,10 +9,6 @@ FrameMatter 是面向 macOS 的胶片与印放模拟应用，由 [LittleSixNine]
 
 上游提供了光谱胶片／印放流程、原生 C++/Metal 引擎、胶片和相纸配置、RAW 工作流、半格拼接、导出，以及 CLI／MCP 接口。FrameMatter 保留这些基础，增加颗粒、日期打印和胶片边缘外观的调节能力。
 
-## 发布版本
-
-版本以整数递增：**Build 1、Build 2……**，Git 标签对应 `build-1`、`build-2`。macOS 应用内部版本为 `1.0.0`，构建号使用该整数。下载包面向 macOS 15 及以上的 Apple silicon Mac，签名与公证情况在每次发布说明中标明。
-
 ## FrameMatter 新增功能
 
 - **颗粒调节**：开放强度、粒子面积与柔和度，沿用 spektrafilm 已有颗粒模型。

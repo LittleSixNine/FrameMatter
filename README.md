@@ -9,10 +9,6 @@ FrameMatter is a macOS app for film and print simulation, independently develope
 
 The upstream application provides the spectral film/print pipeline, native C++/Metal engine, film and paper profiles, RAW workflow, half-frame pairs, export, CLI and MCP access. FrameMatter retains those foundations and adds controls for grain, date imprints and the physical appearance of a film strip.
 
-## Releases
-
-FrameMatter uses integer releases: **Build 1**, **Build 2**, and so on; Git tags are `build-1`, `build-2`, etc. The macOS bundle keeps `1.0.0` as its marketing version and the integer as its build number. Downloads target Apple silicon on macOS 15 or later. Signing and notarization status are stated on each release page.
-
 ## Added in FrameMatter
 
 - **Grain controls:** strength, particle area and softness, exposing the existing spektrafilm grain model.
