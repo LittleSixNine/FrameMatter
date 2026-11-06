@@ -1085,17 +1085,17 @@ No schema-version bump: these are additive native-product wire fields.
 
 ## 17. Date Back: DSEG fonts, capture clock and diagonal margin
 
-The LCD submenu lists four unmodified DSEG v0.46 fonts by their original names,
+The LCD submenu lists four unmodified DSEG v0.46 fonts with localized names,
 followed by LCD Style 2 (the original `lcd` face). All fonts are by Keshikan,
 OFL-1.1, bundled under `engine/resources/fonts/` with license and source.
 
-| Menu title | Persisted `lcdStyle` | `date_imprint_style` |
-|---|---|---|
-| DSEG7 Classic Mini Bold Italic | `style2` | `dseg` |
-| DSEG7 Classic Mini Italic | `classicMiniItalic` | `dseg_mini_italic` |
-| DSEG7 Classic Mini Regular | `classicMiniRegular` | `dseg_mini_regular` |
-| DSEG7 Classic Regular | `classicRegular` | `dseg_classic_regular` |
-| LCD Style 2 | `style1` | `lcd` |
+| Menu title (English) | Menu title (Chinese) | Persisted `lcdStyle` | `date_imprint_style` |
+|---|---|---|---|
+| DSEG7 Classic Regular | DSEG7（经典 常规） | `classicRegular` | `dseg_classic_regular` |
+| DSEG7 Classic Mini Regular | DSEG7（经典 迷你 常规） | `classicMiniRegular` | `dseg_mini_regular` |
+| DSEG7 Classic Mini Italic | DSEG7（经典 迷你 斜） | `classicMiniItalic` | `dseg_mini_italic` |
+| DSEG7 Classic Mini Bold Italic | DSEG7（经典 迷你 粗 斜） | `style2` | `dseg` |
+| LCD Style 2 | LCD 样式 2 | `style1` | `lcd` |
 
 Existing IDs keep their faces; missing `lcdStyle` retains the original.
 The four DSEG choices share the same sizing and spacing controls. CoreText supplies

@@ -918,10 +918,10 @@ extension DateBackFace {
 extension DateBackLCDStyle {
     @MainActor var title: String {
         switch self {
-        case .dseg: "DSEG7 Classic Mini Bold Italic"
-        case .classicMiniItalic: "DSEG7 Classic Mini Italic"
-        case .classicMiniRegular: "DSEG7 Classic Mini Regular"
-        case .classicRegular: "DSEG7 Classic Regular"
+        case .dseg: L("DSEG7 Classic Mini Bold Italic", zh: "DSEG7（经典 迷你 粗 斜）")
+        case .classicMiniItalic: L("DSEG7 Classic Mini Italic", zh: "DSEG7（经典 迷你 斜）")
+        case .classicMiniRegular: L("DSEG7 Classic Mini Regular", zh: "DSEG7（经典 迷你 常规）")
+        case .classicRegular: L("DSEG7 Classic Regular", zh: "DSEG7（经典 常规）")
         case .original: L("LCD Style 2", zh: "LCD 样式 2")
         }
     }

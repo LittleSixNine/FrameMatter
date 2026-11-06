@@ -244,8 +244,8 @@ enum DateBackOrder: String, CaseIterable, Identifiable, Codable, Sendable {
 
 enum DateBackLCDStyle: String, CaseIterable, Identifiable, Codable, Sendable {
     // Keep stored IDs stable when the displayed style numbers change.
+    case classicRegular, classicMiniRegular, classicMiniItalic
     case dseg = "style2"
-    case classicMiniItalic, classicMiniRegular, classicRegular
     case original = "style1"
     var id: String { rawValue }
     var engineStyle: String {

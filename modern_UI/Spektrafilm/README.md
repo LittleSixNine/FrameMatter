@@ -501,9 +501,10 @@ pixel-identical random draws or full print-pipeline parity.
 
 ## Date Back controls
 
-LCD lists DSEG7 Classic Mini Bold Italic, DSEG7 Classic Mini Italic,
-DSEG7 Classic Mini Regular, and DSEG7 Classic Regular, in that order, followed
-by LCD Style 2 (the original face). The four unmodified v0.46 fonts are by
+LCD lists DSEG7 Classic Regular, DSEG7 Classic Mini Regular,
+DSEG7 Classic Mini Italic, and DSEG7 Classic Mini Bold Italic, in that order,
+followed by LCD Style 2 (the original face). Chinese labels use the form
+`DSEG7（经典 迷你 粗 斜）`, with the applicable descriptors for each font. The four unmodified v0.46 fonts are by
 Keshikan (OFL-1.1; source and license in `engine/resources/fonts/`). They change
 only the exposure mask and keep the existing optical/film processing. Stored
 style IDs are retained, so existing edits keep their selected glyphs. The new

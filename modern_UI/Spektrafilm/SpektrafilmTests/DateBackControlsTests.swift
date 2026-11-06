@@ -6,7 +6,7 @@ import XCTest
 @MainActor
 final class DateBackControlsTests: XCTestCase {
     func testLCDMenuOrderAndSavedFaces() throws {
-        XCTAssertEqual(DateBackLCDStyle.allCases, [.dseg, .classicMiniItalic, .classicMiniRegular, .classicRegular, .original])
+        XCTAssertEqual(DateBackLCDStyle.allCases, [.classicRegular, .classicMiniRegular, .classicMiniItalic, .dseg, .original])
         for (stored, style, wireStyle) in [("style1", DateBackLCDStyle.original, "lcd"), ("style2", .dseg, "dseg"),
                                            ("classicMiniItalic", .classicMiniItalic, "dseg_mini_italic"),
                                            ("classicMiniRegular", .classicMiniRegular, "dseg_mini_regular"),
@@ -21,11 +21,16 @@ final class DateBackControlsTests: XCTestCase {
         let savedLanguage = Localization.shared.language
         defer { Localization.shared.language = savedLanguage }
         Localization.shared.language = .simplifiedChinese
-        XCTAssertEqual(DateBackLCDStyle.dseg.title, "DSEG7 Classic Mini Bold Italic")
-        XCTAssertEqual(DateBackLCDStyle.classicMiniItalic.title, "DSEG7 Classic Mini Italic")
-        XCTAssertEqual(DateBackLCDStyle.classicMiniRegular.title, "DSEG7 Classic Mini Regular")
-        XCTAssertEqual(DateBackLCDStyle.classicRegular.title, "DSEG7 Classic Regular")
+        XCTAssertEqual(DateBackLCDStyle.dseg.title, "DSEG7（经典 迷你 粗 斜）")
+        XCTAssertEqual(DateBackLCDStyle.classicMiniItalic.title, "DSEG7（经典 迷你 斜）")
+        XCTAssertEqual(DateBackLCDStyle.classicMiniRegular.title, "DSEG7（经典 迷你 常规）")
+        XCTAssertEqual(DateBackLCDStyle.classicRegular.title, "DSEG7（经典 常规）")
         XCTAssertEqual(DateBackLCDStyle.original.title, "LCD 样式 2")
+        Localization.shared.language = .english
+        XCTAssertEqual(DateBackLCDStyle.allCases.map(\.title), [
+            "DSEG7 Classic Regular", "DSEG7 Classic Mini Regular",
+            "DSEG7 Classic Mini Italic", "DSEG7 Classic Mini Bold Italic", "LCD Style 2"
+        ])
     }
 
     func testAllDSEGChoicesKeepSpacingYearMarkAndRenderInvalidation() {
