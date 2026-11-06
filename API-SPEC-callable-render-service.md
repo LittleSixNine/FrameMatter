@@ -1343,14 +1343,30 @@ old edits. Native fields `scratch_dust_amount`, `scratch_dust_size`,
 and the existing full/half/full-width 135 availability rule. Zero amount or
 strength bypasses dust exactly. Amount thresholds a stable candidate population.
 
-Shapes derive from sixteen MIT FilmDamageSimulator real-scan Dust annotation
-polygons. Sparse clustered placement, rotation and radius use film millimetres,
-so resizing does not reroll the pattern. Radius is (.014 + .10*u^3) * (.4+1.6*size)
-mm; values are visual estimates. Border-only excludes the picture (including both
-half-frame gates); full-width uses the perforation bands. Whole-film includes
-the picture. Hole interiors and carrier remain excluded in both modes.
+Shapes use 112 approved grayscale masks from Daniela Ivanova's CC BY 4.0
+Scans of film damage dataset: 64 dust, 32 short fibers, 16 long fibers. Local
+background removal, relative gray levels and aspect ratio are retained in
+64x64 padded tiles. The generated atlas is compiled into the binary and
+uploaded once per Pipeline into a persistent GPU buffer, only when needed.
+No runtime Python, mask generation or reference-directory lookup is needed.
+
+`dustFiberRatio` / `scratch_dust_fiber_ratio` is a shoot, non-live float 0–1,
+default .25. Zero selects dust only; one selects fibers only. Fiber candidates
+mix 80% short and 20% long. Amount still thresholds the same stable 1mm-cell
+candidate population; ratio changes type at existing candidate positions.
+Half-length in mm before size scaling is .014+.10*u^3 for dust, .05+.13*u for
+short fibers and .20+.35*u for long fibers, multiplied by .4+1.6*size.
+These ranges are artistic estimates, not measured artifact-size statistics.
+Five-by-five neighboring cells cover the longest allowed fibers; bilinear
+sampling with four pixel-footprint taps reduces preview aliasing.
+
+Border-only excludes the picture (including both half-frame gates);
+full-width uses the perforation bands. Whole-film includes the picture.
+Hole interiors and carrier remain excluded in both modes.
 
 The film-present stage adds -log10(1-opacity*coverage) neutral optical density
 before print/scanner processing, producing pale negative-dust marks. It reuses
 the existing pipeline rather than painting RGB dots. Neutral CMY attenuation is
 an approximation, not a calibrated scanner-only spectral or defocus simulation.
+The data license, creator, dataset link and extraction changes ship in About
+and Resources/Licenses; code's MIT license is separate from the CC BY data.

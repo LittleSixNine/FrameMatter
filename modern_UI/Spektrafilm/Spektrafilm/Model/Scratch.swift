@@ -11,6 +11,7 @@ struct ScratchSettings: Codable, Equatable, Sendable {
     var dustSize = 0.5
     var dustStrength = 0.5
     var dustFullFrame = false
+    var dustFiberRatio = 0.25
     var seed = 1
     static let amountRange = 0.0...1.0
     static let seedRange = 1...Int(Int32.max)
@@ -28,6 +29,7 @@ struct ScratchSettings: Codable, Equatable, Sendable {
         dustAmount = try c.decodeIfPresent(Double.self, forKey: .dustAmount) ?? d.dustAmount
         dustSize = try c.decodeIfPresent(Double.self, forKey: .dustSize) ?? d.dustSize
         dustStrength = try c.decodeIfPresent(Double.self, forKey: .dustStrength) ?? d.dustStrength
+        dustFiberRatio = try c.decodeIfPresent(Double.self, forKey: .dustFiberRatio) ?? d.dustFiberRatio
         dustFullFrame = try c.decodeIfPresent(Bool.self, forKey: .dustFullFrame) ?? d.dustFullFrame
         seed = try c.decodeIfPresent(Int.self, forKey: .seed) ?? d.seed
     }
@@ -47,6 +49,7 @@ struct ScratchSettings: Codable, Equatable, Sendable {
             ("scratch_dust_amount", .double(dustAmount.clamped(to: Self.amountRange)), .shoot),
             ("scratch_dust_size", .double(dustSize.clamped(to: Self.amountRange)), .shoot),
             ("scratch_dust_strength", .double(dustStrength.clamped(to: Self.amountRange)), .shoot),
+            ("scratch_dust_fiber_ratio", .double(dustFiberRatio.clamped(to: Self.amountRange)), .shoot),
             ("scratch_dust_full_frame", .bool(dustFullFrame), .shoot),
             ("scratch_seed", .double(Double(seed.clamped(to: Self.seedRange))), .shoot),
         ]

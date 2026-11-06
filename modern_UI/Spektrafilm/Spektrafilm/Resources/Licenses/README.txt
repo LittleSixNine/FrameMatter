@@ -26,6 +26,10 @@ without them is not licensed to be shipped.
       metal-cpp, Apple's C++ bindings for Metal, Apache-2.0, compiled into
       the binary.
 
+  FilmDamageSimulator-Data-CC-BY-4.0.txt / FilmDamageSimulator-Dust-Attribution.txt
+      Daniela Ivanova, Scans of film damage, CC BY 4.0. Cropped and normalized
+      grayscale dust/fiber masks; see attribution for dataset link and changes.
+
   FilmDamageSimulator-MIT.txt
       Daniela Ivanova (2022), MIT. Reference for scratch-mask shape generation.
 

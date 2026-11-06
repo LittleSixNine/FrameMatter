@@ -61,6 +61,8 @@ struct AboutWindow: View {
         Licence(id: "SpektraLab-GPL-3.0.txt", title: "GNU GPL v3 — the application and the engine"),
         Licence(id: "Profiles-and-LUTs-CC-BY-SA-4.0.txt", title: "CC BY-SA 4.0 — the profiles and the print LUTs"),
         Licence(id: "Profiles-and-LUTs-CHANGELOG.txt", title: "What this build changed about the profiles and LUTs"),
+        Licence(id: "FilmDamageSimulator-Data-CC-BY-4.0.txt", title: "CC BY 4.0 — FilmDamageSimulator dust and fiber scans"),
+        Licence(id: "FilmDamageSimulator-Dust-Attribution.txt", title: "Dust and fiber masks — attribution and changes"),
         Licence(id: "FilmDamageSimulator-MIT.txt", title: "MIT — FilmDamageSimulator scratch-mask reference"),
         Licence(id: "metal-cpp-Apache-2.0.txt", title: "Apache 2.0 — metal-cpp"),
     ]

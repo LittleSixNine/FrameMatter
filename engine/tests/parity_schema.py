@@ -238,6 +238,7 @@ NATIVE_ONLY = {
     "scratch_dust_amount": {"path": "film_render.scratches.dust_amount", "type": "float", "layer": "shoot", "default": 0.0, "live": False, "range": [0, 1]},
     "scratch_dust_size": {"path": "film_render.scratches.dust_size", "type": "float", "layer": "shoot", "default": 0.5, "live": False, "range": [0, 1]},
     "scratch_dust_strength": {"path": "film_render.scratches.dust_strength", "type": "float", "layer": "shoot", "default": 0.5, "live": False, "range": [0, 1]},
+    "scratch_dust_fiber_ratio": {"path": "film_render.scratches.dust_fiber_ratio", "type": "float", "layer": "shoot", "default": 0.25, "live": False, "range": [0, 1]},
     "scratch_dust_full_frame": {"path": "film_render.scratches.dust_full_frame", "type": "bool", "layer": "shoot", "default": False, "live": False, "range": None},
     "scratch_seed": {"path": "film_render.scratches.seed", "type": "int", "layer": "shoot", "default": 1, "live": False, "range": [1, 2147483647]},
     "date_imprint_active": {

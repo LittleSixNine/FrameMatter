@@ -31,6 +31,7 @@
 #include "pipeline.hpp"
 #include "spectral.hpp"
 #include "timer.hpp"
+#include "dust_atlas.h"
 
 namespace spk {
 
@@ -57,8 +58,8 @@ enum OsP : int {
     P_CARRIER = 199,
     P_LEAKS = 200,          // up to kMaxLeaks x (s, side, amp, sigma_s, sigma_t)
     P_PAIR_ADV = 260,       // > 0: the same gate exposed again this far along (a half-frame pair)
-    P_SCRATCH_STRENGTH = 261, P_SCRATCH_LONG, P_SCRATCH_SEED, P_SCRATCH_EDGE, P_PERF_LEAK, P_PERF_LEAK_SPREAD, P_FULL_WIDTH, P_DUST_AMOUNT, P_DUST_SIZE, P_DUST_STRENGTH, P_DUST_FULL_FRAME,
-    P_COUNT = 272
+    P_SCRATCH_STRENGTH = 261, P_SCRATCH_LONG, P_SCRATCH_SEED, P_SCRATCH_EDGE, P_PERF_LEAK, P_PERF_LEAK_SPREAD, P_FULL_WIDTH, P_DUST_AMOUNT, P_DUST_SIZE, P_DUST_STRENGTH, P_DUST_FULL_FRAME, P_DUST_FIBER_RATIO,
+    P_COUNT = 273
 };
 constexpr int kMaxLeaks = 12;
 // How far past each long edge of the film a strip scan reaches, mm.
@@ -923,6 +924,7 @@ void Pipeline::overscan_params_block(std::vector<float>& P) const {
     P.assign(P_COUNT, 0.0f);
     const auto& scratches = params_.film_render.scratches;
     if (scratches.active && (L.format == "135" || L.format == "135_half" || L.format == "135_full_67")) {
+        P[P_DUST_FIBER_RATIO] = float(scratches.dust_fiber_ratio);
         P[P_DUST_AMOUNT] = float(scratches.dust_amount);
         P[P_DUST_SIZE] = float(scratches.dust_size);
         P[P_DUST_STRENGTH] = float(scratches.dust_strength);
@@ -2561,6 +2563,11 @@ bool Pipeline::node_overscan_film_present(const Image& in, Image& out, std::stri
         return false;
     }
     Timer t(this, "printing.overscan.film_present");
+    const auto& dust = params_.film_render.scratches;
+    if (dust.active && dust.dust_amount > 0.0 && dust.dust_strength > 0.0 && !dust_atlas_) {
+        dust_atlas_ = gpu_->upload_persistent(kDustAtlas, sizeof(kDustAtlas), error);
+        if (!dust_atlas_) return false;
+    }
     std::vector<float> P;
     overscan_params_block(P);
     gpu::BufferRef pb = gpu_->upload(P.data(), P.size() * sizeof(float), error);
@@ -2568,7 +2575,7 @@ bool Pipeline::node_overscan_film_present(const Image& in, Image& out, std::stri
     const uint32_t n[1] = {uint32_t(in.pixels())};
     return gpu_->dispatch("spk_overscan_film_present",
                           {gpu::Arg::buf(in.buf), gpu::Arg::buf(pb), gpu::Arg::inline_bytes(n, 1),
-                           gpu::Arg::buf(out.buf)},
+                           gpu::Arg::buf(out.buf), gpu::Arg::buf(dust_atlas_ ? dust_atlas_ : pb)},
                           in.pixels(), error);
 }
 

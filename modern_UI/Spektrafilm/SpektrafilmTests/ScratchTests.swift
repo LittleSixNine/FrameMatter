@@ -10,15 +10,18 @@ final class ScratchTests: XCTestCase {
         XCTAssertEqual(old.dustSize, 0.5)
         XCTAssertEqual(old.dustStrength, 0.5)
         XCTAssertFalse(old.dustFullFrame)
+        XCTAssertEqual(old.dustFiberRatio, 0.25)
         var p = FilmParams.default
         p.filmEdge.active = true; p.scratches.active = true
         p.scratches.dustAmount = 0.7; p.scratches.dustSize = 0.3
         p.scratches.dustStrength = 0.8; p.scratches.dustFullFrame = true
+        p.scratches.dustFiberRatio = 0.65
         XCTAssertEqual(try JSONDecoder().decode(FilmParams.self, from: JSONEncoder().encode(p)), p)
         XCTAssertEqual(p.fullDelta["scratch_dust_amount"], .double(0.7))
         XCTAssertEqual(p.fullDelta["scratch_dust_size"], .double(0.3))
         XCTAssertEqual(p.fullDelta["scratch_dust_strength"], .double(0.8))
         XCTAssertEqual(p.fullDelta["scratch_dust_full_frame"], .bool(true))
+        XCTAssertEqual(p.fullDelta["scratch_dust_fiber_ratio"], .double(0.65))
         let before = p
         p.scratches.dustAmount = 0.9
         XCTAssertEqual(p.delta(from: before).layers, [.shoot])

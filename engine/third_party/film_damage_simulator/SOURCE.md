@@ -33,21 +33,32 @@ Pull deformation expands the hole towards the leader (negative signed-distance
 displacement); it does not push a film-coloured spike into the hole. Both the
 baseline tiny deformation and extra seeded wear follow this convention.
 
-## Negative-scan dust
+## Negative-scan dust and fibers
 
-`dust-scan10.json` is the unmodified `scans/Scan (10).json` from
-https://github.com/daniela997/FilmDamageSimulator (MIT, Daniela Ivanova 2022).
-Annotation snapshot repository tree SHA: `bffc46553a3255d8bc4432a1a3102a0fec3dce7a`.
-Rebuild silhouettes with `python3 engine/tools/bake_dust_shapes.py`.
-The repository describes empty Lomochrome Purple 35mm film scans, Plustek
-OpticFilm 7600i / Silverfast 9. Sixteen polygons labelled Dust (at least five
-vertices, annotation order) are centered and uniformly normalized into
-`engine/src/shaders/dust_shapes.h`; only outlines, not photographic pixels,
-are used. Original annotation ids remain in the generated header.
+112 approved grayscale masks are derived from Daniela Ivanova's **Scans of
+film damage**, https://doi.org/10.6084/m9.figshare.21803292 (CC BY 4.0).
+Data license: DATA-LICENSE-CC-BY-4.0.txt. Credits/changes: DUST-ATTRIBUTION.txt.
+The MIT license above covers the algorithm reference code, not this dataset.
 
-Placement adapts the project's clustered sampling, rotation and size variation;
-physical film coordinates and the existing saved seed stabilize preview/export.
-Sizes and densities are artistic estimates, not a measured reproduction of the
-paper's distribution. Neutral transmission loss is converted to optical density
-and follows the existing negative/print/scanner pipeline; this is not a calibrated
-scanner-only spectral or defocus model. No hair, dirt patches or new film profile.
+`dust_masks/` contains the cropped, background-separated grayscale masks;
+`dust_assets.json` preserves source scan/annotation ids and extraction geometry.
+There are 64 dust, 32 short-fiber and 16 long-fiber masks from Scan (1), (4),
+(8), (9) and (10). Masks P01–P16 are the first approved set; D01–D48, S01–S32
+and L01–L16 are the later approved set. No photographic scene content is used.
+
+Extraction follows upstream scans.py's coordinate scaling (1.5 for scans
+8/9/10). Local median background and MAD noise floor are removed (2 sigma for
+dust, 1.5 for fibers), P99 gray normalization is applied, with .65 source-pixel
+contour feather. Peak normalization is artistic, not calibrated optical density.
+
+Run `python3 engine/tools/bake_dust_atlas.py` (Pillow, offline only) to rebuild
+`engine/src/pipeline/dust_atlas.h`: 112 unique 64x64 padded grayscale tiles.
+Only the cropped masks and generated atlas are needed; full source scans stay
+in the developer's ignored reference folder. The app needs no Python or loose
+mask files to render. Source aspect and actual internal gray values survive;
+the former filled annotation-polygon renderer has been removed.
+
+Seeded selection/placement uses physical film coordinates. Fiber ratio .25
+mixes 80% short and 20% long among selected fibers. Size ranges are visual
+estimates. Neutral transmission loss follows the existing negative/print/
+scanner path, not a calibrated scanner-only spectral or defocus model.

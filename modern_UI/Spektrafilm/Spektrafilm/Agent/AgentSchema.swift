@@ -164,6 +164,7 @@ enum AgentSchema {
             .init("params.scratches.dustAmount", .number(ScratchSettings.amountRange), "Negative-scan dust amount, 0–1; default 0."),
             .init("params.scratches.dustSize", .number(ScratchSettings.amountRange), "Negative-scan dust size, 0–1; default .5."),
             .init("params.scratches.dustStrength", .number(ScratchSettings.amountRange), "Negative-scan dust strength, 0–1; default .5."),
+            .init("params.scratches.dustFiberRatio", .number(ScratchSettings.amountRange), "Fraction of dust candidates that are fibers, 0–1; default .25. Fibers mix 80% short and 20% long samples."),
             .init("params.scratches.dustFullFrame", .bool, "Dust covers the whole film when true, border only otherwise; default false."),
             .init("params.scratches.seed", .integer(ScratchSettings.seedRange), "Saved scratch pattern seed, independent of Film Edge."),
             .init("params.dateBack.active", .bool, "Date Back: a date or the shooting data exposed onto the film."),

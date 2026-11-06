@@ -82,6 +82,29 @@ with Engine() as engine:
     ys=np.minimum(((np.arange(low.shape[0])+.5)*high.shape[0]/low.shape[0]).astype(int),high.shape[0]-1)
     xs=np.minimum(((np.arange(low.shape[1])+.5)*high.shape[1]/low.shape[1]).astype(int),high.shape[1]-1)
     assert low.sum()>20 and near[np.ix_(ys,xs)][low].mean()>.95,'resizing moved dust locations'
+    particles,_=render(scratch_dust_amount=1.,scratch_dust_full_frame=True,scratch_dust_fiber_ratio=0.)
+    fibers,_=render(scratch_dust_amount=1.,scratch_dust_full_frame=True,scratch_dust_fiber_ratio=1.)
+    assert not np.array_equal(particles,fibers),'fiber ratio has no effect'
+    assert np.array_equal(fibers,render(scratch_dust_amount=1.,scratch_dust_full_frame=True,scratch_dust_fiber_ratio=1.)[0]),'fiber selection is unstable'
+    pale=(fibers[...,:3].astype(int)-bare[...,:3].astype(int)).max(axis=2)>500
+    # A connected visible line must be longer than any single compact dust core.
+    seen=np.zeros_like(pale);longest=0
+    for y,x in zip(*np.nonzero(pale)):
+        if seen[y,x]:continue
+        stack=[(int(y),int(x))];seen[y,x]=True;points=[]
+        while stack:
+            yy,xx=stack.pop();points.append((yy,xx))
+            for dy,dx in ((1,0),(-1,0),(0,1),(0,-1),(1,1),(-1,-1),(1,-1),(-1,1)):
+                ny,nx=yy+dy,xx+dx
+                if 0<=ny<pale.shape[0] and 0<=nx<pale.shape[1] and pale[ny,nx] and not seen[ny,nx]:
+                    seen[ny,nx]=True;stack.append((ny,nx))
+        spans=np.ptp(np.array(points),axis=0)
+        longest=max(longest,int(spans.max()))
+    assert longest>15,('no elongated fiber visible',longest)
+    try:render(scratch_dust_fiber_ratio=1.1)
+    except EngineError:pass
+    else:raise AssertionError('out-of-range fiber ratio accepted')
+    print('PASS grayscale particles/fibers, visible long lines and ratio validation:',longest,flush=True)
     try:render(scratch_dust_amount=1.1)
     except EngineError:pass
     else:raise AssertionError('out-of-range dust accepted')

@@ -722,6 +722,7 @@ private:
     const Blob* blob_;
     SetupCache* cache_;
     Blur blur_;
+    gpu::BufferRef dust_atlas_;
     Params params_;
     bool built_ = false;
     int node_count_ = 0;

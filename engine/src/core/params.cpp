@@ -171,6 +171,7 @@ const SchemaField kFields[] = {
     {"scratch_dust_amount", "film_render.scratches.dust_amount", F, SHOOT, true, 0, 1, false},
     {"scratch_dust_size", "film_render.scratches.dust_size", F, SHOOT, true, 0, 1, false},
     {"scratch_dust_strength", "film_render.scratches.dust_strength", F, SHOOT, true, 0, 1, false},
+    {"scratch_dust_fiber_ratio", "film_render.scratches.dust_fiber_ratio", F, SHOOT, true, 0, 1, false},
     {"scratch_dust_full_frame", "film_render.scratches.dust_full_frame", B, SHOOT, false, 0, 0, false},
     {"scratch_seed",            "film_render.scratches.seed",           I, SHOOT, true, 1, 2147483647, false},
     {"date_imprint_active",      "film_render.date_imprint.active",       B, SHOOT, false, 0, 0, false},
@@ -250,6 +251,7 @@ double* float_slot(Params& p, const std::string& path) {
     if (path == "film_render.scratches.edge_marks") return &p.film_render.scratches.edge_marks;
     if (path == "film_render.scratches.leak_strength") return &p.film_render.scratches.leak_strength;
     if (path == "film_render.scratches.leak_spread") return &p.film_render.scratches.leak_spread;
+    if (path == "film_render.scratches.dust_fiber_ratio") return &p.film_render.scratches.dust_fiber_ratio;
     if (path == "film_render.scratches.dust_amount") return &p.film_render.scratches.dust_amount;
     if (path == "film_render.scratches.dust_size") return &p.film_render.scratches.dust_size;
     if (path == "film_render.scratches.dust_strength") return &p.film_render.scratches.dust_strength;

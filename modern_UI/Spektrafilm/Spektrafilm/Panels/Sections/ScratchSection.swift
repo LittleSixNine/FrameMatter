@@ -27,6 +27,7 @@ struct ScratchSection: View {
                 RailSubhead(L("Dust", zh: "灰尘"))
                 amount(L("Amount", zh: "数量"), \.dustAmount, zero: 0)
                 amount(L("Size", zh: "大小"), \.dustSize, zero: 0.5)
+                amount(L("Fiber ratio", zh: "纤维比例"), \.dustFiberRatio, zero: 0.25)
                 amount(L("Strength", zh: "强度"), \.dustStrength, zero: 0.5)
                 HStack(spacing: 0) {
                     RowLabel(L("Area", zh: "范围"))

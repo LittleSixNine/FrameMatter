@@ -248,6 +248,7 @@ struct ScratchParams {
     double leak_strength = 0.0, leak_spread = 0.5;
     double dust_amount = 0.0, dust_size = 0.5, dust_strength = 0.5;
     bool dust_full_frame = false;
+    double dust_fiber_ratio = 0.25;
     int seed = 1;
 };
 
