@@ -191,8 +191,34 @@ slider as DSEG, while keeping its original dot and digit pitch.
 
 
 Scratches is an independent card between Film Edge and Date Back. With 135
-or half-frame Film Edge enabled, it adds fine grouped long border scratches
-and sparse short scuffs. Density and strength are adjustable; Another changes
+or half-frame Film Edge enabled, it adds grouped sprocket-friction scratches.
+Density and strength are adjustable; Another changes
 only its saved pattern. Off by default. Shapes reference FilmDamageSimulator
 (MIT); the initial density response is an approximation, not a calibrated
 material-damage simulation. The picture gates and perforations are excluded.
+
+Film Edge offers white/black Hole background; new app settings default to black.
+
+Within Scratches, Sprocket friction scratches offers Amount/Strength and
+Perforation edge marks offers Strength (default 35%). Another re-seeds both
+without moving their centres. Edge marks extend the existing rough outline
+and local burr/chip geometry at the left short-edge centre (fixed film-leader
+direction), with no added glow. Zero keeps the original
+outline and rim. No dust is included.
+
+Black perforation backing uses near-black sRGB(4,10,13). Local edge-colour
+marks use the existing film-base transmittance as absorption, without glow.
+
+Scratches also offers Perforation light leaks: Strength (default off) and
+Spread. It reuses the existing seeded Gaussian exposure and warm spectral
+fog-light path, anchored near selected holes; a larger spread can enter the
+picture. Another shares the scratch seed. It is not a calibrated model of
+light propagation in the film base.
+
+Both perforation rows share the leak distribution, with small local strength
+variation per row; Another changes the common pattern.
+
+Perforation leaks include a faint, patchy exposure rim right at each hole's
+edge, sharing Strength/Another. Spread controls the broad spill, while the
+rim keeps a narrow film-scale width. Its colour passes through the same
+spectral exposure path rather than a fixed RGB outline.

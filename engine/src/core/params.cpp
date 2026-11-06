@@ -164,8 +164,10 @@ const SchemaField kFields[] = {
     {"overscan_holes",           "film_render.overscan.holes",            S, SHOOT, false, 0, 0, false},
     {"scratch_active",          "film_render.scratches.active",         B, SHOOT, false, 0, 0, false},
     {"scratch_long_lines",      "film_render.scratches.long_lines",     F, SHOOT, true, 0, 1, false},
-    {"scratch_short_scuffs",    "film_render.scratches.short_scuffs",   F, SHOOT, true, 0, 1, false},
     {"scratch_strength",        "film_render.scratches.strength",       F, SHOOT, true, 0, 1, false},
+    {"scratch_edge_marks",      "film_render.scratches.edge_marks",     F, SHOOT, true, 0, 1, false},
+    {"scratch_leak_strength",   "film_render.scratches.leak_strength",  F, SHOOT, true, 0, 1, false},
+    {"scratch_leak_spread",     "film_render.scratches.leak_spread",    F, SHOOT, true, 0, 1, false},
     {"scratch_seed",            "film_render.scratches.seed",           I, SHOOT, true, 1, 2147483647, false},
     {"date_imprint_active",      "film_render.date_imprint.active",       B, SHOOT, false, 0, 0, false},
     {"date_imprint_text",        "film_render.date_imprint.text",         S, SHOOT, false, 0, 0, false},
@@ -241,7 +243,9 @@ const SchemaField* find_field(const std::string& name) {
 
 double* float_slot(Params& p, const std::string& path) {
     if (path == "film_render.scratches.long_lines") return &p.film_render.scratches.long_lines;
-    if (path == "film_render.scratches.short_scuffs") return &p.film_render.scratches.short_scuffs;
+    if (path == "film_render.scratches.edge_marks") return &p.film_render.scratches.edge_marks;
+    if (path == "film_render.scratches.leak_strength") return &p.film_render.scratches.leak_strength;
+    if (path == "film_render.scratches.leak_spread") return &p.film_render.scratches.leak_spread;
     if (path == "film_render.scratches.strength") return &p.film_render.scratches.strength;
     if (path == "camera.exposure_compensation_ev") return &p.camera.exposure_compensation_ev;
     if (path == "camera.film_format_mm") return &p.camera.film_format_mm;

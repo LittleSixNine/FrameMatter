@@ -32,8 +32,8 @@ enum : uint {
     P_CARRIER = 199,
     P_LEAKS = 200,          // up to 12 x (s, side, amp, sigma_s, sigma_t)
     P_PAIR_ADV = 260,       // > 0: the same gate exposed again this far along (a half-frame pair)
-    P_SCRATCH_STRENGTH = 261, P_SCRATCH_LONG, P_SCRATCH_SHORT, P_SCRATCH_SEED,
-    P_COUNT = 265
+    P_SCRATCH_STRENGTH = 261, P_SCRATCH_LONG, P_SCRATCH_SEED, P_SCRATCH_EDGE, P_PERF_LEAK, P_PERF_LEAK_SPREAD,
+    P_COUNT = 267
 };
 constant uint kQStride = 10u;
 
@@ -141,6 +141,47 @@ static float3 sample_frame(device const float* f, float fx, float fy, uint fw, u
     return mix(mix(a, b, ax), mix(c, d, ax), ay);
 }
 
+static float perf_sdf(float2 st, device const float* P, thread uint& hole);
+
+// Adapt the existing spool-leak Gaussian/exposure model to perforation anchors.
+// shortcut: a visual exposure model, not measured light propagation through a specific film base.
+static float perforation_leak(float2 st, device const float* P) {
+    if (P[P_PERF_LEAK] <= 0.0f || P[P_PERFORATED] < 0.5f) return 0.0f;
+    const float spread = mix(0.15f, 1.80f, P[P_PERF_LEAK_SPREAD]);
+    const bool top = st.y < 0.5f * P[P_FILM_W];
+    const float inner = P[P_PERF_EDGE] + P[P_PERF_H];
+    const float dt = st.y - (top ? inner : P[P_FILM_W] - inner);
+    uint hole;
+    const float d = perf_sdf(st, P, hole);
+    if (d < 0.0f) return 0.0f;
+    const float pitch = P[P_PERF_PITCH], phase = P[P_PERF_PHASE];
+    const int nearest = int(floor((st.x - phase - 0.5f * P[P_PERF_W]) / pitch + 0.5f));
+    // Share the anchors and slow exposure trend; only small local variation differs by row.
+    const uint seed = uint(P[P_SCRATCH_SEED]) ^ 0x1EAFu;
+    const uint row_seed = seed ^ (top ? 0xA101u : 0xB202u);
+    // The existing hole distance and pixel footprint define a separate, narrow exposure rim.
+    const float rim_sigma = sqrt(0.012f * 0.012f + 0.0961f * P[P_PX] * P[P_PX]);
+    const uint rim_seed = row_seed ^ hole;
+    const float patch = smoothstep(0.20f, 0.80f, 0.5f * (value_noise(st.x / 0.20f, rim_seed) +
+                                                                    value_noise(st.y / 0.20f, rim_seed ^ 0x33u)));
+    const float rim_weight = (0.25f + 0.75f * hash_f(nearest, seed ^ 0x44u)) * (0.35f + 0.65f * patch);
+    const float rim_x = (d - 0.012f) / rim_sigma;
+    float amount = 0.80f * P[P_PERF_LEAK] * rim_weight * exp(-0.5f * rim_x * rim_x);
+    if (abs(dt) > 6.0f * spread) return amount;
+    const float sigma_s = 0.55f + 0.55f * spread;
+    for (int offset = -1; offset <= 1; ++offset) {
+        const int k = nearest + offset;
+        if (hash_f(k, seed ^ 0x11u) > 0.65f) continue;
+        const float cluster = smoothstep(0.40f, 0.70f, value_noise(float(k) / 3.0f, seed));
+        const float center = phase + float(k) * pitch + 0.5f * P[P_PERF_W];
+        const float ds = st.x - center;
+        const float local = 0.85f + 0.30f * hash_f(k, row_seed);
+        const float amplitude = 0.36f * P[P_PERF_LEAK] * cluster * (0.3f + 0.7f * hash_f(k, seed ^ 0x22u)) * local;
+        amount += amplitude * exp(-0.5f * ds * ds / (sigma_s * sigma_s)) * exp(-0.5f * dt * dt / (spread * spread));
+    }
+    return amount;
+}
+
 // ① + ② + the fog of ③: raw exposure on the film canvas.
 kernel void spk_overscan_canvas(device const float* frame [[buffer(0)]],
                                 device const float* P [[buffer(1)]],
@@ -197,6 +238,7 @@ kernel void spk_overscan_canvas(device const float* frame [[buffer(0)]],
             const float ds = st.x - P[b];
             fog += P[b + 2u] * exp(-ds * ds / (2.0f * P[b + 3u] * P[b + 3u])) * exp(-dd / P[b + 4u]);
         }
+        fog += perforation_leak(st, P);
         e += fog * float3(P[P_FOG_R], P[P_FOG_G], P[P_FOG_B]);
     }
     out[3u * i] = e.x;
@@ -253,14 +295,31 @@ static float perf_sdf(float2 st, device const float* P, thread uint& hole) {
     const float rough = 0.001f + 0.003f * hash_f(int(hole & 0xFFFFu), seed ^ 0x6u);
     d += rough * (value_noise(st.x / 0.05f, seed ^ 0x77u) + value_noise(st.y / 0.05f, seed ^ 0x99u) - 1.0f) * 2.0f;
     // a burr or a chip on about one hole in four: a 20-50 micron bump on the
-    // edge, into the hole or out of it, somewhere around its outline
+    // edge, extending the hole outward at its left short-edge centre
     if (hash_f(int(hole & 0xFFFFu), seed ^ 0x7u) < 0.25f) {
-        const float ang = 6.2831853f * hash_f(int(hole & 0xFFFFu), seed ^ 0x8u);
-        const float2 pb = float2(sc, tc) + float2(cos(ang) * 0.5f * wa, sin(ang) * 0.5f * hc);
+        // The owner fixes the film leader at s-: pull contact is the left short-edge centre.
+        const float2 pb = float2(sc - 0.5f * wa, tc);
         const float sig = 0.020f + 0.030f * hash_f(int(hole & 0xFFFFu), seed ^ 0x9u);
-        const float amp = (hash_f(int(hole & 0xFFFFu), seed ^ 0xAu) < 0.5f ? -1.0f : 1.0f) *
-                          (0.006f + 0.010f * hash_f(int(hole & 0xFFFFu), seed ^ 0xBu));
+        // Negative signed-distance displacement expands the hole into the film, towards s-.
+        const float amp = -(0.006f + 0.010f * hash_f(int(hole & 0xFFFFu), seed ^ 0xBu));
         d += amp * exp(-dot(st - pb, st - pb) / (sig * sig));
+    }
+    // Extend the existing Gaussian burr/chip at the sprocket's pull-contact point.
+    // shortcut: dimensions are visual estimates; calibrate against measured negatives for physical claims.
+    const float wear = P[P_SCRATCH_EDGE];
+    const float2 contact = float2(sc - 0.5f * wa, tc);
+    const float2 qwear = st - contact;
+    if (wear > 0.0f && abs(qwear.x) < 0.20f && abs(qwear.y) < 0.18f) {
+        const uint ws = uint(P[P_SCRATCH_SEED]) ^ hole ^ 0xD271u;
+        if (hash_f(0, ws ^ 0x7u) < 0.75f) {
+            const float2 sig = float2(0.025f + 0.020f * hash_f(0, ws ^ 0x8u),
+                                      0.035f + 0.040f * hash_f(0, ws ^ 0x9u));
+            const float amp = -wear * (0.015f + 0.035f * hash_f(0, ws ^ 0xBu));
+            const float2 z = qwear / sig;
+            const float end = 1.0f - smoothstep(0.10f, 0.18f, abs(qwear.y));
+            d += amp * exp(-dot(z,z)) * end *
+                 (0.75f + 0.25f * value_noise(qwear.y / 0.012f, ws ^ 0x77u));
+        }
     }
     return d;
 }
@@ -331,26 +390,8 @@ static float scratch_mask(float2 st, device const float* P) {
         const float t = top ? P[P_GT0] - offset : P[P_GT0] + P[P_GH] + offset;
         const float ss = P[P_GS0] + along_span * hash_f(i, seed ^ 0x404u);
         const float len = along_span * (0.3f + 0.8f * hash_f(i, seed ^ 0x505u));
-        const float w = sqrt(pow(0.006f + 0.007f * hash_f(i, seed ^ 0x606u), 2.0f) + 0.0961f * P[P_PX] * P[P_PX]);
+        const float w = sqrt(pow(0.009f + 0.0105f * hash_f(i, seed ^ 0x606u), 2.0f) + 0.0961f * P[P_PX] * P[P_PX]);
         mask = max(mask, scratch_line(st, float2(ss,t), len, w, 0.0f, seed ^ uint(i + 1)));
-    }
-    // Select a few perforations, then place several short marks near each.
-    for (int group = 0; group < 8; ++group) {
-        if (hash_f(group, seed ^ 0x707u) >= 0.75f * P[P_SCRATCH_SHORT]) continue;
-        const bool top = hash_f(group, seed ^ 0x808u) < 0.5f;
-        const float pos = P[P_GS0] + along_span * hash_f(group, seed ^ 0x909u);
-        const float k = floor((pos - P[P_PERF_PHASE]) / P[P_PERF_PITCH]);
-        const float ss = P[P_PERF_PHASE] + k * P[P_PERF_PITCH] + 0.5f * P[P_PERF_W];
-        const float edge = P[P_PERF_EDGE] + P[P_PERF_H] + 0.20f;
-        const float tt = top ? edge : P[P_FILM_W] - edge;
-        for (int j = 0; j < 3; ++j) {
-            const int i = group * 3 + j;
-            const float2 center = float2(ss + 0.22f * (hash_f(i,seed ^ 0xAu) - 0.5f), tt + float(j) * 0.08f);
-            const float len = 0.2f + 1.2f * hash_f(i, seed ^ 0xBu);
-            const float w = sqrt(pow(0.007f + 0.012f * hash_f(i, seed ^ 0xCu), 2.0f) + 0.0961f * P[P_PX] * P[P_PX]);
-            const float angle = (hash_f(i, seed ^ 0xDu) - 0.5f) * 0.7f;
-            mask = max(mask, scratch_line(st, center, len, w, angle, seed ^ uint(i + 100)));
-        }
     }
     return mask;
 }
@@ -371,7 +412,7 @@ kernel void spk_overscan_film_present(device const float* cmy [[buffer(0)]],
     if (P[P_SCRATCH_STRENGTH] > 0.0f && P[P_PERFORATED] > 0.5f && a > 0.999f) {
         // shortcut: neutral density approximates scratch obstruction; calibrate against measured wear before claiming a physical model.
         const float wear = scratch_mask(canvas_to_film(float(i % cw), float(i / cw), P), P);
-        c += 0.50f * P[P_SCRATCH_STRENGTH] * wear;
+        c += 0.90f * P[P_SCRATCH_STRENGTH] * wear;
     }
     const float3 hole = float3(P[P_HOLE_C], P[P_HOLE_M], P[P_HOLE_Y]);
     const float3 r3 = a * c + (1.0f - a) * hole;
@@ -430,6 +471,17 @@ kernel void spk_overscan_light(device const float* rgb [[buffer(0)]],
             // the base's tint, mostly washed out
             const float3 tint = mix(float3(1.0f), float3(P[P_BASE_R], P[P_BASE_G], P[P_BASE_B]), 0.3f);
             const float lam = P[P_WALL_SCATTER];
+            if (P[P_SCRATCH_EDGE] > 0.0f && abs(d) < 0.06f) {
+                const uint ws = uint(P[P_SCRATCH_SEED]) ^ hole ^ 0xC010u;
+                const float patch = smoothstep(0.25f, 0.75f, 0.5f * (value_noise(st.x / 0.20f, ws) +
+                                                                             value_noise(st.y / 0.20f, ws ^ 0x33u)));
+                // Existing spectral base transmittance: a narrow absorptive colour mark, not added light.
+                const float amount = 0.65f * P[P_SCRATCH_EDGE] * patch * exp(-abs(d) / 0.018f);
+                const float3 filter = mix(float3(1.0f), clamp(float3(P[P_BASE_R], P[P_BASE_G], P[P_BASE_B]), 0.01f, 1.0f), amount);
+                // Output-space conversion can leave negative channels; absorption must not lift them.
+                if (d >= 0.0f) c -= max(c, 0.0f) * (1.0f - filter);
+                else light *= filter;
+            }
             if (d >= 0.0f) {
                 const float lift = P[P_WALL_GLOW] * k * exp(-d / lam);
                 c += lift * tint * (white ? light : float3(1.0f));

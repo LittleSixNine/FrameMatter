@@ -1191,34 +1191,40 @@ field gap (or 1.20H if missing).
 ## 18. Film-border scratches
 
 An independent Scratches card sits between Film Edge and Date Back. It stores
-`params.scratches` with `active=false`, `longLines=.4`, `shortScuffs=.25`,
-`strength=.35`, `seed=1`. Missing sidecars decode to these defaults. Three
-0–100% controls adjust line density, scuff density and strength. Another picks
+`params.scratches` with `active=false`, `longLines=.4`,
+`strength=.35`, `edgeMarks=.35`, `leakStrength=0`, `leakSpread=.5`, `seed=1`. Missing sidecars decode to these defaults. Two friction
+0–100% controls adjust sprocket-friction scratch density and strength. A separate
+Perforation edge marks subsection adds its own 0–100% strength control, default
+35%, stored as `edgeMarks` and sent as `scratch_edge_marks` (float 0–1, shoot,
+non-live, native default .35). Both subsections share the saved seed. Another picks
 an independent seed; saved edits and undo retain it. Full/half 135 Film Edge
 is required; other formats and Film Edge off send `scratch_active=false`.
 
 All fields are shoot, non-live. Native fields are `scratch_active` (bool),
-`scratch_long_lines`, `scratch_short_scuffs`, `scratch_strength` (floats, 0–1),
+`scratch_long_lines`, `scratch_strength`, `scratch_edge_marks`,
+`scratch_leak_strength`, `scratch_leak_spread` (floats, 0–1),
 `scratch_seed` (int, 1–2147483647), under `film_render.scratches` (snake_case
 leaves). Defaults match the app; inactive controls do not enter render stamps.
 
-The existing overscan film-density mask stage adds up to 0.50 neutral CMY
+The existing overscan film-density mask stage adds up to 0.90 neutral CMY
 optical density times strength and a soft scratch mask. That is a provisional
 obstruction model, not calibrated refractive grooves or dye-layer removal.
 It runs before print/scanner processing and does not paint fixed RGB colours.
 Mask shape adapts FilmDamageSimulator's MIT line-scratch/envelope method using
 the existing seeded value noise, with small groups of long parallel lines
-near the picture and sparse short groups near selected perforations. Source
+near the picture. Short scuffs have been removed; legacy saved `shortScuffs`
+keys are ignored and the former native `scratch_short_scuffs` field is removed. Source
 and full MIT notice are in `engine/third_party/film_damage_simulator` and the
 app license bundle. No external images or runtime Python dependency.
 
 The mask is excluded from both picture gates (including half-frame pairs),
 perforations and outside-film areas; a 0.10 mm gate buffer and 0.07 mm hole
-buffer avoid the boundaries. Gaussian widths are 6–13 micrometres for long
-lines and 7–19 for short scuffs, with the existing pixel-footprint softness.
+buffer avoid the boundaries. Gaussian widths are 9–19.5 micrometres, with the existing pixel-footprint
+softness; the former widths were 6–13 micrometres.
 Noise varies the opacity continuously, sometimes to zero. Fine details may
 be subtle in fit-to-window previews. No dust/hairs or central coloured bands.
-A zero strength or disabled effect bypasses the code exactly. The random
+A zero friction strength bypasses the friction mask; edge marks have their
+own independent strength. Disabling Scratches bypasses both. The random
 layout is based on film coordinates, not raster dimensions, so it follows
 rotations and keeps its pattern in preview/full/export. Mask boundaries do
 not disable downstream global print/scan effects; the mask exclusion is not
@@ -1226,3 +1232,72 @@ a promise of bit-identical picture pixels under every global effect.
 
 Scratch settings are not copied by the settings clipboard, matching the
 existing per-photo Film Edge and Date Back policy.
+
+The Film Edge hole colour control is labelled Hole background / 齿孔背景.
+New app settings default to black; saved explicit white/black selections
+are preserved. The existing native `overscan_holes` contract and white
+default remain unchanged; the app sends its selection explicitly.
+
+Perforation edge marks extend `perf_sdf`'s existing Gaussian burr/chip model.
+The film leader is fixed at film coordinate s- (left before rotation).
+Both the original tiny deformation and added pull wear extend the hole
+outward into the film (negative SDF displacement), at the centre of that
+short edge, not at random positions around the hole. Added wear has compact
+support within 0.20 mm along-film / 0.18 mm across-film of this contact point;
+it tapers to zero away from the centre. The displacement never pushes film material inward into the hole.
+Seed changes select the affected holes
+(75%), amplitude, width and fine detail, not the side or centre location.
+At strength 1 the additional displacement is 15–50 micrometres; Gaussian sigma
+is 25–45 micrometres along-film and 35–75 across-film. These are visual
+estimates, not measured calibration. Hole centres, pitch and nominal size
+remain unchanged. Zero added strength keeps the existing punch roughness and
+tiny contact-centred burr. Friction strength/quantity do not affect edge marks.
+No detached particles or scanning colour fringes are added.
+
+The black hole backing is now display-referred sRGB(4,10,13), decoded and
+converted using the existing colour transforms into the linear output space.
+White remains unchanged. This is a backing colour, not zero light; subsequent
+user grading may change its displayed appearance. A narrow, seeded absorptive
+edge-colour variation uses the existing spectral base transmittance, with
+falloff 0.018 mm and support within 0.06 mm of the outline. It multiplies
+transmission rather than adding glow; it does not invent cyan/yellow wear.
+
+### 18.1 Perforation light leaks
+
+A separate subsection in Scratches has Strength (0–100%, default 0/off) and
+Spread (0–100%, default 50%). They persist as `leakStrength` / `leakSpread`,
+with optional decoding for old edits, and use native `scratch_leak_strength`
+/ `scratch_leak_spread` (float 0–1, shoot, non-live; defaults 0 / .5).
+They share the existing scratch seed and full/half-135 availability. The
+existing friction and edge-mark strength sliders do not affect this exposure.
+
+The existing raw overscan-canvas exposure stage adapts the spool-leak
+Gaussian model to a subset of perforation inner-edge centres. Low-frequency
+seeded value noise groups affected holes. Both perforation rows share the
+selected hole indices, slow exposure trend and per-hole exposure weights;
+each row then adds a bounded .85–1.15 local multiplier. This avoids independent
+thresholds blanking an entire row while retaining local variation. A
+three-neighbour sum avoids cell seams. Spread maps to a
+0.15–1.80 mm across-film Gaussian sigma; along-film sigma is .55+.55×spread mm.
+Peak raw exposure is .36×strength×cluster×per-hole weight×row multiplier. The existing 2800K
+fog-light weights pass through the film's spectral sensitivity, development,
+print and scan; there is no fixed RGB overlay. These are visual parameters,
+not measured film-base light-piping calibration.
+
+No exposure is injected into hole interiors or outside the film. The leak
+may extend into the picture at wider spreads: unlike friction and contact
+marks, it is intentionally additional exposure, not a border-only damage mask.
+Subsequent halation/scan processing may spread it further. Zero strength is
+an exact bypass, including when Spread or the saved seed changes with all
+other scratch strengths zero. No dust or development-surge simulation.
+
+A narrow exposure rim follows the actual perforation SDF in addition to the
+wide leak. It shares Strength and the saved seed; no new wire/UI controls.
+Its peak is 0.012 mm onto the film, Gaussian sigma 0.012 mm plus the existing
+0.31-pixel footprint, and amplitude .80×strength×seeded per-hole/local weight.
+The weight varies around each outline and between holes instead of drawing
+a uniform RGB stroke. It uses the same 2800K spectral exposure and subsequent
+film/print/scan response. The rim remains narrow when Spread changes; it is
+not cut off by the wide leak's inner-edge distance window. Hole interiors
+still receive no added exposure. Dimensions/intensity are visual estimates
+from the supplied overscan reference, not an identified physical mechanism.

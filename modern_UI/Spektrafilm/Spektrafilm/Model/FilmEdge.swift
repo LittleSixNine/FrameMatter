@@ -100,7 +100,7 @@ struct FilmEdgeSettings: Codable, Equatable, Sendable {
     var format = FilmEdgeFormat.f135
     var view = FilmEdgeView.strip
     var gate = FilmEdgeGate.auto
-    var holes = FilmEdgeHoles.white
+    var holes = FilmEdgeHoles.black
     /// **The body.** Per user, not per photo: the same camera shot the roll.
     /// A new frame takes `FilmEdgeSettings.bodySeed`.
     var cameraSeed = 1

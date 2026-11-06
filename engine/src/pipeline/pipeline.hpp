@@ -287,7 +287,7 @@ struct OverscanLayout {
     bool holes_light = false;
     bool carrier_open = false;            // past the film's long edges: the scan's light, not a black carrier
     bool carrier_none = false;            // no carrier: the canvas ends at the film's edge
-    double light_rgb[3] = {1, 1, 1};      // the backlight through the scan, linear output RGB
+    double light_rgb[3] = {1, 1, 1};      // hole backlight / near-black backing, linear output RGB
     double light_fall = 0, light_dir = 0; // the light panel's falloff across the canvas
     uint32_t perf_seed = 0;               // per-hole punch tolerances, burrs, wall slant
     // RFC-032 §31: the base's thickness at a perforation's cut wall

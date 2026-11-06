@@ -57,8 +57,8 @@ enum OsP : int {
     P_CARRIER = 199,
     P_LEAKS = 200,          // up to kMaxLeaks x (s, side, amp, sigma_s, sigma_t)
     P_PAIR_ADV = 260,       // > 0: the same gate exposed again this far along (a half-frame pair)
-    P_SCRATCH_STRENGTH = 261, P_SCRATCH_LONG, P_SCRATCH_SHORT, P_SCRATCH_SEED,
-    P_COUNT = 265
+    P_SCRATCH_STRENGTH = 261, P_SCRATCH_LONG, P_SCRATCH_SEED, P_SCRATCH_EDGE, P_PERF_LEAK, P_PERF_LEAK_SPREAD,
+    P_COUNT = 267
 };
 constexpr int kMaxLeaks = 12;
 // How far past each long edge of the film a strip scan reaches, mm.
@@ -855,7 +855,20 @@ bool Pipeline::overscan_layout(uint32_t frame_w, uint32_t frame_h, std::string& 
     // its axis -- a band of thinning base, brown through the orange mask.
     {
         Rng rl(stream(frm ^ (cam << 32), kFrame, 3));
-        for (double& c : L.light_rgb) c = L.holes_light ? 1.0 : 0.0;
+        if (L.holes_light) {
+            for (double& c : L.light_rgb) c = 1.0;
+        } else {
+            // Display-referred sRGB(4,10,13), converted into the linear output space.
+            Mat3 backing_to_output;
+            if (!colour_->matrix_RGB_to_RGB("sRGB", params_.io.output_color_space, "CAT02", backing_to_output, error)) return false;
+            const double backing[3] = {colour_->cctf_decode(4.0 / 255.0, "sRGB"),
+                                       colour_->cctf_decode(10.0 / 255.0, "sRGB"),
+                                       colour_->cctf_decode(13.0 / 255.0, "sRGB")};
+            for (int row = 0; row < 3; ++row)
+                L.light_rgb[row] = backing_to_output.m[row][0] * backing[0] +
+                                   backing_to_output.m[row][1] * backing[1] +
+                                   backing_to_output.m[row][2] * backing[2];
+        }
         L.light_fall = 0.0;
         L.light_dir = 0.0;
         L.perf_seed = uint32_t(rl.next() & 0xFFFFFFu);
@@ -904,7 +917,9 @@ void Pipeline::overscan_params_block(std::vector<float>& P) const {
     if (scratches.active && (L.format == "135" || L.format == "135_half")) {
         P[P_SCRATCH_STRENGTH] = float(scratches.strength);
         P[P_SCRATCH_LONG] = float(scratches.long_lines);
-        P[P_SCRATCH_SHORT] = float(scratches.short_scuffs);
+        P[P_SCRATCH_EDGE] = float(scratches.edge_marks);
+        P[P_PERF_LEAK] = float(scratches.leak_strength);
+        P[P_PERF_LEAK_SPREAD] = float(scratches.leak_spread);
         P[P_SCRATCH_SEED] = float(uint32_t(scratches.seed) & 0xFFFFFFu);
     }
     P[P_CW] = float(L.canvas_w); P[P_CH] = float(L.canvas_h); P[P_PX] = float(L.px);

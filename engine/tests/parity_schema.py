@@ -231,8 +231,10 @@ NATIVE_ONLY = {
     },
     "scratch_active": {"path": "film_render.scratches.active", "type": "bool", "layer": "shoot", "default": False, "live": False, "range": None},
     "scratch_long_lines": {"path": "film_render.scratches.long_lines", "type": "float", "layer": "shoot", "default": 0.4, "live": False, "range": [0, 1]},
-    "scratch_short_scuffs": {"path": "film_render.scratches.short_scuffs", "type": "float", "layer": "shoot", "default": 0.25, "live": False, "range": [0, 1]},
     "scratch_strength": {"path": "film_render.scratches.strength", "type": "float", "layer": "shoot", "default": 0.35, "live": False, "range": [0, 1]},
+    "scratch_edge_marks": {"path": "film_render.scratches.edge_marks", "type": "float", "layer": "shoot", "default": 0.35, "live": False, "range": [0, 1]},
+    "scratch_leak_strength": {"path": "film_render.scratches.leak_strength", "type": "float", "layer": "shoot", "default": 0.0, "live": False, "range": [0, 1]},
+    "scratch_leak_spread": {"path": "film_render.scratches.leak_spread", "type": "float", "layer": "shoot", "default": 0.5, "live": False, "range": [0, 1]},
     "scratch_seed": {"path": "film_render.scratches.seed", "type": "int", "layer": "shoot", "default": 1, "live": False, "range": [1, 2147483647]},
     "date_imprint_active": {
         "path": "film_render.date_imprint.active", "type": "bool", "layer": "shoot",

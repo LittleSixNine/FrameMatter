@@ -3,8 +3,10 @@ import Foundation
 struct ScratchSettings: Codable, Equatable, Sendable {
     var active = false
     var longLines = 0.4
-    var shortScuffs = 0.25
     var strength = 0.35
+    var edgeMarks = 0.35
+    var leakStrength = 0.0
+    var leakSpread = 0.5
     var seed = 1
     static let amountRange = 0.0...1.0
     static let seedRange = 1...Int(Int32.max)
@@ -15,8 +17,10 @@ struct ScratchSettings: Codable, Equatable, Sendable {
         let d = Self()
         active = try c.decodeIfPresent(Bool.self, forKey: .active) ?? d.active
         longLines = try c.decodeIfPresent(Double.self, forKey: .longLines) ?? d.longLines
-        shortScuffs = try c.decodeIfPresent(Double.self, forKey: .shortScuffs) ?? d.shortScuffs
         strength = try c.decodeIfPresent(Double.self, forKey: .strength) ?? d.strength
+        edgeMarks = try c.decodeIfPresent(Double.self, forKey: .edgeMarks) ?? d.edgeMarks
+        leakStrength = try c.decodeIfPresent(Double.self, forKey: .leakStrength) ?? d.leakStrength
+        leakSpread = try c.decodeIfPresent(Double.self, forKey: .leakSpread) ?? d.leakSpread
         seed = try c.decodeIfPresent(Int.self, forKey: .seed) ?? d.seed
     }
     func available(on edge: FilmEdgeSettings) -> Bool {
@@ -28,8 +32,10 @@ struct ScratchSettings: Codable, Equatable, Sendable {
         guard on else { return fields }
         fields += [
             ("scratch_long_lines", .double(longLines.clamped(to: Self.amountRange)), .shoot),
-            ("scratch_short_scuffs", .double(shortScuffs.clamped(to: Self.amountRange)), .shoot),
             ("scratch_strength", .double(strength.clamped(to: Self.amountRange)), .shoot),
+            ("scratch_edge_marks", .double(edgeMarks.clamped(to: Self.amountRange)), .shoot),
+            ("scratch_leak_strength", .double(leakStrength.clamped(to: Self.amountRange)), .shoot),
+            ("scratch_leak_spread", .double(leakSpread.clamped(to: Self.amountRange)), .shoot),
             ("scratch_seed", .double(Double(seed.clamped(to: Self.seedRange))), .shoot),
         ]
         return fields

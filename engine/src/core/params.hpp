@@ -244,7 +244,8 @@ struct DateImprintParams {
 
 struct ScratchParams {
     bool active = false;
-    double long_lines = 0.4, short_scuffs = 0.25, strength = 0.35;
+    double long_lines = 0.4, strength = 0.35, edge_marks = 0.35;
+    double leak_strength = 0.0, leak_spread = 0.5;
     int seed = 1;
 };
 

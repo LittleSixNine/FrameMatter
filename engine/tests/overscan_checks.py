@@ -249,16 +249,18 @@ def main():
             band = rgba[int(round(2.3 / px)):int(round(4.5 / px)), :, :3].astype(float).mean(-1)
             return np.percentile(band, 99), np.percentile(band, 50)
         hi_light, _ = perf_values(on)
-        printed = render(e, img, dict(S135, overscan_holes="black"))
+        printed = render(e, img, dict(S135, overscan_holes="black", output_color_space="sRGB"))
         hi_print, _ = perf_values(printed)
         check("holes = white shows the light through the perforations", hi_light > 0.9 * 65535, f"{hi_light:.0f}")
         check("holes = black leaves them dark", hi_print < 0.25 * 65535, f"{hi_print:.0f}")
-        # black holes are still holes: darker than the rebate around them
+        # The owner chose sRGB(4,10,13); it need not be half as dark as every film rebate.
         bb = printed[int(round(2.3 / px)):int(round(4.5 / px)), :, :3].astype(float)
-        bl = bb.mean(-1)
-        hole_dark, rebate = np.percentile(bl, 1), np.median(bl)
-        check("black holes read: darker than the rebate", hole_dark < 0.5 * rebate,
-              f"hole {hole_dark:.0f} vs rebate {rebate:.0f}")
+        lit = on[int(round(2.3 / px)):int(round(4.5 / px)), :, :3].astype(float)
+        interior = lit.min(-1) > 0.98 * 65535
+        backing = np.median(bb[interior], axis=0)
+        check("black backing matches near-black sRGB(4,10,13)",
+              interior.sum() > 1000 and np.abs(backing - np.array([4,10,13]) * 257).max() <= 6,
+              f"8-bit sRGB {np.round(backing / 257, 2)}")
 
         # A hole is white inside (RFC-032 §30.5); its edges carry the
         # randomness, and no two holes' edges are alike.

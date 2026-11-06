@@ -16,13 +16,18 @@ struct ScratchSection: View {
                      note: settings.active ? nil : L(.edgeOff), toggle: bind(\.active),
                      toggleHelp: L("Fine wear on the film border", zh: "在片边添加细微磨损")) {
             RailRows {
-                amount(L("Long lines", zh: "长划痕"), \.longLines, zero: 0.4)
-                amount(L("Short scuffs", zh: "短擦痕"), \.shortScuffs, zero: 0.25)
+                RailSubhead(L("Sprocket friction scratches", zh: "齿孔摩擦划痕"))
+                amount(L("Amount", zh: "数量"), \.longLines, zero: 0.4)
                 amount(L("Strength", zh: "强度"), \.strength, zero: 0.35)
+                RailSubhead(L("Perforation edge marks", zh: "齿孔边缘痕迹"))
+                amount(L("Strength", zh: "强度"), \.edgeMarks, zero: 0.35)
+                RailSubhead(L("Perforation light leaks", zh: "齿孔漏光"))
+                amount(L("Strength", zh: "强度"), \.leakStrength, zero: 0)
+                amount(L("Spread", zh: "扩散范围"), \.leakSpread, zero: 0.5)
                 HStack(spacing: 0) {
                     RowLabel(L("Pattern", zh: "样式"))
                     DiceButton(title: L("Another", zh: "换一组"),
-                               help: L("Change scratches without changing the film edge", zh: "只更换划痕分布"), fill: true) {
+                               help: L("Change scratches, edge marks and light leaks while keeping hole centres and pitch", zh: "更换划痕、孔缘痕迹和漏光分布，保留齿孔中心与排列"), fill: true) {
                         var p = session.params
                         p.scratches.seed = FilmEdgeSection.another(than: settings.seed, in: ScratchSettings.seedRange)
                         session.params = p
@@ -33,8 +38,8 @@ struct ScratchSection: View {
             .rowEnabled(settings.active && available,
                         because: available ? L("Switch Scratches on in its header.", zh: "先在标题栏开启划痕。")
                             : L("Enable 135 or half-frame Film Edge first.", zh: "需先开启 135 或半格片边。"))
-            Text(available ? L("Film border only. Fine parallel lines and sparse scuffs; no dust. Thickness is fixed in film units.",
-                   zh: "仅作用于片边：细长划痕与少量局部擦痕。粗细随胶片尺寸缩放，暂不包含灰尘。")
+            Text(available ? L("Film leader fixed left. Another changes all patterns. Wide light leaks may reach the picture.",
+                   zh: "片头固定向左；“换一组”更换所有痕迹。漏光范围较大时会进入画幅。")
                 : L("Enable 135 or half-frame Film Edge first.", zh: "需先开启 135 或半格片边，才能显示划痕。"))
                 .font(Theme.Font.caption).foregroundStyle(Theme.Ink.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
