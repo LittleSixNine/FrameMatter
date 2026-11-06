@@ -4,6 +4,26 @@ import XCTest
 
 @MainActor
 final class ScratchTests: XCTestCase {
+    func testDustDefaultsPersistenceAndWire() throws {
+        let old = try JSONDecoder().decode(ScratchSettings.self, from: Data("{}".utf8))
+        XCTAssertEqual(old.dustAmount, 0)
+        XCTAssertEqual(old.dustSize, 0.5)
+        XCTAssertEqual(old.dustStrength, 0.5)
+        XCTAssertFalse(old.dustFullFrame)
+        var p = FilmParams.default
+        p.filmEdge.active = true; p.scratches.active = true
+        p.scratches.dustAmount = 0.7; p.scratches.dustSize = 0.3
+        p.scratches.dustStrength = 0.8; p.scratches.dustFullFrame = true
+        XCTAssertEqual(try JSONDecoder().decode(FilmParams.self, from: JSONEncoder().encode(p)), p)
+        XCTAssertEqual(p.fullDelta["scratch_dust_amount"], .double(0.7))
+        XCTAssertEqual(p.fullDelta["scratch_dust_size"], .double(0.3))
+        XCTAssertEqual(p.fullDelta["scratch_dust_strength"], .double(0.8))
+        XCTAssertEqual(p.fullDelta["scratch_dust_full_frame"], .bool(true))
+        let before = p
+        p.scratches.dustAmount = 0.9
+        XCTAssertEqual(p.delta(from: before).layers, [.shoot])
+    }
+
     func testOldEditsAndScratchPersistence() throws {
         let old = try JSONDecoder().decode(ScratchSettings.self, from: Data("{}".utf8))
         XCTAssertFalse(old.active)

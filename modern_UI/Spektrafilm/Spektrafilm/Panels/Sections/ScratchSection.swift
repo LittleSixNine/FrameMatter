@@ -14,7 +14,7 @@ struct ScratchSection: View {
                          session.params = p
                      },
                      note: settings.active ? nil : L(.edgeOff), toggle: bind(\.active),
-                     toggleHelp: L("Fine wear on the film border", zh: "在片边添加细微磨损")) {
+                     toggleHelp: L("Film wear and negative-scan dust", zh: "在胶片上添加磨损和灰尘")) {
             RailRows {
                 RailSubhead(L("Sprocket friction scratches", zh: "齿孔摩擦划痕"))
                 amount(L("Amount", zh: "数量"), \.longLines, zero: 0.4)
@@ -24,10 +24,23 @@ struct ScratchSection: View {
                 RailSubhead(L("Perforation light leaks", zh: "齿孔漏光"))
                 amount(L("Strength", zh: "强度"), \.leakStrength, zero: 0)
                 amount(L("Spread", zh: "扩散范围"), \.leakSpread, zero: 0.5)
+                RailSubhead(L("Dust", zh: "灰尘"))
+                amount(L("Amount", zh: "数量"), \.dustAmount, zero: 0)
+                amount(L("Size", zh: "大小"), \.dustSize, zero: 0.5)
+                amount(L("Strength", zh: "强度"), \.dustStrength, zero: 0.5)
+                HStack(spacing: 0) {
+                    RowLabel(L("Area", zh: "范围"))
+                    Picker(L("Dust area", zh: "灰尘范围"), selection: bind(\.dustFullFrame)) {
+                        Text(L("Border only", zh: "仅片边")).tag(false)
+                        Text(L("Whole film", zh: "全片")).tag(true)
+                    }
+                    .labelsHidden().pickerStyle(.menu)
+                }
+                .frame(height: Theme.Metric.rowHeight)
                 HStack(spacing: 0) {
                     RowLabel(L("Pattern", zh: "样式"))
                     DiceButton(title: L("Another", zh: "换一组"),
-                               help: L("Change scratches, edge marks and light leaks while keeping hole centres and pitch", zh: "更换划痕、孔缘痕迹和漏光分布，保留齿孔中心与排列"), fill: true) {
+                               help: L("Change scratches, edge marks, light leaks and dust while keeping hole centres and pitch", zh: "更换划痕、孔缘痕迹、漏光及灰尘分布，保留齿孔中心与排列"), fill: true) {
                         var p = session.params
                         p.scratches.seed = FilmEdgeSection.another(than: settings.seed, in: ScratchSettings.seedRange)
                         session.params = p

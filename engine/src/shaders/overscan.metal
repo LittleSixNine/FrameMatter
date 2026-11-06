@@ -32,8 +32,8 @@ enum : uint {
     P_CARRIER = 199,
     P_LEAKS = 200,          // up to 12 x (s, side, amp, sigma_s, sigma_t)
     P_PAIR_ADV = 260,       // > 0: the same gate exposed again this far along (a half-frame pair)
-    P_SCRATCH_STRENGTH = 261, P_SCRATCH_LONG, P_SCRATCH_SEED, P_SCRATCH_EDGE, P_PERF_LEAK, P_PERF_LEAK_SPREAD, P_FULL_WIDTH,
-    P_COUNT = 268
+    P_SCRATCH_STRENGTH = 261, P_SCRATCH_LONG, P_SCRATCH_SEED, P_SCRATCH_EDGE, P_PERF_LEAK, P_PERF_LEAK_SPREAD, P_FULL_WIDTH, P_DUST_AMOUNT, P_DUST_SIZE, P_DUST_STRENGTH, P_DUST_FULL_FRAME,
+    P_COUNT = 272
 };
 constant uint kQStride = 10u;
 
@@ -407,6 +407,56 @@ static float scratch_mask(float2 st, device const float* P) {
     return mask;
 }
 
+// Polygon silhouettes are sampled from upstream real-scan Dust annotations.
+#include "dust_shapes.h"
+static float dust_outline(float2 q, uint shape) {
+    float d2 = 1e6f;
+    bool inside = false;
+    const uint count = kDustCounts[shape];
+    for (uint i = 0, j = count - 1; i < count; j = i++) {
+        const float2 a = kDustShapes[shape][i], b = kDustShapes[shape][j];
+        const float2 e = b - a, v = q - a;
+        const float2 near = v - e * clamp(dot(v, e) / max(dot(e, e), 1e-8f), 0.0f, 1.0f);
+        d2 = min(d2, dot(near, near));
+        if ((a.y > q.y) != (b.y > q.y)) {
+            if (q.x < a.x + (q.y - a.y) * (b.x - a.x) / (b.y - a.y)) inside = !inside;
+        }
+    }
+    return (inside ? -1.0f : 1.0f) * sqrt(d2);
+}
+
+static float dust_mask(float2 st, device const float* P) {
+    if (P[P_DUST_FULL_FRAME] < 0.5f) {
+        if (P[P_FULL_WIDTH] > 0.5f) {
+            if (min(st.y, P[P_FILM_W] - st.y) > P[P_PERF_EDGE] + P[P_PERF_H] + 0.35f) return 0.0f;
+        } else {
+            float2 other = st; other.x -= P[P_PAIR_ADV];
+            if (min(gate_sdf(st, P), P[P_PAIR_ADV] > 0.0f ? gate_sdf(other, P) : 1e6f) < 0.10f) return 0.0f;
+        }
+    }
+    const uint seed = uint(P[P_SCRATCH_SEED]) ^ 0xD057u;
+    const int2 cell = int2(floor(st));
+    float mask = 0.0f;
+    // Physical 1 mm cells keep positions stable across preview/export sizes.
+    for (int y = -1; y <= 1; ++y) for (int x = -1; x <= 1; ++x) {
+        const int2 id = cell + int2(x, y);
+        const uint h = hash_u(uint(id.x) * 0x9E3779B9u ^ uint(id.y) * 0x85EBCA6Bu ^ seed);
+        const float cluster = 0.25f + 0.75f * value_noise(float(id.x) / 5.0f, seed ^ uint(id.y / 5));
+        if (hash_f(0, h) >= 0.22f * P[P_DUST_AMOUNT] * cluster) continue;
+        const float2 center = float2(id) + float2(hash_f(1, h), hash_f(2, h));
+        const float radius = (0.014f + 0.10f * pow(hash_f(3, h), 3.0f)) * (0.4f + 1.6f * P[P_DUST_SIZE]);
+        const float2 v = st - center;
+        if (length(v) > 1.415f * radius + P[P_PX] + 0.01f) continue;
+        const float angle = 6.2831853f * hash_f(4, h);
+        const float2 q = float2(cos(angle) * v.x + sin(angle) * v.y, -sin(angle) * v.x + cos(angle) * v.y) / radius;
+        const float d = dust_outline(q, h % 16u) * radius;
+        const float sigma = sqrt(0.000004f + 0.0961f * P[P_PX] * P[P_PX]);
+        const float cover = 0.5f - 0.5f * erf_as(d / (1.41421356f * sigma));
+        mask = max(mask, cover * (0.5f + 0.45f * hash_f(5, h)));
+    }
+    return mask;
+}
+
 // ④: where there is no film -- the perforations, and outside the strip --
 // the negative's density goes to the cmy that cancels this film's base, so
 // the enlarger or the scanner sees clear light.
@@ -424,6 +474,11 @@ kernel void spk_overscan_film_present(device const float* cmy [[buffer(0)]],
         // shortcut: neutral density approximates scratch obstruction; calibrate against measured wear before claiming a physical model.
         const float wear = scratch_mask(canvas_to_film(float(i % cw), float(i / cw), P), P);
         c += 0.90f * P[P_SCRATCH_STRENGTH] * wear;
+    }
+    if (P[P_DUST_AMOUNT] > 0.0f && P[P_DUST_STRENGTH] > 0.0f && a > 0.999f) {
+        const float cover = dust_mask(canvas_to_film(float(i % cw), float(i / cw), P), P);
+        // shortcut: neutral CMY attenuation reuses the negative/print path; not calibrated scanner spectral dust.
+        c += -log10(max(1.0f - 0.98f * P[P_DUST_STRENGTH] * cover, 0.02f));
     }
     const float3 hole = float3(P[P_HOLE_C], P[P_HOLE_M], P[P_HOLE_Y]);
     const float3 r3 = a * c + (1.0f - a) * hole;

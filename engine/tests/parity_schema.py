@@ -235,6 +235,10 @@ NATIVE_ONLY = {
     "scratch_edge_marks": {"path": "film_render.scratches.edge_marks", "type": "float", "layer": "shoot", "default": 0.35, "live": False, "range": [0, 1]},
     "scratch_leak_strength": {"path": "film_render.scratches.leak_strength", "type": "float", "layer": "shoot", "default": 0.0, "live": False, "range": [0, 1]},
     "scratch_leak_spread": {"path": "film_render.scratches.leak_spread", "type": "float", "layer": "shoot", "default": 0.5, "live": False, "range": [0, 1]},
+    "scratch_dust_amount": {"path": "film_render.scratches.dust_amount", "type": "float", "layer": "shoot", "default": 0.0, "live": False, "range": [0, 1]},
+    "scratch_dust_size": {"path": "film_render.scratches.dust_size", "type": "float", "layer": "shoot", "default": 0.5, "live": False, "range": [0, 1]},
+    "scratch_dust_strength": {"path": "film_render.scratches.dust_strength", "type": "float", "layer": "shoot", "default": 0.5, "live": False, "range": [0, 1]},
+    "scratch_dust_full_frame": {"path": "film_render.scratches.dust_full_frame", "type": "bool", "layer": "shoot", "default": False, "live": False, "range": None},
     "scratch_seed": {"path": "film_render.scratches.seed", "type": "int", "layer": "shoot", "default": 1, "live": False, "range": [1, 2147483647]},
     "date_imprint_active": {
         "path": "film_render.date_imprint.active", "type": "bool", "layer": "shoot",

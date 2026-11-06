@@ -246,6 +246,8 @@ struct ScratchParams {
     bool active = false;
     double long_lines = 0.4, strength = 0.35, edge_marks = 0.35;
     double leak_strength = 0.0, leak_spread = 0.5;
+    double dust_amount = 0.0, dust_size = 0.5, dust_strength = 0.5;
+    bool dust_full_frame = false;
     int seed = 1;
 };
 

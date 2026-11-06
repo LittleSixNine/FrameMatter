@@ -1331,3 +1331,26 @@ full renders and reprints use the same layout and crop mapping.
 
 The closed format pill reads Full / 全宽; the menu and tooltip keep the
 complete 135 full width (6×7) name to fit the narrow rail at larger UI scales.
+
+### 18.5 Negative-scan dust
+
+The Scratches card contains a Dust subsection with Amount, Size, Strength
+(0–100%) and Area (border only / whole film). App properties `dustAmount=0`,
+`dustSize=.5`, `dustStrength=.5`, `dustFullFrame=false` decode optionally for
+old edits. Native fields `scratch_dust_amount`, `scratch_dust_size`,
+`scratch_dust_strength` are shoot, non-live floats 0–1;
+`scratch_dust_full_frame` is a shoot, non-live bool. They share `scratch_seed`
+and the existing full/half/full-width 135 availability rule. Zero amount or
+strength bypasses dust exactly. Amount thresholds a stable candidate population.
+
+Shapes derive from sixteen MIT FilmDamageSimulator real-scan Dust annotation
+polygons. Sparse clustered placement, rotation and radius use film millimetres,
+so resizing does not reroll the pattern. Radius is (.014 + .10*u^3) * (.4+1.6*size)
+mm; values are visual estimates. Border-only excludes the picture (including both
+half-frame gates); full-width uses the perforation bands. Whole-film includes
+the picture. Hole interiors and carrier remain excluded in both modes.
+
+The film-present stage adds -log10(1-opacity*coverage) neutral optical density
+before print/scanner processing, producing pale negative-dust marks. It reuses
+the existing pipeline rather than painting RGB dots. Neutral CMY attenuation is
+an approximation, not a calibrated scanner-only spectral or defocus simulation.

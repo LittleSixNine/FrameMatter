@@ -168,6 +168,10 @@ const SchemaField kFields[] = {
     {"scratch_edge_marks",      "film_render.scratches.edge_marks",     F, SHOOT, true, 0, 1, false},
     {"scratch_leak_strength",   "film_render.scratches.leak_strength",  F, SHOOT, true, 0, 1, false},
     {"scratch_leak_spread",     "film_render.scratches.leak_spread",    F, SHOOT, true, 0, 1, false},
+    {"scratch_dust_amount", "film_render.scratches.dust_amount", F, SHOOT, true, 0, 1, false},
+    {"scratch_dust_size", "film_render.scratches.dust_size", F, SHOOT, true, 0, 1, false},
+    {"scratch_dust_strength", "film_render.scratches.dust_strength", F, SHOOT, true, 0, 1, false},
+    {"scratch_dust_full_frame", "film_render.scratches.dust_full_frame", B, SHOOT, false, 0, 0, false},
     {"scratch_seed",            "film_render.scratches.seed",           I, SHOOT, true, 1, 2147483647, false},
     {"date_imprint_active",      "film_render.date_imprint.active",       B, SHOOT, false, 0, 0, false},
     {"date_imprint_text",        "film_render.date_imprint.text",         S, SHOOT, false, 0, 0, false},
@@ -246,6 +250,9 @@ double* float_slot(Params& p, const std::string& path) {
     if (path == "film_render.scratches.edge_marks") return &p.film_render.scratches.edge_marks;
     if (path == "film_render.scratches.leak_strength") return &p.film_render.scratches.leak_strength;
     if (path == "film_render.scratches.leak_spread") return &p.film_render.scratches.leak_spread;
+    if (path == "film_render.scratches.dust_amount") return &p.film_render.scratches.dust_amount;
+    if (path == "film_render.scratches.dust_size") return &p.film_render.scratches.dust_size;
+    if (path == "film_render.scratches.dust_strength") return &p.film_render.scratches.dust_strength;
     if (path == "film_render.scratches.strength") return &p.film_render.scratches.strength;
     if (path == "camera.exposure_compensation_ev") return &p.camera.exposure_compensation_ev;
     if (path == "camera.film_format_mm") return &p.camera.film_format_mm;
@@ -302,6 +309,7 @@ double* float_slot(Params& p, const std::string& path) {
 }
 
 bool* bool_slot(Params& p, const std::string& path) {
+    if (path == "film_render.scratches.dust_full_frame") return &p.film_render.scratches.dust_full_frame;
     if (path == "film_render.scratches.active") return &p.film_render.scratches.active;
     if (path == "camera.auto_exposure") return &p.camera.auto_exposure;
     if (path == "film_render.halation.active") return &p.film_render.halation.active;
