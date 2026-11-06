@@ -57,7 +57,8 @@ enum OsP : int {
     P_CARRIER = 199,
     P_LEAKS = 200,          // up to kMaxLeaks x (s, side, amp, sigma_s, sigma_t)
     P_PAIR_ADV = 260,       // > 0: the same gate exposed again this far along (a half-frame pair)
-    P_COUNT = 261
+    P_SCRATCH_STRENGTH = 261, P_SCRATCH_LONG, P_SCRATCH_SHORT, P_SCRATCH_SEED,
+    P_COUNT = 265
 };
 constexpr int kMaxLeaks = 12;
 // How far past each long edge of the film a strip scan reaches, mm.
@@ -899,6 +900,13 @@ bool Pipeline::overscan_layout(uint32_t frame_w, uint32_t frame_h, std::string& 
 void Pipeline::overscan_params_block(std::vector<float>& P) const {
     const OverscanLayout& L = overscan_;
     P.assign(P_COUNT, 0.0f);
+    const auto& scratches = params_.film_render.scratches;
+    if (scratches.active && (L.format == "135" || L.format == "135_half")) {
+        P[P_SCRATCH_STRENGTH] = float(scratches.strength);
+        P[P_SCRATCH_LONG] = float(scratches.long_lines);
+        P[P_SCRATCH_SHORT] = float(scratches.short_scuffs);
+        P[P_SCRATCH_SEED] = float(uint32_t(scratches.seed) & 0xFFFFFFu);
+    }
     P[P_CW] = float(L.canvas_w); P[P_CH] = float(L.canvas_h); P[P_PX] = float(L.px);
     P[P_FW] = float(L.frame_w); P[P_FH] = float(L.frame_h);
     P[P_A00] = float(L.A[0]); P[P_A01] = float(L.A[1]); P[P_A10] = float(L.A[2]); P[P_A11] = float(L.A[3]);

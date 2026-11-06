@@ -242,6 +242,12 @@ struct DateImprintParams {
     double inset_y = 2.4;            // mm from the gate's top/bottom to the text (frame placement)
 };
 
+struct ScratchParams {
+    bool active = false;
+    double long_lines = 0.4, short_scuffs = 0.25, strength = 0.35;
+    int seed = 1;
+};
+
 struct FilmRenderParams {
     double density_curve_gamma = 1.0;
     GrainParams grain;
@@ -250,6 +256,7 @@ struct FilmRenderParams {
     GlareParams glare;
     OverscanParams overscan;
     DateImprintParams date_imprint;
+    ScratchParams scratches;
 };
 
 // RFC-024: the virtual contrast mask, a neutral spatial gain on the

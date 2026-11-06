@@ -34,6 +34,7 @@ struct LeftPanel: View {
         // Under Film, before Print: both belong to the film and depend on
         // neither the paper nor the DI (2026-10-01 drawings).
         s.append((FilmEdgeSection.key, AnyView(FilmEdgeSection(session: session))))
+        s.append((ScratchSection.key, AnyView(ScratchSection(session: session))))
         s.append((DateBackSection.key, AnyView(DateBackSection(session: session))))
         s.append(("print", AnyView(PrintProfileSection(session: session))))
         if !isPair { s.append(("crop", AnyView(CropSection(session: session)))) }

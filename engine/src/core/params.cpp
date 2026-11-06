@@ -162,6 +162,11 @@ const SchemaField kFields[] = {
     {"overscan_f_number",        "film_render.overscan.f_number",         F, SHOOT, true, 0.0, 64.0, false},
     {"overscan_gate",            "film_render.overscan.gate",             S, SHOOT, false, 0, 0, false},
     {"overscan_holes",           "film_render.overscan.holes",            S, SHOOT, false, 0, 0, false},
+    {"scratch_active",          "film_render.scratches.active",         B, SHOOT, false, 0, 0, false},
+    {"scratch_long_lines",      "film_render.scratches.long_lines",     F, SHOOT, true, 0, 1, false},
+    {"scratch_short_scuffs",    "film_render.scratches.short_scuffs",   F, SHOOT, true, 0, 1, false},
+    {"scratch_strength",        "film_render.scratches.strength",       F, SHOOT, true, 0, 1, false},
+    {"scratch_seed",            "film_render.scratches.seed",           I, SHOOT, true, 1, 2147483647, false},
     {"date_imprint_active",      "film_render.date_imprint.active",       B, SHOOT, false, 0, 0, false},
     {"date_imprint_text",        "film_render.date_imprint.text",         S, SHOOT, false, 0, 0, false},
     {"date_imprint_placement",   "film_render.date_imprint.placement",    S, SHOOT, false, 0, 0, false},
@@ -235,6 +240,9 @@ const SchemaField* find_field(const std::string& name) {
 // error here and a test failure there, never a silently ignored slider.
 
 double* float_slot(Params& p, const std::string& path) {
+    if (path == "film_render.scratches.long_lines") return &p.film_render.scratches.long_lines;
+    if (path == "film_render.scratches.short_scuffs") return &p.film_render.scratches.short_scuffs;
+    if (path == "film_render.scratches.strength") return &p.film_render.scratches.strength;
     if (path == "camera.exposure_compensation_ev") return &p.camera.exposure_compensation_ev;
     if (path == "camera.film_format_mm") return &p.camera.film_format_mm;
     if (path == "camera.lens_blur_um") return &p.camera.lens_blur_um;
@@ -290,6 +298,7 @@ double* float_slot(Params& p, const std::string& path) {
 }
 
 bool* bool_slot(Params& p, const std::string& path) {
+    if (path == "film_render.scratches.active") return &p.film_render.scratches.active;
     if (path == "camera.auto_exposure") return &p.camera.auto_exposure;
     if (path == "film_render.halation.active") return &p.film_render.halation.active;
     if (path == "film_render.halation.antihalation_removed")
@@ -346,6 +355,7 @@ std::string* str_slot(Params& p, const std::string& path) {
 }
 
 int* int_slot(Params& p, const std::string& path) {
+    if (path == "film_render.scratches.seed") return &p.film_render.scratches.seed;
     if (path == "io.geometry.quarter_turns") return &p.io.geometry.quarter_turns;
     if (path == "io.preview_long_edge") return &p.io.preview_long_edge;
     if (path == "settings.strip_rows") return &p.settings.strip_rows;

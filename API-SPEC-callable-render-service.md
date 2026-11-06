@@ -1186,3 +1186,43 @@ face's default. Explicit saved sizes are preserved; missing dot sizes decode
 to 0.60. The common native size default remains 0.40; the app sends its
 face-specific size explicitly. Existing dot edits now use their saved shared
 field gap (or 1.20H if missing).
+
+
+## 18. Film-border scratches
+
+An independent Scratches card sits between Film Edge and Date Back. It stores
+`params.scratches` with `active=false`, `longLines=.4`, `shortScuffs=.25`,
+`strength=.35`, `seed=1`. Missing sidecars decode to these defaults. Three
+0–100% controls adjust line density, scuff density and strength. Another picks
+an independent seed; saved edits and undo retain it. Full/half 135 Film Edge
+is required; other formats and Film Edge off send `scratch_active=false`.
+
+All fields are shoot, non-live. Native fields are `scratch_active` (bool),
+`scratch_long_lines`, `scratch_short_scuffs`, `scratch_strength` (floats, 0–1),
+`scratch_seed` (int, 1–2147483647), under `film_render.scratches` (snake_case
+leaves). Defaults match the app; inactive controls do not enter render stamps.
+
+The existing overscan film-density mask stage adds up to 0.50 neutral CMY
+optical density times strength and a soft scratch mask. That is a provisional
+obstruction model, not calibrated refractive grooves or dye-layer removal.
+It runs before print/scanner processing and does not paint fixed RGB colours.
+Mask shape adapts FilmDamageSimulator's MIT line-scratch/envelope method using
+the existing seeded value noise, with small groups of long parallel lines
+near the picture and sparse short groups near selected perforations. Source
+and full MIT notice are in `engine/third_party/film_damage_simulator` and the
+app license bundle. No external images or runtime Python dependency.
+
+The mask is excluded from both picture gates (including half-frame pairs),
+perforations and outside-film areas; a 0.10 mm gate buffer and 0.07 mm hole
+buffer avoid the boundaries. Gaussian widths are 6–13 micrometres for long
+lines and 7–19 for short scuffs, with the existing pixel-footprint softness.
+Noise varies the opacity continuously, sometimes to zero. Fine details may
+be subtle in fit-to-window previews. No dust/hairs or central coloured bands.
+A zero strength or disabled effect bypasses the code exactly. The random
+layout is based on film coordinates, not raster dimensions, so it follows
+rotations and keeps its pattern in preview/full/export. Mask boundaries do
+not disable downstream global print/scan effects; the mask exclusion is not
+a promise of bit-identical picture pixels under every global effect.
+
+Scratch settings are not copied by the settings clipboard, matching the
+existing per-photo Film Edge and Date Back policy.

@@ -486,7 +486,7 @@ struct FilmParams: Codable, Equatable, Sendable {
         case filmFormatMM, filmFrame, filmSide, sideLengthMM, grainActive, halationActive
         case printBrightnessStops, yFilterShift, mFilterShift, glareActive, scanFilm
         case extendedDynamicRange, preflashExposure, contrastMask, sceneLatitude, effects, printEffects
-        case digitalIntermediate, filmEdge, dateBack
+        case digitalIntermediate, filmEdge, dateBack, scratches
         case sceneLatitudeOther, placementIsRight, pairSplit
     }
 
@@ -675,6 +675,7 @@ struct FilmParams: Codable, Equatable, Sendable {
     /// layer: both are exposure on the negative.
     var filmEdge = FilmEdgeSettings()
     var dateBack = DateBackSettings()
+    var scratches = ScratchSettings()
 
     init() {
         filmStock = "kodak_portra_400"
@@ -703,6 +704,7 @@ struct FilmParams: Codable, Equatable, Sendable {
         printEffects = true
         filmEdge = FilmEdgeSettings()
         dateBack = DateBackSettings()
+        scratches = ScratchSettings()
     }
 
     /// Keep sidecars written before EDR readable. Stored properties with
@@ -744,6 +746,7 @@ struct FilmParams: Codable, Equatable, Sendable {
         effects = try c.decodeIfPresent(EffectStrengths.self, forKey: .effects) ?? EffectStrengths()
         printEffects = try c.decodeIfPresent(Bool.self, forKey: .printEffects) ?? true
         filmEdge = try c.decodeIfPresent(FilmEdgeSettings.self, forKey: .filmEdge) ?? FilmEdgeSettings()
+        scratches = try c.decodeIfPresent(ScratchSettings.self, forKey: .scratches) ?? ScratchSettings()
         dateBack = try c.decodeIfPresent(DateBackSettings.self, forKey: .dateBack) ?? DateBackSettings()
     }
 
@@ -854,6 +857,7 @@ struct FilmParams: Codable, Equatable, Sendable {
         }
         fields += pairPlacementWire
         fields += filmEdge.wire
+        fields += scratches.wire(filmEdge: filmEdge)
         fields += dateBack.wire(filmEdge: filmEdge, scale: dateScale)
         return fields
     }

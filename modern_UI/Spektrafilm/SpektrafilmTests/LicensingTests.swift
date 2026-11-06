@@ -38,6 +38,7 @@ final class LicensingTests: XCTestCase {
         let expected = [
             "SpektraLab-GPL-3.0.txt": "GNU GENERAL PUBLIC LICENSE",
             "Profiles-and-LUTs-CC-BY-SA-4.0.txt": "Attribution-ShareAlike 4.0 International",
+            "FilmDamageSimulator-MIT.txt": "Copyright (c) 2022 Daniela Ivanova",
             "metal-cpp-Apache-2.0.txt": "Apache License",
         ]
         for licence in AboutWindow.licences {

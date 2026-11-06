@@ -32,7 +32,8 @@ enum : uint {
     P_CARRIER = 199,
     P_LEAKS = 200,          // up to 12 x (s, side, amp, sigma_s, sigma_t)
     P_PAIR_ADV = 260,       // > 0: the same gate exposed again this far along (a half-frame pair)
-    P_COUNT = 261
+    P_SCRATCH_STRENGTH = 261, P_SCRATCH_LONG, P_SCRATCH_SHORT, P_SCRATCH_SEED,
+    P_COUNT = 265
 };
 constant uint kQStride = 10u;
 
@@ -299,6 +300,61 @@ static float film_alpha(float2 st, device const float* P) {
     return a;
 }
 
+// Line mask/envelope adapted from FilmDamageSimulator's line_scratch;
+// see third_party/film_damage_simulator. Geometry uses this engine's film mm.
+static float scratch_line(float2 st, float2 center, float len, float width, float angle, uint seed) {
+    const float2 axis = float2(cos(angle), sin(angle));
+    const float2 q = st - center;
+    const float along = dot(q, axis);
+    if (abs(along) >= 0.5f * len) return 0.0f;
+    const float across = dot(q, float2(-axis.y, axis.x));
+    const float fade = smoothstep(0.0f, min(0.15f, len * 0.15f), 0.5f * len - abs(along));
+    const float envelope = smoothstep(0.25f, 0.65f, value_noise((along + len) / max(0.12f, len * 0.09f), seed));
+    return exp(-0.5f * across * across / (width * width)) * fade * envelope;
+}
+
+static float scratch_mask(float2 st, device const float* P) {
+    const uint seed = uint(P[P_SCRATCH_SEED]);
+    float2 other = st; other.x -= P[P_PAIR_ADV];
+    const float gate = min(gate_sdf(st, P), P[P_PAIR_ADV] > 0.0f ? gate_sdf(other, P) : 1e6f);
+    if (gate < 0.10f || st.y <= 0.0f || st.y >= P[P_FILM_W]) return 0.0f;
+    uint hole;
+    if (perf_sdf(st, P, hole) < 0.07f) return 0.0f;
+    const float along_span = P[P_GW] + P[P_PAIR_ADV];
+    float mask = 0.0f;
+    // Three neighboring tracks share a band, while their starts/ends differ.
+    for (int i = 0; i < 12; ++i) {
+        if (hash_f(i, seed ^ 0x101u) >= P[P_SCRATCH_LONG]) continue;
+        const int group = i / 3;
+        const bool top = hash_f(group, seed ^ 0x202u) < 0.5f;
+        const float offset = 0.28f + 0.65f * hash_f(group, seed ^ 0x303u) + float(i % 3) * 0.07f;
+        const float t = top ? P[P_GT0] - offset : P[P_GT0] + P[P_GH] + offset;
+        const float ss = P[P_GS0] + along_span * hash_f(i, seed ^ 0x404u);
+        const float len = along_span * (0.3f + 0.8f * hash_f(i, seed ^ 0x505u));
+        const float w = sqrt(pow(0.006f + 0.007f * hash_f(i, seed ^ 0x606u), 2.0f) + 0.0961f * P[P_PX] * P[P_PX]);
+        mask = max(mask, scratch_line(st, float2(ss,t), len, w, 0.0f, seed ^ uint(i + 1)));
+    }
+    // Select a few perforations, then place several short marks near each.
+    for (int group = 0; group < 8; ++group) {
+        if (hash_f(group, seed ^ 0x707u) >= 0.75f * P[P_SCRATCH_SHORT]) continue;
+        const bool top = hash_f(group, seed ^ 0x808u) < 0.5f;
+        const float pos = P[P_GS0] + along_span * hash_f(group, seed ^ 0x909u);
+        const float k = floor((pos - P[P_PERF_PHASE]) / P[P_PERF_PITCH]);
+        const float ss = P[P_PERF_PHASE] + k * P[P_PERF_PITCH] + 0.5f * P[P_PERF_W];
+        const float edge = P[P_PERF_EDGE] + P[P_PERF_H] + 0.20f;
+        const float tt = top ? edge : P[P_FILM_W] - edge;
+        for (int j = 0; j < 3; ++j) {
+            const int i = group * 3 + j;
+            const float2 center = float2(ss + 0.22f * (hash_f(i,seed ^ 0xAu) - 0.5f), tt + float(j) * 0.08f);
+            const float len = 0.2f + 1.2f * hash_f(i, seed ^ 0xBu);
+            const float w = sqrt(pow(0.007f + 0.012f * hash_f(i, seed ^ 0xCu), 2.0f) + 0.0961f * P[P_PX] * P[P_PX]);
+            const float angle = (hash_f(i, seed ^ 0xDu) - 0.5f) * 0.7f;
+            mask = max(mask, scratch_line(st, center, len, w, angle, seed ^ uint(i + 100)));
+        }
+    }
+    return mask;
+}
+
 // ④: where there is no film -- the perforations, and outside the strip --
 // the negative's density goes to the cmy that cancels this film's base, so
 // the enlarger or the scanner sees clear light.
@@ -311,7 +367,12 @@ kernel void spk_overscan_film_present(device const float* cmy [[buffer(0)]],
     if (i >= n[0]) return;
     const uint cw = uint(P[P_CW]);
     const float a = film_alpha(canvas_to_film(float(i % cw), float(i / cw), P), P);
-    const float3 c = float3(cmy[3u * i], cmy[3u * i + 1u], cmy[3u * i + 2u]);
+    float3 c = float3(cmy[3u * i], cmy[3u * i + 1u], cmy[3u * i + 2u]);
+    if (P[P_SCRATCH_STRENGTH] > 0.0f && P[P_PERFORATED] > 0.5f && a > 0.999f) {
+        // shortcut: neutral density approximates scratch obstruction; calibrate against measured wear before claiming a physical model.
+        const float wear = scratch_mask(canvas_to_film(float(i % cw), float(i / cw), P), P);
+        c += 0.50f * P[P_SCRATCH_STRENGTH] * wear;
+    }
     const float3 hole = float3(P[P_HOLE_C], P[P_HOLE_M], P[P_HOLE_Y]);
     const float3 r3 = a * c + (1.0f - a) * hole;
     out[3u * i] = r3.x;

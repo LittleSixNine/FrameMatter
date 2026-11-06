@@ -229,6 +229,11 @@ NATIVE_ONLY = {
         "path": "film_render.overscan.holes", "type": "str", "layer": "shoot",
         "default": 'white', "live": False, "range": None,
     },
+    "scratch_active": {"path": "film_render.scratches.active", "type": "bool", "layer": "shoot", "default": False, "live": False, "range": None},
+    "scratch_long_lines": {"path": "film_render.scratches.long_lines", "type": "float", "layer": "shoot", "default": 0.4, "live": False, "range": [0, 1]},
+    "scratch_short_scuffs": {"path": "film_render.scratches.short_scuffs", "type": "float", "layer": "shoot", "default": 0.25, "live": False, "range": [0, 1]},
+    "scratch_strength": {"path": "film_render.scratches.strength", "type": "float", "layer": "shoot", "default": 0.35, "live": False, "range": [0, 1]},
+    "scratch_seed": {"path": "film_render.scratches.seed", "type": "int", "layer": "shoot", "default": 1, "live": False, "range": [1, 2147483647]},
     "date_imprint_active": {
         "path": "film_render.date_imprint.active", "type": "bool", "layer": "shoot",
         "default": False, "live": False, "range": None,

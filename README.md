@@ -188,3 +188,11 @@ Year/month/day is the first and default date format. Date size ranges from
 
 Dot-matrix date size defaults/resets to 0.60 and has the same field-spacing
 slider as DSEG, while keeping its original dot and digit pitch.
+
+
+Scratches is an independent card between Film Edge and Date Back. With 135
+or half-frame Film Edge enabled, it adds fine grouped long border scratches
+and sparse short scuffs. Density and strength are adjustable; Another changes
+only its saved pattern. Off by default. Shapes reference FilmDamageSimulator
+(MIT); the initial density response is an approximation, not a calibrated
+material-damage simulation. The picture gates and perforations are excluded.

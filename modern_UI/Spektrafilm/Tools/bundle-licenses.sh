@@ -43,6 +43,7 @@ upstream_url="https://github.com/andreavolpato/spektrafilm"
 cp "$root/license/LICENSE" "$out/SpektraLab-GPL-3.0.txt"
 cp "$root/license/SPEKTRAFILM_LICENSE.txt" "$out/Profiles-and-LUTs-CC-BY-SA-4.0.txt"
 cp "$root/engine/third_party/metal-cpp/LICENSE.txt" "$out/metal-cpp-Apache-2.0.txt"
+cp "$root/engine/third_party/film_damage_simulator/LICENSE" "$out/FilmDamageSimulator-MIT.txt"
 
 # The CC BY-SA text asks that changes to the profiles and LUTs be recorded in
 # a CHANGELOG shipped beside them, rather than by editing the licence. This is
@@ -136,6 +137,9 @@ without them is not licensed to be shipped.
   metal-cpp-Apache-2.0.txt
       metal-cpp, Apple's C++ bindings for Metal, Apache-2.0, compiled into
       the binary.
+
+  FilmDamageSimulator-MIT.txt
+      Daniela Ivanova (2022), MIT. Reference for scratch-mask shape generation.
 
 Two projects, two links, and they are not interchangeable. SpektraLab is a
 native macOS application and a C++ render engine, and the first link above is

@@ -26,6 +26,9 @@ without them is not licensed to be shipped.
       metal-cpp, Apple's C++ bindings for Metal, Apache-2.0, compiled into
       the binary.
 
+  FilmDamageSimulator-MIT.txt
+      Daniela Ivanova (2022), MIT. Reference for scratch-mask shape generation.
+
 Two projects, two links, and they are not interchangeable. SpektraLab is a
 native macOS application and a C++ render engine, and the first link above is
 where its source is. The film simulation, the measured profiles and the
