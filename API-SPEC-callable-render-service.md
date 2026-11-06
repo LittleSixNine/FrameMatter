@@ -1278,7 +1278,8 @@ Each hole gets one to three seeded light events in a wrapped angular coordinate
 around its nominal rounded outline. Event centres, widths (.035–.125 turns)
 and exposure amplitudes (2^(-.7–.7)) vary. A smoothstep(.15,.85) envelope fades
 arcs to unlit stretches rather than imposing a positive brightness floor.
-A row-level light direction varies up to .75 radians per hole; the outward
+Both rows share one strip-level direction from the saved scratch seed, with
+only ±.06 radians of local variation (2026-11-07). The outward
 normal weights the lit side by .15+.85×max(dot(normal,direction),0). Per-hole
 strength is .35–1, modulated by a .4–1 slow trend over three hole pitches;
 25% of holes receive only 5% of that contribution. All draws use the saved
@@ -1288,7 +1289,10 @@ The narrow rim follows the actual perforation SDF, including local wear.
 Its thickness varies per light event (2026-11-06 thickness/visibility revision):
 event sigma is .007+.058×hash² mm, tapered along its arc by a smooth, randomly
 shifted Gaussian factor (.55–1). Overlapping events blend their sigma by their
-local exposure weights, keeping thickness continuous through overlaps. The
+local exposure weights, keeping thickness continuous through overlaps. A
+(.45+.55×direction) thickness factor makes the side facing the shared light
+thicker and the opposite side thinner. Reuse the same scratch seed across
+frames to retain this style; there is no new roll object. The
 profile peaks half that local sigma onto the film, and its pixel footprint
 adds the existing .31-pixel sigma in quadrature. The maximum search reach
 includes the full .065 mm sigma, so thicker patches are not clipped.

@@ -191,8 +191,9 @@ static float3 perforation_light(float2 st, device const float* P, int nearest, u
     const float2 outside = max(q, 0.0f);
     const float2 normal = length(outside) > 1e-5f ? normalize(outside) * sign(local)
         : (q.x > q.y ? float2(sign(local.x), 0.0f) : float2(0.0f, sign(local.y)));
-    const float angle = 2.0f * M_PI_F * hash_f(0, row_seed ^ 0x14u) +
-                        1.5f * (hash_f(0, rim_seed ^ 0x15u) - 0.5f);
+    // Both rows share a saved strip direction; only a small local deviation remains.
+    const float angle = 2.0f * M_PI_F * hash_f(0, seed ^ 0x14u) +
+                        0.12f * (hash_f(0, rim_seed ^ 0x15u) - 0.5f);
     // As in the scan-wall model, a side facing the light receives more than the opposite side.
     const float direction = 0.15f + 0.85f * max(0.0f, dot(normal, float2(cos(angle), sin(angle))));
     const float presence = hash_f(0, rim_seed ^ 0x16u) < 0.75f ? 1.0f : 0.05f;
@@ -207,7 +208,8 @@ static float3 perforation_light(float2 st, device const float* P, int nearest, u
     const float halo_weight = hole_weight * (0.25f + 0.75f * direction) *
                               (0.04f + 0.96f * (1.0f - exp(-halo_field)));
     const float support = 1.0f - smoothstep(pitch, 1.4f * pitch, abs(local.x));
-    return float3(rim_weight, halo_weight * halo * support, thickness_sum / max(rim_field, 1e-8f));
+    return float3(rim_weight, halo_weight * halo * support,
+                  thickness_sum / max(rim_field, 1e-8f) * (0.45f + 0.55f * direction));
 }
 
 // Keep the real hole SDF for the thin rim; soft light merges from neighbouring holes.

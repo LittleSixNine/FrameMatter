@@ -32,10 +32,12 @@ with Engine() as engine:
     samples = []
     rim_samples = []
     rim_widths = []
+    row_directions = []
     for row in runs(np.flatnonzero(holes.any(axis=1))):
         y0, y1 = row[0], row[-1]
         if y0 < max(9, offset + 2) or y1 >= holes.shape[0] - max(9, offset + 2):
             continue
+        first = len(rim_samples)
         for col in runs(np.flatnonzero(holes[y0:y1 + 1].any(axis=0))):
             x0, x1 = col[0], col[-1]
             if x0 < max(9, offset + 2) or x1 >= holes.shape[1] - max(9, offset + 2):
@@ -61,7 +63,13 @@ with Engine() as engine:
                 profile = rim_delta[edge-8:edge+9,along] if horizontal else rim_delta[along,edge-8:edge+9]
                 if profile.max() > 1028:
                     rim_widths.append(profile.sum()/profile.max())
+        totals = np.sum(rim_samples[first:], axis=0)
+        vector = np.array([totals[3]-totals[2], totals[1]-totals[0]])
+        row_directions.append(vector / max(np.linalg.norm(vector), 1.))
     assert len(samples) > 8, 'no independently located holes to measure'
+    agreement = np.dot(row_directions[0], row_directions[-1])
+    print('upper/lower row lighting agreement:', agreement, flush=True)
+    assert agreement > .8, 'the two rows do not share a main light direction'
     rim_samples = np.array(rim_samples)
     contrast = (rim_samples.max(axis=1) - rim_samples.min(axis=1)) / np.maximum(rim_samples.max(axis=1), 1.)
     print('median within-hole rim contrast:', np.median(contrast), flush=True)
