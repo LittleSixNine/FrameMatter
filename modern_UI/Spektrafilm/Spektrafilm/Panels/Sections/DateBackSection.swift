@@ -59,7 +59,7 @@ struct DateBackSection: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 if date.face == .lcd {
-                    PillMenu(label: L("LCD style", zh: "LCD 样式"), options: DateBackLCDStyle.allCases,
+                    PillMenu(label: L("LCD style", zh: "LCD 样式"), options: DateBackLCDStyle.selectableCases,
                              title: { $0.title },
                              selection: bind(\.lcdStyle))
                         .truncationMode(.middle)

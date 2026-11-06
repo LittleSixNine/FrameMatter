@@ -247,6 +247,7 @@ enum DateBackLCDStyle: String, CaseIterable, Identifiable, Codable, Sendable {
     case classicRegular, classicMiniRegular, classicMiniItalic
     case dseg = "style2"
     case original = "style1"
+    static let selectableCases = allCases.filter { $0 != .original }
     var id: String { rawValue }
     var engineStyle: String {
         switch self {
@@ -262,7 +263,7 @@ enum DateBackLCDStyle: String, CaseIterable, Identifiable, Codable, Sendable {
 struct DateBackSettings: Codable, Equatable, Sendable {
     var active = false
     var face = DateBackFace.lcd
-    var lcdStyle = DateBackLCDStyle.original
+    var lcdStyle = DateBackLCDStyle.classicRegular
     var fieldGapH = 1.20
     static let fieldGapRange = 0.20...3.00
     // Nil keeps old sidecars' physical insets until the user moves the slider.
@@ -326,7 +327,7 @@ struct DateBackSettings: Codable, Equatable, Sendable {
         active = try c.decodeIfPresent(Bool.self, forKey: .active) ?? d.active
         face = (try? c.decodeIfPresent(DateBackFace.self, forKey: .face)) ?? d.face
         order = (try? c.decodeIfPresent(DateBackOrder.self, forKey: .order)) ?? d.order
-        lcdStyle = (try? c.decodeIfPresent(DateBackLCDStyle.self, forKey: .lcdStyle)) ?? d.lcdStyle
+        lcdStyle = (try? c.decodeIfPresent(DateBackLCDStyle.self, forKey: .lcdStyle)) ?? .original
         fieldGapH = try c.decodeIfPresent(Double.self, forKey: .fieldGapH) ?? d.fieldGapH
         marginPercent = try c.decodeIfPresent(Double.self, forKey: .marginPercent)
         customDateTime = try c.decodeIfPresent(String.self, forKey: .customDateTime)

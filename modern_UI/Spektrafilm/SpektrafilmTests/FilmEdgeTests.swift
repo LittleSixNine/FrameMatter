@@ -362,7 +362,7 @@ final class FilmEdgeTests: XCTestCase {
         XCTAssertEqual(p.fullDelta["date_imprint_data_text"], .string(""), "off until asked for")
         let dateOnly = try await render(p, 600, 400)
         p.dateBack.withData = true
-        XCTAssertEqual(p.fullDelta["date_imprint_style"], .string("lcd"), "the date keeps its face")
+        XCTAssertEqual(p.fullDelta["date_imprint_style"], .string("dseg_classic_regular"), "the date keeps its face")
         XCTAssertEqual(p.fullDelta["date_imprint_data_text"], .string("1/250 F5.6 A 50mm"))
         let both = try await render(p, 600, 400)
         p.dateBack.active = false

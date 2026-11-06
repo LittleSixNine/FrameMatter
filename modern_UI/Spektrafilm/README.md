@@ -503,7 +503,8 @@ pixel-identical random draws or full print-pipeline parity.
 
 LCD lists DSEG7 Classic Regular, DSEG7 Classic Mini Regular,
 DSEG7 Classic Mini Italic, and DSEG7 Classic Mini Bold Italic, in that order,
-followed by LCD Style 2 (the original face). Chinese labels use the form
+with Classic Regular as the new-settings default. The original LCD face is
+no longer selectable; existing saved edits retain it. Chinese labels use the form
 `DSEG7（经典 迷你 粗 斜）`, with the applicable descriptors for each font. The four unmodified v0.46 fonts are by
 Keshikan (OFL-1.1; source and license in `engine/resources/fonts/`). They change
 only the exposure mask and keep the existing optical/film processing. Stored
@@ -522,7 +523,7 @@ all LCD styles, all corners, 135 full/half frames, portrait/landscape, the
 content gate with film borders, preview/full resolution, export reprint, 120
 and between-frame placement, and invalid inputs.
 
-All four DSEG fonts omit the apostrophe before the year (including both half-frame dates); Style 2 and the dot-matrix face retain their existing date text.
+All four DSEG fonts omit the apostrophe before the year (including both half-frame dates); Legacy LCD edits and the dot-matrix face retain their existing date text.
 
 
 All four DSEG fonts share a Field Spacing slider, 0.20–3.00H, default 1.20H (H is the

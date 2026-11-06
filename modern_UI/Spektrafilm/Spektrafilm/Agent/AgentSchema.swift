@@ -158,7 +158,7 @@ enum AgentSchema {
             .init("params.dateBack.active", .bool, "Date Back: a date or the shooting data exposed onto the film."),
             .init("params.dateBack.face", .choice(DateBackFace.allCases.map(\.rawValue)), "Seven segments, a 5×7 dot matrix, or shooting data."),
             .init("params.dateBack.fieldGapH", .number(DateBackSettings.fieldGapRange), "DSEG LCD styles only: date-field gap in digit heights; default 1.20H, including a centered time colon. Digit tracking is fixed at +0.20H."),
-            .init("params.dateBack.lcdStyle", .choice(DateBackLCDStyle.allCases.map(\.rawValue)), "style2: DSEG7 Classic Mini Bold Italic; classicMiniItalic: DSEG7 Classic Mini Italic; classicMiniRegular: DSEG7 Classic Mini Regular; classicRegular: DSEG7 Classic Regular; style1: LCD Style 2 (original)."),
+            .init("params.dateBack.lcdStyle", .choice(DateBackLCDStyle.selectableCases.map(\.rawValue)), "style2: DSEG7 Classic Mini Bold Italic; classicMiniItalic: DSEG7 Classic Mini Italic; classicMiniRegular: DSEG7 Classic Mini Regular; classicRegular: DSEG7 Classic Regular. Legacy style1 is read for saved edits only."),
             .init("params.dateBack.marginPercent", .number(DateBackSettings.marginRange), "135 picture corner to center, 0–100; null preserves legacy insets."),
             .init("params.dateBack.customDateTime", .choice([]), "Manual local wall time, yyyy:MM:dd HH:mm:ss.", readOnly: "Set the date and time with Date Back's picker."),
             .init("params.dateBack.order", .choice(DateBackOrder.allCases.map(\.rawValue)), "Month day year, year month day, or day hour : minute."),

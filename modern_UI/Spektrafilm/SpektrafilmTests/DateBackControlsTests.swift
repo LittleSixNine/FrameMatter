@@ -7,6 +7,8 @@ import XCTest
 final class DateBackControlsTests: XCTestCase {
     func testLCDMenuOrderAndSavedFaces() throws {
         XCTAssertEqual(DateBackLCDStyle.allCases, [.classicRegular, .classicMiniRegular, .classicMiniItalic, .dseg, .original])
+        XCTAssertEqual(DateBackLCDStyle.selectableCases, [.classicRegular, .classicMiniRegular, .classicMiniItalic, .dseg])
+        XCTAssertEqual(DateBackSettings().lcdStyle, .classicRegular)
         for (stored, style, wireStyle) in [("style1", DateBackLCDStyle.original, "lcd"), ("style2", .dseg, "dseg"),
                                            ("classicMiniItalic", .classicMiniItalic, "dseg_mini_italic"),
                                            ("classicMiniRegular", .classicMiniRegular, "dseg_mini_regular"),
@@ -25,11 +27,11 @@ final class DateBackControlsTests: XCTestCase {
         XCTAssertEqual(DateBackLCDStyle.classicMiniItalic.title, "DSEG7（经典 迷你 斜）")
         XCTAssertEqual(DateBackLCDStyle.classicMiniRegular.title, "DSEG7（经典 迷你 常规）")
         XCTAssertEqual(DateBackLCDStyle.classicRegular.title, "DSEG7（经典 常规）")
-        XCTAssertEqual(DateBackLCDStyle.original.title, "LCD 样式 2")
+        XCTAssertEqual(DateBackLCDStyle.original.title, "旧版日期字体")
         Localization.shared.language = .english
-        XCTAssertEqual(DateBackLCDStyle.allCases.map(\.title), [
+        XCTAssertEqual(DateBackLCDStyle.selectableCases.map(\.title), [
             "DSEG7 Classic Regular", "DSEG7 Classic Mini Regular",
-            "DSEG7 Classic Mini Italic", "DSEG7 Classic Mini Bold Italic", "LCD Style 2"
+            "DSEG7 Classic Mini Italic", "DSEG7 Classic Mini Bold Italic"
         ])
     }
 
@@ -93,6 +95,7 @@ final class DateBackControlsTests: XCTestCase {
         date.active = true
         date.text = "'26 9 15"
         date.textB = "'26 9 16"
+        date.lcdStyle = .original
         XCTAssertEqual(date.printedText, "'26 9 15")
         date.lcdStyle = .dseg
         XCTAssertEqual(date.printedText, "26 9 15")

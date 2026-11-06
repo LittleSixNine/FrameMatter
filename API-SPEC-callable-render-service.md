@@ -1086,7 +1086,8 @@ No schema-version bump: these are additive native-product wire fields.
 ## 17. Date Back: DSEG fonts, capture clock and diagonal margin
 
 The LCD submenu lists four unmodified DSEG v0.46 fonts with localized names,
-followed by LCD Style 2 (the original `lcd` face). All fonts are by Keshikan,
+with Classic Regular as the new-settings default. The original `lcd` face is
+retained only to read legacy edits, and is not a selectable option. All DSEG fonts are by Keshikan,
 OFL-1.1, bundled under `engine/resources/fonts/` with license and source.
 
 | Menu title (English) | Menu title (Chinese) | Persisted `lcdStyle` | `date_imprint_style` |
@@ -1095,7 +1096,7 @@ OFL-1.1, bundled under `engine/resources/fonts/` with license and source.
 | DSEG7 Classic Mini Regular | DSEG7（经典 迷你 常规） | `classicMiniRegular` | `dseg_mini_regular` |
 | DSEG7 Classic Mini Italic | DSEG7（经典 迷你 斜） | `classicMiniItalic` | `dseg_mini_italic` |
 | DSEG7 Classic Mini Bold Italic | DSEG7（经典 迷你 粗 斜） | `style2` | `dseg` |
-| LCD Style 2 | LCD 样式 2 | `style1` | `lcd` |
+| Legacy date font (saved edits only) | 旧版日期字体（仅旧设置） | `style1` | `lcd` |
 
 Existing IDs keep their faces; missing `lcdStyle` retains the original.
 The four DSEG choices share the same sizing and spacing controls. CoreText supplies
@@ -1129,7 +1130,7 @@ default 1.20). It replaces the font's space width between adjacent numeric
 fields, in digit-height units H. Consecutive digits receive fixed +0.20H
 tracking. Hour/minute clear spacing is split equally around the colon’s visible glyph, so the colon remains centered as spacing changes.
 The same glyph layout measures and draws the text, so alignment includes the
-spacing. These changes apply only to the four DSEG styles; LCD Style 2 and dot-matrix/data
+spacing. These changes apply only to the four DSEG styles; the legacy `lcd` face and dot-matrix/data
 faces do not read the field-gap setting. The app stores it as
 `params.dateBack.fieldGapH`, defaults missing values to 1.20, and exposes its
 slider only for the four DSEG styles. Glyph outlines and optical processing are unchanged.
