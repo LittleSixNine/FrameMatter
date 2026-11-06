@@ -1,8 +1,21 @@
 // Run: swift Tools/dmg/render-background.swift Tools/dmg
 // Then: tiffutil -cathidpicheck Tools/dmg/background{,@2x}.png -out Tools/dmg/background.tiff
 import AppKit
+import CoreText
 
 let output = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
+// Supply a locally licensed font; the proprietary font is not distributed.
+guard let fontPath = ProcessInfo.processInfo.environment["DMG_TITLE_FONT_PATH"] else {
+    fatalError("Set DMG_TITLE_FONT_PATH to your licensed Sigma Serif Headline font")
+}
+let fontURL = URL(fileURLWithPath: fontPath)
+var fontError: Unmanaged<CFError>?
+guard CTFontManagerRegisterFontsForURL(fontURL as CFURL, .process, &fontError),
+      let titleFont = NSFont(name: "SigmaSerif-Headline", size: 28) else {
+    fatalError("Could not load Sigma Serif Headline: \(String(describing: fontError))")
+}
+assert(titleFont.fontName == "SigmaSerif-Headline")
+print("Title font: \(titleFont.fontName)")
 let teal = NSColor(srgbRed: 0.035, green: 0.19, blue: 0.20, alpha: 1)
 let copper = NSColor(srgbRed: 0.68, green: 0.34, blue: 0.16, alpha: 1)
 
@@ -36,10 +49,15 @@ for scale in [1, 2] {
         NSRect(x: x, y: y, width: 0.5, height: 0.5).fill()
     }
 
-    func text(_ string: String, y: CGFloat, size: CGFloat, color: NSColor, weight: NSFont.Weight) {
+    func text(_ string: String, y: CGFloat, color: NSColor, font: NSFont, tracking: CGFloat) {
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: size, weight: weight), .foregroundColor: color]
-        let label = NSAttributedString(string: string, attributes: attributes)
+            .font: font, .foregroundColor: color]
+        let label = NSMutableAttributedString(string: string, attributes: attributes)
+        if tracking != 0 {
+            label.addAttribute(.kern, value: tracking, range: NSRange(location: 0, length: label.length - 1))
+            assert(font.pointSize == 28 && tracking == 4.5)
+            print("Title: 28 pt; added tracking: 4.5 pt; width: \(label.size().width) pt; center: 330 pt")
+        }
         let bounds = label.size()
         context.saveGState()
         context.translateBy(x: (660 - bounds.width) / 2, y: y + bounds.height)
@@ -47,8 +65,8 @@ for scale in [1, 2] {
         label.draw(at: .zero)
         context.restoreGState()
     }
-    text("FrameMatter", y: 37, size: 28, color: .init(white: 0.95, alpha: 1), weight: .medium)
-    text("拖动到 Applications 安装", y: 345, size: 16, color: teal, weight: .regular)
+    text("FrameMatter", y: 37, color: .init(white: 0.95, alpha: 1), font: titleFont, tracking: 4.5)
+    text("拖动到 Applications 安装", y: 345, color: teal, font: .systemFont(ofSize: 16, weight: .regular), tracking: 0)
     copper.setStroke()
     let arrow = NSBezierPath()
     arrow.lineWidth = 2
