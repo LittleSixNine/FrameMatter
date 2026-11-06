@@ -694,7 +694,7 @@ fields. Design and measurements: RFC-032 §26–§29 and RFC-031 (the date back)
 | field | path | type | default | range | meaning |
 |---|---|---|---|---|---|
 | `overscan_active` | `film_render.overscan.active` | bool | `false` | — | the switch; `false` dispatches nothing (byte-identical to the pre-RFC build) |
-| `overscan_format` | `…overscan.format` | str | `"135"` | `135` \| `135_half` \| `120_645` \| `120_6x6` \| `120_6x7` \| `120_6x8` \| `120_6x9` \| `135_xpan` \| `120_6x12` \| `120_6x17` | the film and its gate (`135_half`: 18 × 24 mm half frame, below). The panoramic long formats (2026-10-03, reversing "nothing larger than 6×9"): `135_xpan` 24 × 65 on 14 perforations, `120_6x12` 56 × 112, `120_6x17` 56 × 168; their gates are `square` until real strips are measured, and none carries a date |
+| `overscan_format` | `…overscan.format` | str | `"135"` | `135` \| `135_half` \| `120_645` \| `120_6x6` \| `120_6x7` \| `120_6x8` \| `120_6x9` \| `135_xpan` \| `135_full_67` \| `120_6x12` \| `120_6x17` | the film and its gate (`135_half`: 18 × 24 mm half frame, below). The panoramic long formats (2026-10-03, reversing "nothing larger than 6×9"): `135_xpan` 24 × 65 on 14 perforations, `120_6x12` 56 × 112, `120_6x17` 56 × 168; their gates are `square` until real strips are measured, and none carries a date |
 | `overscan_mode` | `…overscan.mode` | str | `"strip"` | `strip` \| `filed` | the whole film width, or a filed-out carrier's sliver of rebate |
 | `overscan_gate` | `…overscan.gate` | str | `"auto"` | `auto` \| `square` \| `rounded` \| `eared` \| `shouldered` \| `kicked` | the gate's shape family (RFC-032 §29.2, §30.2); `auto` lets the camera seed pick one the format's real cameras have. `shouldered` (6×8) also seats the gate at the stock-name edge, with its ears ~1.2 mm from it and the edge print in the recess between them |
 | `overscan_holes` | `…overscan.holes` | str | `"white"` | `white` \| `black` | what shows through the perforations (past the film's long edges is `overscan_carrier`'s). `white`: the picture's white (a scan's light). `black`: a black backing or a darkroom print. Either way the cut is not a perfectly vertical knife: a slight rounding of the base shows as a faint, patchy shoulder just outside each hole (1-6 % lift, ~0.03 mm), different on every hole, plus per-hole punch tolerances, roughness and burrs (RFC-032 §30.5, §31.5) |
@@ -1197,7 +1197,7 @@ An independent Scratches card sits between Film Edge and Date Back. It stores
 Perforation edge marks subsection adds its own 0–100% strength control, default
 35%, stored as `edgeMarks` and sent as `scratch_edge_marks` (float 0–1, shoot,
 non-live, native default .35). Both subsections share the saved seed. Another picks
-an independent seed; saved edits and undo retain it. Full/half 135 Film Edge
+an independent seed; saved edits and undo retain it. Full/half or full-width 135 Film Edge
 is required; other formats and Film Edge off send `scratch_active=false`.
 
 All fields are shoot, non-live. Native fields are `scratch_active` (bool),
@@ -1268,7 +1268,7 @@ A separate subsection in Scratches has Strength (0–100%, default 0/off) and
 Spread (0–100%, default 50%). They persist as `leakStrength` / `leakSpread`,
 with optional decoding for old edits, and use native `scratch_leak_strength`
 / `scratch_leak_spread` (float 0–1, shoot, non-live; defaults 0 / .5).
-They share the existing scratch seed and full/half-135 availability. The
+They share the existing scratch seed and full/half/full-width-135 availability. The
 existing friction and edge-mark strength sliders do not affect this exposure.
 
 The existing raw overscan-canvas exposure stage adapts the spool-leak
@@ -1301,3 +1301,33 @@ film/print/scan response. The rim remains narrow when Spread changes; it is
 not cut off by the wide leak's inner-edge distance window. Hole interiors
 still receive no added exposure. Dimensions/intensity are visual estimates
 from the supplied overscan reference, not an identified physical mechanism.
+
+## 19. Full-width 135 exposure
+
+`overscan_format="135_full_67"` adds a 69.5×35 mm visible exposure on 35 mm
+perforated stock. The app calls it 135 full width (6×7), in the panoramic
+group, and still resolves the stock gauge as 135. The dimensions are a
+representative preset, not a measured camera reconstruction. Existing
+formats, including 65×24 mm XPan, are unchanged.
+
+The source is reframed to 69.5:35 using the existing crop/held-crop flow.
+One source mapping covers the whole strip. A dedicated exposure-layout flag
+removes the gate mask. This mode exports the exposed 69.5×35 mm crop without
+frame-gap padding at either end; it has no random scan tilt/offset, so an
+unexposed wedge cannot reappear at a corner. There is no duplicated/extended edge texture. The
+existing film-present mask removes the actual perforations, and existing
+edge-print exposure develops together with the scene. Grain and all material
+profiles use the same pipeline. The gate-family control is hidden in this
+mode: the aperture is open across the film. The internal flag is not a new
+public parameter. Both strip/filed end at the physical film width and the exposed crop ends.
+
+Scratch controls and perforation leaks also work here. Friction lines are
+restricted to the perforation-side bands rather than an unexposed rebate;
+they can therefore mark scene content in those bands. The central picture
+is excluded. Pull deformations, near-black/white hole backing, edge colour
+and narrow highlights retain the same film geometry. Date Back remains
+unavailable, consistent with the app's other panoramic formats. Previews,
+full renders and reprints use the same layout and crop mapping.
+
+The closed format pill reads Full / 全宽; the menu and tooltip keep the
+complete 135 full width (6×7) name to fit the narrow rail at larger UI scales.

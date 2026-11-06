@@ -18,6 +18,7 @@ enum FilmEdgeFormat: String, CaseIterable, Identifiable, Codable, Sendable {
     /// 2026-10-03, with square gates until real strips are measured (C5) and
     /// no date back (C7).
     case xpan = "135_xpan"
+    case f135FullWidth = "135_full_67"
     case f6x12 = "120_6x12"
     case f6x17 = "120_6x17"
 
@@ -29,7 +30,7 @@ enum FilmEdgeFormat: String, CaseIterable, Identifiable, Codable, Sendable {
         switch self {
         case .f135, .f135Half: .film135
         case .f645, .f6x6, .f6x7, .f6x8, .f6x9: .film120
-        case .xpan, .f6x12, .f6x17: .panoramic
+        case .xpan, .f135FullWidth, .f6x12, .f6x17: .panoramic
         }
     }
 
@@ -45,6 +46,7 @@ enum FilmEdgeFormat: String, CaseIterable, Identifiable, Codable, Sendable {
         case .f6x8: (76, 56)
         case .f6x9: (84, 56)
         case .xpan: (65, 24)
+        case .f135FullWidth: (69.5, 35)
         case .f6x12: (112, 56)
         case .f6x17: (168, 56)
         }
@@ -52,7 +54,7 @@ enum FilmEdgeFormat: String, CaseIterable, Identifiable, Codable, Sendable {
 
     /// The film this format runs on, as the stock catalogue names gauges
     /// (`Stock.formats`): half frame and XPan are cameras for 135 film.
-    var gauge: String { self == .f135 || self == .f135Half || self == .xpan ? "135" : "120" }
+    var gauge: String { self == .f135 || self == .f135Half || self == .xpan || self == .f135FullWidth ? "135" : "120" }
 
     /// The film's width across, mm (the engine's `kFormats`; D2: 35.00).
     var filmWidthMM: Double { gauge == "135" ? 35 : 61 }
@@ -60,7 +62,7 @@ enum FilmEdgeFormat: String, CaseIterable, Identifiable, Codable, Sendable {
     /// What the engine will take today: every format, since the long ones
     /// landed. Kept so a format drawn ahead of the engine has somewhere to say so.
     var isAvailable: Bool { true }
-    var isPerforated: Bool { self == .f135 || self == .f135Half || self == .xpan }
+    var isPerforated: Bool { self == .f135 || self == .f135Half || self == .xpan || self == .f135FullWidth }
 
     /// Which date faces the engine draws on this format (API-SPEC §13, "Where
     /// a face is drawn"). Anywhere else a date is silently not drawn, so the

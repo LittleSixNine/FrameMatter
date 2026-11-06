@@ -32,8 +32,8 @@ enum : uint {
     P_CARRIER = 199,
     P_LEAKS = 200,          // up to 12 x (s, side, amp, sigma_s, sigma_t)
     P_PAIR_ADV = 260,       // > 0: the same gate exposed again this far along (a half-frame pair)
-    P_SCRATCH_STRENGTH = 261, P_SCRATCH_LONG, P_SCRATCH_SEED, P_SCRATCH_EDGE, P_PERF_LEAK, P_PERF_LEAK_SPREAD,
-    P_COUNT = 267
+    P_SCRATCH_STRENGTH = 261, P_SCRATCH_LONG, P_SCRATCH_SEED, P_SCRATCH_EDGE, P_PERF_LEAK, P_PERF_LEAK_SPREAD, P_FULL_WIDTH,
+    P_COUNT = 268
 };
 constant uint kQStride = 10u;
 
@@ -115,6 +115,12 @@ static float gate_sdf(float2 st, device const float* P) {
         d += P[P_ROUGH_AMP] * (value_noise(st.x / per, seed) + value_noise(st.y / per, seed ^ 0x5bd1e995u) - 1.0f);
     }
     return d;
+}
+
+// Full-width 135 maps the source to the whole strip; there is no top/bottom camera mask.
+static float exposure_gate_sdf(float2 st, device const float* P) {
+    if (P[P_FULL_WIDTH] > 0.5f) return -1e6f; // the output is an exposed crop, without frame-gap padding
+    return gate_sdf(st, P);
 }
 
 // The gate's shadow on the emulsion from a circular aperture: the lit fraction
@@ -199,7 +205,7 @@ kernel void spk_overscan_canvas(device const float* frame [[buffer(0)]],
         float2 sg = st;
         float shift = 0.0f;
         if (P[P_PAIR_ADV] > 0.0f && st.x > P[P_GS0] + 0.5f * (P[P_GW] + P[P_PAIR_ADV])) { shift = P[P_PAIR_ADV]; sg.x -= shift; }
-        const float cov = penumbra(gate_sdf(sg, P), P[P_PENUMBRA]);
+        const float cov = penumbra(exposure_gate_sdf(sg, P), P[P_PENUMBRA]);
         if (cov > 0.0f) {
             const float px = P[P_PX];
             float fx, fy;
@@ -210,7 +216,7 @@ kernel void spk_overscan_canvas(device const float* frame [[buffer(0)]],
         // Gate flare: the gate's bevelled edge reflects scene light onto the
         // film just outside the frame -- a thin line that follows the scene's
         // brightness along the edge (bright sky, bright line).
-        const float d_gate = gate_sdf(sg, P);
+        const float d_gate = exposure_gate_sdf(sg, P);
         if (P[P_FLARE_AMP] > 0.0f && d_gate > -0.02f && d_gate < 6.0f * P[P_FLARE_WIDTH]) {
             const float px = P[P_PX];
             const float in_s = clamp(sg.x, P[P_GS0] + 0.12f, P[P_GS0] + P[P_GW] - 0.12f) + shift;
@@ -376,7 +382,10 @@ static float scratch_mask(float2 st, device const float* P) {
     const uint seed = uint(P[P_SCRATCH_SEED]);
     float2 other = st; other.x -= P[P_PAIR_ADV];
     const float gate = min(gate_sdf(st, P), P[P_PAIR_ADV] > 0.0f ? gate_sdf(other, P) : 1e6f);
-    if (gate < 0.10f || st.y <= 0.0f || st.y >= P[P_FILM_W]) return 0.0f;
+    const bool full_width = P[P_FULL_WIDTH] > 0.5f;
+    const float rebate_depth = P[P_PERF_EDGE] + P[P_PERF_H] + 0.35f;
+    if ((!full_width && gate < 0.10f) || (full_width && min(st.y, P[P_FILM_W] - st.y) > rebate_depth) ||
+        st.y <= 0.0f || st.y >= P[P_FILM_W]) return 0.0f;
     uint hole;
     if (perf_sdf(st, P, hole) < 0.07f) return 0.0f;
     const float along_span = P[P_GW] + P[P_PAIR_ADV];
@@ -387,7 +396,9 @@ static float scratch_mask(float2 st, device const float* P) {
         const int group = i / 3;
         const bool top = hash_f(group, seed ^ 0x202u) < 0.5f;
         const float offset = 0.28f + 0.65f * hash_f(group, seed ^ 0x303u) + float(i % 3) * 0.07f;
-        const float t = top ? P[P_GT0] - offset : P[P_GT0] + P[P_GH] + offset;
+        const float band = P[P_PERF_EDGE] + P[P_PERF_H] + 0.25f - offset;
+        const float t = full_width ? (top ? band : P[P_FILM_W] - band)
+                                  : (top ? P[P_GT0] - offset : P[P_GT0] + P[P_GH] + offset);
         const float ss = P[P_GS0] + along_span * hash_f(i, seed ^ 0x404u);
         const float len = along_span * (0.3f + 0.8f * hash_f(i, seed ^ 0x505u));
         const float w = sqrt(pow(0.009f + 0.0105f * hash_f(i, seed ^ 0x606u), 2.0f) + 0.0961f * P[P_PX] * P[P_PX]);

@@ -56,7 +56,7 @@ final class ScratchTests: XCTestCase {
         p.filmEdge.active = true
         for format in FilmEdgeFormat.allCases {
             p.filmEdge.format = format
-            XCTAssertEqual(p.fullDelta["scratch_active"], .bool([.f135, .f135Half].contains(format)))
+            XCTAssertEqual(p.fullDelta["scratch_active"], .bool([.f135, .f135Half, .f135FullWidth].contains(format)))
         }
     }
 

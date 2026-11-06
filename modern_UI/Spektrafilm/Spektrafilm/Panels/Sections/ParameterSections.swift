@@ -75,7 +75,7 @@ struct FilmFormatSection: View {
                 .fixedSize()
                 .padding(.trailing, 6)
                 .frame(minWidth: width, alignment: .leading)
-            Text(session.params.filmEdge.format.title)
+            Text(session.params.filmEdge.format.pillTitle)
                 .font(Theme.Font.label).foregroundStyle(Theme.text)
                 .lineLimit(1).fixedSize()
                 .padding(.horizontal, 10)

@@ -59,8 +59,10 @@ struct FilmEdgeSection: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 RailSubhead(L(.edgeGateAndScan))
-                PillMenu(label: L(.edgeGate), options: FilmEdgeGate.allCases, title: { L($0.key) },
-                         selection: bind(\.gate))
+                if edge.format != .f135FullWidth {
+                    PillMenu(label: L(.edgeGate), options: FilmEdgeGate.allCases, title: { L($0.key) },
+                             selection: bind(\.gate))
+                }
                 PillSwitchRow(label: L(.edgeHoles), options: FilmEdgeHoles.allCases,
                               selection: bind(\.holes), title: { L($0.key) })
                 bodyRow
@@ -129,7 +131,7 @@ struct FilmEdgeSection: View {
                 .frame(minWidth: Theme.Metric.sliderLabelWidth, alignment: .leading)
             Button { formatMenu.toggle() } label: {
                 HStack(spacing: 0) {
-                    Text(edge.format.title).font(Theme.Font.label).foregroundStyle(Theme.text)
+                    Text(edge.format.pillTitle).font(Theme.Font.label).foregroundStyle(Theme.text)
                         .lineLimit(1).fixedSize()
                         .padding(.leading, 10)
                     Spacer(minLength: 4)
@@ -143,6 +145,7 @@ struct FilmEdgeSection: View {
                 .contentShape(Capsule())
             }
             .buttonStyle(.plain)
+            .help(edge.format.title)
             .popover(isPresented: $formatMenu, arrowEdge: .trailing) {
                 FilmEdgeFormatMenu(selection: edge.format, view: edge.view,
                                    stockName: shortStockName,
@@ -246,7 +249,7 @@ struct FilmEdgeSection: View {
     /// turn, which is not a control yet.
     private var summary: String? {
         guard edge.active else { return nil }
-        return "\(edge.format.title) · \(L(edge.view.key))"
+        return "\(edge.format.pillTitle) · \(L(edge.view.key))"
     }
 
     /// The picture's own pixels, and the film built around them. The border
@@ -442,14 +445,14 @@ private struct FormatGlyph: View {
             let filmRect = CGRect(x: (size.width - w) / 2, y: (size.height - filmH) / 2, width: w, height: filmH)
             ctx.fill(Path(roundedRect: filmRect, cornerRadius: 1.5), with: .color(Theme.Ink.tertiary.opacity(0.35)))
             let inset = format.isPerforated ? filmH * 0.2 : filmH * 0.08
-            let gateRect = filmRect.insetBy(dx: filmH * 0.06, dy: inset)
+            let gateRect = filmRect.insetBy(dx: filmH * 0.06, dy: format == .f135FullWidth ? 0 : inset)
             ctx.fill(Path(roundedRect: gateRect, cornerRadius: 0.8), with: .color(Theme.Ink.secondary.opacity(0.85)))
             guard format.isPerforated else { return }
             let holes = max(3, Int(w / 4))
             for i in 0..<holes {
                 let x = filmRect.minX + (CGFloat(i) + 0.5) * w / CGFloat(holes) - 0.8
                 for y in [filmRect.minY + inset * 0.3, filmRect.maxY - inset * 0.7] {
-                    ctx.fill(Path(CGRect(x: x, y: y, width: 1.6, height: inset * 0.4)), with: .color(Theme.Ink.secondary))
+                    ctx.fill(Path(CGRect(x: x, y: y, width: 1.6, height: inset * 0.4)), with: .color(format == .f135FullWidth ? Theme.card : Theme.Ink.secondary))
                 }
             }
         }
@@ -557,9 +560,15 @@ extension FilmEdgeFormat {
         case .f6x8: return "6×8"
         case .f6x9: return "6×9"
         case .xpan: return "XPan"
+        case .f135FullWidth: return L("135 full width (6×7)", zh: "135 全宽曝光（6×7）")
         case .f6x12: return "6×12"
         case .f6x17: return "6×17"
         }
+    }
+
+    /// Closed pills stay short; the popup and tooltip retain the descriptive format name.
+    @MainActor var pillTitle: String {
+        self == .f135FullWidth ? L("Full", zh: "全宽") : title
     }
 
     /// The gate as the drawing writes it after the pill: `36 × 24`.
@@ -573,6 +582,7 @@ extension FilmEdgeFormat {
         case .f6x8: "56 × 76"
         case .f6x9: "56 × 84"
         case .xpan: "24 × 65"
+        case .f135FullWidth: "69.5 × 35"
         case .f6x12: "56 × 112"
         case .f6x17: "56 × 168"
         }
@@ -588,6 +598,7 @@ extension FilmEdgeFormat {
         case .f6x7: "1.24"
         case .f6x8: "1.36"
         case .xpan: "2.7"
+        case .f135FullWidth: "1.99"
         case .f6x12: "2:1"
         case .f6x17: "3:1"
         }
@@ -608,6 +619,7 @@ extension FilmEdgeFormat {
         case (.f6x7, .strip), (.f6x8, .strip): 1.15
         case (.f6x9, .strip): 1.14
         case (.xpan, .strip): 1.50
+        case (.f135FullWidth, _): 1.00
         case (.f6x12, .strip): 1.13
         case (.f6x17, .strip): 1.12
         case (.f135, .filed): 1.15

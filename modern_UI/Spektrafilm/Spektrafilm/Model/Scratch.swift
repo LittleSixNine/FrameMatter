@@ -24,7 +24,7 @@ struct ScratchSettings: Codable, Equatable, Sendable {
         seed = try c.decodeIfPresent(Int.self, forKey: .seed) ?? d.seed
     }
     func available(on edge: FilmEdgeSettings) -> Bool {
-        edge.effective && [.f135, .f135Half].contains(edge.format)
+        edge.effective && [.f135, .f135Half, .f135FullWidth].contains(edge.format)
     }
     func wire(filmEdge: FilmEdgeSettings) -> [(name: String, value: ParamValue, layer: ParamLayer)] {
         let on = active && available(on: filmEdge)

@@ -57,8 +57,8 @@ enum OsP : int {
     P_CARRIER = 199,
     P_LEAKS = 200,          // up to kMaxLeaks x (s, side, amp, sigma_s, sigma_t)
     P_PAIR_ADV = 260,       // > 0: the same gate exposed again this far along (a half-frame pair)
-    P_SCRATCH_STRENGTH = 261, P_SCRATCH_LONG, P_SCRATCH_SEED, P_SCRATCH_EDGE, P_PERF_LEAK, P_PERF_LEAK_SPREAD,
-    P_COUNT = 267
+    P_SCRATCH_STRENGTH = 261, P_SCRATCH_LONG, P_SCRATCH_SEED, P_SCRATCH_EDGE, P_PERF_LEAK, P_PERF_LEAK_SPREAD, P_FULL_WIDTH,
+    P_COUNT = 268
 };
 constexpr int kMaxLeaks = 12;
 // How far past each long edge of the film a strip scan reaches, mm.
@@ -119,10 +119,11 @@ constexpr Format kFormats[] = {
     // perforations (66.5 mm) for its 65 mm gate, counted off the perforations
     // (C8), so the 135 phase and advance error hold.
     {"135_xpan", 35.0, 24.0, 65.0, true, "square"},
+    {"135_full_67", 35.0, 35.0, 69.5, true, "square"}, // 135 through a 6×7-width aperture: the whole strip is exposed
     {"120_6x12", 61.0, 56.0, 112.0, false, "square"},
     {"120_6x17", 61.0, 56.0, 168.0, false, "square"},
 };
-constexpr const char* kFormatNames = "135, 135_half, 120_645, 120_6x6, 120_6x7, 120_6x8, 120_6x9, 135_xpan, 120_6x12, 120_6x17";
+constexpr const char* kFormatNames = "135, 135_half, 120_645, 120_6x6, 120_6x7, 120_6x8, 120_6x9, 135_xpan, 135_full_67, 120_6x12, 120_6x17";
 constexpr const char* kGateFamilies[] = {"square", "rounded", "eared", "shouldered", "kicked"};
 const Format* find_format(const std::string& name) {
     for (const Format& f : kFormats) if (name == f.name) return &f;
@@ -679,13 +680,15 @@ bool Pipeline::overscan_layout(uint32_t frame_w, uint32_t frame_h, std::string& 
     // middle (reference_film/120: rebates of 2.26/3.28, 2.48/2.60, 2.51/2.99,
     // 2.4/3.1 and 1.9/2.64 mm); a 135 gate is held by the perforations.
     const double t_off = (fmt->perforated ? rc.uni(-0.10, 0.10) : rc.uni(-0.45, 0.45)) + rf.normal() * 0.025;
-    L.gate_t0 = 0.5 * (L.film_w - L.gate_across) + t_off;
+    L.gate_t0 = 0.5 * (L.film_w - L.gate_across) + (L.format == "135_full_67" ? 0.0 : t_off);
     L.gate_s0 = 0.0;
     for (int side = 0; side < 4; ++side)
         for (int k = 0; k < 3; ++k) {
             L.wob_a[side][k] = rc.normal() * 0.012 / double(k + 1);
             L.wob_ph[side][k] = rc.uni(0.0, 2.0 * M_PI);
         }
+    if (L.format == "135_full_67")
+        for (auto& side : L.wob_a) for (double& amplitude : side) amplitude = 0.0;
     // The gate sits a fraction of a millimetre in front of the emulsion; its
     // shadow's radius is gap / (2 N). EXIF gives N; f/5.6 when unknown.
     const double gate_gap = rc.uni(0.18, 0.40);
@@ -706,7 +709,7 @@ bool Pipeline::overscan_layout(uint32_t frame_w, uint32_t frame_h, std::string& 
             }
             family = fams[size_t(rg.uni(0.0, double(fams.size()))) % fams.size()];
         }
-        gate_shape(L, family, fmt->perforated, rg);
+        if (L.format != "135_full_67") gate_shape(L, family, fmt->perforated, rg);
     }
     L.holes_light = o.holes == "white";
     L.carrier_open = o.carrier == "open";
@@ -744,8 +747,10 @@ bool Pipeline::overscan_layout(uint32_t frame_w, uint32_t frame_h, std::string& 
         t_lo = -reach; t_hi = L.film_w + reach;
     } else {
         margin_along = 0.9 + rf.uni(-0.1, 0.1);
-        t_lo = L.gate_t0 - 1.1; t_hi = L.gate_t0 + L.gate_across + 1.1;
+        t_lo = L.format == "135_full_67" ? 0.0 : L.gate_t0 - 1.1;
+        t_hi = L.format == "135_full_67" ? L.film_w : L.gate_t0 + L.gate_across + 1.1;
     }
+    if (L.format == "135_full_67") margin_along = 0.0;
     const uint32_t m_px = uint32_t(std::lround(margin_along / L.px));
     const uint32_t along_px = uint32_t(L.vertical ? frame_h : frame_w) + 2 * m_px;
     const uint32_t across_px = uint32_t(std::lround((t_hi - t_lo) / L.px));
@@ -764,7 +769,10 @@ bool Pipeline::overscan_layout(uint32_t frame_w, uint32_t frame_h, std::string& 
     const double half_along = 0.5 * along_px * L.px;
     const double tilt_lim = std::min(0.35, std::asin(std::min(1.0, 0.27 / half_along)) * 180.0 / M_PI);
     L.scan_rot = std::clamp(rf.normal() * 0.14, -tilt_lim, tilt_lim) * M_PI / 180.0;
-    const double ds = rf.normal() * 0.08, dt = rf.normal() * 0.06;
+    const bool full_width = L.format == "135_full_67";
+    if (full_width) L.scan_rot = 0.0;
+    const double random_ds = rf.normal() * 0.08, random_dt = rf.normal() * 0.06;
+    const double ds = full_width ? 0.0 : random_ds, dt = full_width ? 0.0 : random_dt;
     const double cu = 0.5 * L.canvas_w * L.px, cv = 0.5 * L.canvas_h * L.px;
     const double c = std::cos(L.scan_rot), sn = std::sin(L.scan_rot);
     // canvas (u, v) -> film (s, t): the scan rotation R, then for a vertical film
@@ -914,7 +922,7 @@ void Pipeline::overscan_params_block(std::vector<float>& P) const {
     const OverscanLayout& L = overscan_;
     P.assign(P_COUNT, 0.0f);
     const auto& scratches = params_.film_render.scratches;
-    if (scratches.active && (L.format == "135" || L.format == "135_half")) {
+    if (scratches.active && (L.format == "135" || L.format == "135_half" || L.format == "135_full_67")) {
         P[P_SCRATCH_STRENGTH] = float(scratches.strength);
         P[P_SCRATCH_LONG] = float(scratches.long_lines);
         P[P_SCRATCH_EDGE] = float(scratches.edge_marks);
@@ -922,6 +930,7 @@ void Pipeline::overscan_params_block(std::vector<float>& P) const {
         P[P_PERF_LEAK_SPREAD] = float(scratches.leak_spread);
         P[P_SCRATCH_SEED] = float(uint32_t(scratches.seed) & 0xFFFFFFu);
     }
+    P[P_FULL_WIDTH] = L.format == "135_full_67" ? 1.0f : 0.0f;
     P[P_CW] = float(L.canvas_w); P[P_CH] = float(L.canvas_h); P[P_PX] = float(L.px);
     P[P_FW] = float(L.frame_w); P[P_FH] = float(L.frame_h);
     P[P_A00] = float(L.A[0]); P[P_A01] = float(L.A[1]); P[P_A10] = float(L.A[2]); P[P_A11] = float(L.A[3]);

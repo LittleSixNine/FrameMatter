@@ -37,10 +37,10 @@ struct ScratchSection: View {
             }
             .rowEnabled(settings.active && available,
                         because: available ? L("Switch Scratches on in its header.", zh: "先在标题栏开启划痕。")
-                            : L("Enable 135 or half-frame Film Edge first.", zh: "需先开启 135 或半格片边。"))
+                            : L("Enable 135, half-frame or full-width Film Edge first.", zh: "需先开启 135、半格或全宽片边。"))
             Text(available ? L("Film leader fixed left. Another changes all patterns. Wide light leaks may reach the picture.",
                    zh: "片头固定向左；“换一组”更换所有痕迹。漏光范围较大时会进入画幅。")
-                : L("Enable 135 or half-frame Film Edge first.", zh: "需先开启 135 或半格片边，才能显示划痕。"))
+                : L("Enable 135, half-frame or full-width Film Edge first.", zh: "需先开启 135、半格或全宽片边，才能显示划痕。"))
                 .font(Theme.Font.caption).foregroundStyle(Theme.Ink.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
         }

@@ -155,7 +155,7 @@ enum AgentSchema {
             .init("params.filmEdge.framing", .choice([]), "The crop the engine's frame was cut with.", readOnly: resolved),
             .init("params.filmEdge.seeded", .bool, "Whether the frame has been given its seeds.", readOnly: resolved),
             .init("params.filmEdge.pair", .bool, "Whether this is a half-frame pair: two frames on one strip.", readOnly: resolved),
-            .init("params.scratches.active", .bool, "Film-border wear, only with 135/full or half-frame Film Edge."),
+            .init("params.scratches.active", .bool, "Film-border wear, only with 135/full, half-frame or full-width Film Edge."),
             .init("params.scratches.longLines", .number(ScratchSettings.amountRange), "Density of fine parallel scratches, 0–1."),
             .init("params.scratches.strength", .number(ScratchSettings.amountRange), "Border wear contrast, 0–1; default .35."),
             .init("params.scratches.edgeMarks", .number(ScratchSettings.amountRange), "Left short-edge-centred pull burrs/notches and absorptive base-colour marks, 0–1; default .35; shares the scratch seed."),

@@ -164,7 +164,7 @@ enum FilmCanvasEstimate {
         let px = gate.long / max(w, h)                        // mm per pixel
         // The film runs along the picture axis that is not the gate's across
         // size (the engine's `vertical`).
-        let acrossMM = format.gauge == "135" ? 24.0 : 56.0
+        let acrossMM = format == .f135FullWidth ? 35.0 : (format.gauge == "135" ? 24.0 : 56.0)
         let vertical = abs(w * px - acrossMM) < abs(h * px - acrossMM) && w != h
         let alongPx = vertical ? h : w
         let marginMM: Double
@@ -173,14 +173,14 @@ enum FilmCanvasEstimate {
         case .strip:
             // 135 advances 38 mm for 36 (0.75–0.95 a side), half frame 19 for
             // 18 (0.40–0.50); 120's spacing is the camera's, ±0.25 per frame.
-            marginMM = format == .f135Half ? 0.5 : (format.isPerforated ? 0.95 : 2.35)
+            marginMM = format == .f135FullWidth ? 0 : (format == .f135Half ? 0.5 : (format.isPerforated ? 0.95 : 2.35))
             // The film's width (120's is cut to +-0.15) and nothing past it:
             // a strip scan shows no carrier since 1.3.1 (the engine's
             // `overscan_carrier` is `none` unless asked).
             acrossCanvasMM = format.filmWidthMM + (format.isPerforated ? 0 : 0.15)
         case .filed:
-            marginMM = 1.0
-            acrossCanvasMM = (vertical ? w : h) * px + 2.2
+            marginMM = format == .f135FullWidth ? 0 : 1.0
+            acrossCanvasMM = format == .f135FullWidth ? format.filmWidthMM : (vertical ? w : h) * px + 2.2
         }
         let along = alongPx + 2 * (marginMM / px).rounded()
         let across = (acrossCanvasMM / px).rounded()

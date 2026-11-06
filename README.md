@@ -222,3 +222,12 @@ Perforation leaks include a faint, patchy exposure rim right at each hole's
 edge, sharing Strength/Another. Spread controls the broad spill, while the
 rim keeps a narrow film-scale width. Its colour passes through the same
 spectral exposure path rather than a fixed RGB outline.
+
+135 full width (6×7), in the panoramic format group, exposes the scene over
+the whole 35 mm strip (69.5×35 mm preset), including between and outside the
+perforations. The existing hole mask and factory edge-print exposure remain.
+The source is cropped to the new ratio; scratches and leaks remain available.
+Date Back is unavailable in this first panoramic preset.
+
+Full-width 135 exports the exposed crop without black frame-gap padding or
+random scan-registration wedges; both views fill the output to all four edges.

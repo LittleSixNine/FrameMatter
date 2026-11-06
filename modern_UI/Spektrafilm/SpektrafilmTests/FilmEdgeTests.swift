@@ -298,6 +298,30 @@ final class FilmEdgeTests: XCTestCase {
         }
     }
 
+    func testFullWidth135KeepsTheFilmWidthAndCropRatio() async throws {
+        let format = FilmEdgeFormat.f135FullWidth
+        XCTAssertEqual(format.gauge, "135")
+        XCTAssertTrue(format.isPerforated)
+        XCTAssertFalse(format.draws(.lcd))
+        XCTAssertTrue(StockCatalog.shared.isMade("kodak_ultramax_400", in: format))
+        let framed = Session.gateFramed(.default, format: format, imageSize: CGSize(width: 600, height: 400))
+        let crop = framed.outputSize(for: CGSize(width: 600, height: 400))
+        XCTAssertEqual(crop.width / crop.height, 69.5 / 35, accuracy: 1 / crop.height)
+        var p = FilmParams.default
+        p.grainActive = false; p.glareActive = false
+        p.filmEdge.active = true; p.filmEdge.format = format
+        p.filmEdge.cameraSeed = 19; p.filmEdge.frameSeed = 5
+        XCTAssertEqual(try JSONDecoder().decode(FilmParams.self, from: JSONEncoder().encode(p)), p)
+        for (w,h) in [(695,350),(350,695)] {
+            let out = try await render(p,w,h)
+            XCTAssertEqual(max(out.w,out.h),max(w,h),accuracy: 1)
+            XCTAssertEqual(min(out.w,out.h),min(w,h),accuracy: 1)
+            let estimate = FilmCanvasEstimate.size(picture: CGSize(width:w,height:h),format:format,view:.strip)
+            XCTAssertGreaterThanOrEqual(Int(estimate.width),out.w)
+            XCTAssertGreaterThanOrEqual(Int(estimate.height),out.h)
+        }
+    }
+
     func testTheDateAloneKeepsTheSizeAndPrintsInTheCorner() async throws {
         var p = FilmParams.default
         p.grainActive = false; p.glareActive = false
