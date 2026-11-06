@@ -58,7 +58,7 @@ enum S: String, CaseIterable, Sendable {
     case filmGroupPositive, filmGroupNegative
     case filmFormat, filmFormatSide, filmFormatShort, filmFormatLong
     case filmFormatSideLength
-    case filmGrain, filmHalation, filmGlare
+    case filmGrain, filmHalation, filmGlare, grainParticleArea, grainSoftness
     // RFC-025, shown only with Settings → Decouple effects.
     case filmEffectStrength, filmGrainLayers, filmScatter, filmCouplers
 
@@ -272,6 +272,8 @@ extension S {
         case .filmFormatShort: "Short"
         case .filmFormatLong: "Long"
         case .filmFormatSideLength: "Side Length"
+        case .grainParticleArea: "Particle Area"
+        case .grainSoftness: "Softness"
         case .filmGrain: "Grain"
         case .filmHalation: "Halation"
         case .filmGlare: "Glare"
@@ -595,6 +597,8 @@ extension S {
         case .filmFormatShort: "短边"
         case .filmFormatLong: "长边"
         case .filmFormatSideLength: "边长"
+        case .grainParticleArea: "粗细"
+        case .grainSoftness: "柔化"
         case .filmGrain: "颗粒"
         case .filmHalation: "光晕"
         case .filmGlare: "耀光"

@@ -95,7 +95,6 @@ struct FilmFormatSection: View {
     }
 
     @ViewBuilder private var coupled: some View {
-        ToggleRow(label: L(.filmGrain), isOn: param(\.grainActive))
         ToggleRow(label: L(.filmHalation), isOn: param(\.halationActive))
         antihalationRow
         headroomRow
@@ -139,8 +138,6 @@ struct FilmFormatSection: View {
     /// hides, while its effect is off: the value is still the frame's.
     @ViewBuilder private var decoupled: some View {
         let p = session.params
-        ToggleRow(label: L(.filmGrain), isOn: param(\.grainActive))
-        strength(L(.filmGrainStrength), \.grain, EffectStrengths.grainRange, enabled: p.grainActive)
         ToggleRow(label: L(.filmHalation), isOn: param(\.halationActive))
         antihalationRow
         headroomRow
@@ -206,13 +203,6 @@ struct FilmFormatSection: View {
                     var p = session.params; p.effects = .default; session.params = p
                 }
                 .disabled(session.params.effects.isDefault)
-            }
-            if decoupleEffects {
-                Divider()
-                // A model choice, not a strength, so it is a menu check rather
-                // than a row: the sub-layer model against the single-layer one.
-                Toggle(L(.helpSubLayerGrain), isOn: effect(\.grainLayered))
-                    .disabled(!session.params.grainActive)
             }
         }
     }

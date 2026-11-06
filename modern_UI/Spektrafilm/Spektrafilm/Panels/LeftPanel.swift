@@ -30,6 +30,7 @@ struct LeftPanel: View {
         if isPair { s.append((PairSection.key, AnyView(PairSection(session: session)))) }
         s.append(("clipboard", AnyView(ClipboardSection(session: session))))
         s.append(("film", AnyView(FilmSection(session: session))))
+        s.append((GrainSection.key, AnyView(GrainSection(session: session))))
         // Under Film, before Print: both belong to the film and depend on
         // neither the paper nor the DI (2026-10-01 drawings).
         s.append((FilmEdgeSection.key, AnyView(FilmEdgeSection(session: session))))

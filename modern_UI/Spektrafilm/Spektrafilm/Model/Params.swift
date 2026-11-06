@@ -386,6 +386,20 @@ struct EffectStrengths: Codable, Equatable, Sendable {
     /// `grain_sublayers_active`, which the Grain switch used to set too: the
     /// three-sub-layer model against the single-layer one.
     var grainLayered = true
+    // Spektrafilm 3bb2c2d: GrainParams, model/grain.py and GRAIN_MANIFEST.
+    var grainParticleAreaUM2 = 0.2
+    var grainBlur = 0.65
+    // Product control bounds, not upstream physical limits. Area cannot be zero.
+    static let grainParticleAreaRange = 0.01...2.0
+    static let grainBlurRange = 0.0...2.0
+
+    mutating func resetGrain() {
+        let d = Self.default
+        grain = d.grain
+        grainLayered = d.grainLayered
+        grainParticleAreaUM2 = d.grainParticleAreaUM2
+        grainBlur = d.grainBlur
+    }
     /// `halation_amount`: the back-reflection off the base, as an area
     /// multiplier (RFC-034). 1 is the film's own halo.
     var halation = 1.0             // 0…4
@@ -452,6 +466,8 @@ struct EffectStrengths: Codable, Equatable, Sendable {
         let d = EffectStrengths()
         grain = try c.decodeIfPresent(Double.self, forKey: .grain) ?? d.grain
         grainLayered = try c.decodeIfPresent(Bool.self, forKey: .grainLayered) ?? d.grainLayered
+        grainParticleAreaUM2 = try c.decodeIfPresent(Double.self, forKey: .grainParticleAreaUM2) ?? d.grainParticleAreaUM2
+        grainBlur = try c.decodeIfPresent(Double.self, forKey: .grainBlur) ?? d.grainBlur
         halation = try c.decodeIfPresent(Double.self, forKey: .halation) ?? d.halation
         scatter = try c.decodeIfPresent(Double.self, forKey: .scatter) ?? d.scatter
         antihalationRemoved = try c.decodeIfPresent(Bool.self, forKey: .antihalationRemoved)
@@ -799,6 +815,8 @@ struct FilmParams: Codable, Equatable, Sendable {
             ("halation_scatter_amount", .double(effects.scatter.clamped(to: EffectStrengths.scatterRange)), .shoot),
             ("grain_amount", .double((effects.grain * FilmParams.ownGrain(of: filmStock))
                 .clamped(to: EffectStrengths.grainRange)), .shoot),
+            ("grain_particle_area_um2", .double(effects.grainParticleAreaUM2.clamped(to: EffectStrengths.grainParticleAreaRange)), .shoot),
+            ("grain_blur", .double(effects.grainBlur.clamped(to: EffectStrengths.grainBlurRange)), .shoot),
             ("dir_couplers_active", .bool(effects.couplersActive), .shoot),
             ("dir_couplers_amount", .double(effects.couplers.clamped(to: EffectStrengths.couplersRange)), .shoot),
             ("glare_amount", .double(effects.glare.clamped(to: EffectStrengths.glareRange)), .print),

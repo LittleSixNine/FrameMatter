@@ -1050,3 +1050,34 @@ knows exactly, and halate at what they are. Measured canvas against export (live
 downscaled): the halo's energy is 0.83–1.01 of the export's (the low end a frame of tiny lights), and the frame's mean difference is no
 larger than plain 500T's. The kernel `spk_highlight_headroom` is Metal only: the Vulkan backend
 refuses a back-reflection film at dispatch.
+
+
+## 16. Grain particle area and softness
+
+The left rail's Grain card exposes two existing Spektrafilm fields. Model
+and units were checked against andreavolpato/spektrafilm commit
+`3bb2c2d2801ff68b92019cf1dbcbb133d60832bc`:
+`src/spektrafilm/runtime/params_schema.py` (`GrainParams`),
+`src/spektrafilm/model/grain.py`, and
+`src/spektrafilm_gui/param_manifest.py` (`GRAIN_MANIFEST`).
+
+| wire name | existing model path | default | product range | layer |
+|---|---|---|---|---|
+| `grain_particle_area_um2` | `film_render.grain.particle_area_um2` | 0.2 | 0.01–2 µm² | shoot |
+| `grain_blur` | `film_render.grain.blur` | 0.65 | 0–2 px sigma | shoot |
+
+Both are non-live float fields: editing them rebuilds the film pipeline and
+invalidates the negative. The shader and density-stage calculations are
+unchanged. The ranges are product control bounds, not measured physical
+limits or upstream maxima (the upstream GUI specifies no parameter maxima).
+Zero particle area is rejected because the model divides by it. Existing
+channel and sublayer scales, density minima, uniformity and dye-cloud model
+are untouched. Changing area also changes grain statistics; no compensating
+strength formula is added. Blur acts on grained density, so it can soften
+picture detail and is resolution dependent. Single-layer rendering follows
+the existing upstream sigma > 0.4 threshold; the control does not redefine it.
+
+Both values are persisted inside `FilmParams.effects`, default on legacy
+sidecars, participate in the wire stamp, and travel with the film-effects
+clipboard group. Reset Grain restores only grain settings and enables grain.
+No schema-version bump: these are additive native-product wire fields.

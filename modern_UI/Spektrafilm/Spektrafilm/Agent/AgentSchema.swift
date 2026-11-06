@@ -124,6 +124,8 @@ enum AgentSchema {
                   readOnly: "gaussian is the only product scheme."),
             .init("params.effects.grain", .number(EffectStrengths.grainRange), "Grain strength, × the film's own."),
             .init("params.effects.grainLayered", .bool, "Three-sub-layer grain model."),
+            .init("params.effects.grainParticleAreaUM2", .number(EffectStrengths.grainParticleAreaRange), "Spektrafilm particle area in µm²; changes size and grain statistics."),
+            .init("params.effects.grainBlur", .number(EffectStrengths.grainBlurRange), "Spektrafilm grain-stage Gaussian sigma in pixels; also softens density detail."),
             .init("params.effects.halation", .number(EffectStrengths.halationRange), "Halation strength, × the film's own."),
             .init("params.effects.antihalationRemoved", .bool, "The film without its anti-halation layer (a cine negative with the remjet removed)."),
             .init("params.effects.highlightBoost", .number(EffectStrengths.highlightBoostRange), "Stops added to the highlights before the halo is drawn; 0 is off."),

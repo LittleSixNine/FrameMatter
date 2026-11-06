@@ -94,6 +94,9 @@ final class SettingsClipboardTests: XCTestCase {
         p.contrastMask.active = true
         p.contrastMask.highlights = 1.5
         p.effects.grain = 1.4
+        p.effects.grainParticleAreaUM2 = 0.4
+        p.effects.grainBlur = 0.9
+        p.effects.grainLayered = false
         p.effects.halation = 2
         p.sceneLatitude.highlightPullBack = 2
         p.sceneLatitude.shadowPullBack = 1

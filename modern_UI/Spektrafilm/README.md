@@ -460,3 +460,40 @@ Two habits that made the last rework cheap and are worth keeping:
   reach the screen, `SPEKTRAFILM_CANVAS_LOG=1` prints one line per draw with
   the base texture, the viewport and whether a drawable was available, and one
   line for any render dropped before upload.
+
+
+## Grain card
+
+Grain is a collapsible card on the left rail, between Film and Film Edge.
+Its header enables grain, resets only grain settings, and offers the existing
+sub-layer model (disabled for monochrome film, which uses one layer).
+Strength, Particle Area (µm²) and Softness (Gaussian sigma in output pixels)
+are always available when expanded; Settings → Decouple effects only controls
+the remaining effect strengths on the Pre-Dev rail. Off preserves the values.
+Double-click a slider to restore its default. Larger area also changes grain
+strength; softness also affects density detail. Inspect at native 1:1 before
+judging an export. The existing Spektrafilm grain model is unchanged; source,
+units and product ranges are recorded in API-SPEC §16.
+
+
+Grain verification (test-only probe of the existing density stage):
+
+```bash
+engine/build.sh dylib
+clang++ -std=c++20 -O2 -Iengine/src -Iengine/src/core -Iengine/include \
+  -Iengine/third_party/metal-cpp engine/tests/grain_probe.cpp engine/build/*.o \
+  -framework Metal -framework Foundation -framework QuartzCore \
+  -framework CoreText -framework CoreGraphics -framework Accelerate \
+  -o engine/build/grain_probe
+python engine/tests/parity_grain_controls.py --reference /path/to/spektrafilm
+```
+
+Run from the repository root with Spektrafilm's runtime dependencies installed
+in a separate test environment. The pinned reference above has no service
+package, so this test calls its unmodified `model.grain.apply_grain` directly.
+It checks both grain paths at three densities, changed/default particle areas
+and blur sigmas, per-channel moments and lag-one spatial correlation. Means
+use a six-standard-error bound estimated from 30×30-pixel blocks (with the
+existing 0.004 floor); standard-deviation ratios, skewness and correlation
+use 8%, 0.25 and 0.05 bars. This is density-stage statistical parity, not
+pixel-identical random draws or full print-pipeline parity.

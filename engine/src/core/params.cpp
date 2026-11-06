@@ -53,6 +53,9 @@ const SchemaField kFields[] = {
     {"halation_boost_ev",        "film_render.halation.boost_ev",         F, SHOOT, true, 0.0, 8.0, false},
     {"grain_active",             "film_render.grain.active",              B, SHOOT, false, 0, 0, false},
     {"grain_sublayers_active",   "film_render.grain.sublayers_active",    B, SHOOT, false, 0, 0, false},
+    // Existing Spektrafilm model parameters; ranges are product UI bounds.
+    {"grain_particle_area_um2",  "film_render.grain.particle_area_um2",    F, SHOOT, true, 0.01, 2.0, false},
+    {"grain_blur",               "film_render.grain.blur",                 F, SHOOT, true, 0.0, 2.0, false},
     {"dir_couplers_active",      "film_render.dir_couplers.active",       B, SHOOT, false, 0, 0, false},
     {"dir_couplers_amount",      "film_render.dir_couplers.amount",       F, SHOOT, true, 0.0, 4.0, false},
     {"density_curve_gamma",      "film_render.density_curve_gamma",       F, SHOOT, true, 0.2, 4.0, false},
@@ -268,6 +271,8 @@ double* float_slot(Params& p, const std::string& path) {
     if (path == "camera.scene_latitude.b_shadow_room") return &p.camera.scene_latitude.b_shadow_room;
     if (path == "film_render.halation.scatter_amount") return &p.film_render.halation.scatter_amount;
     if (path == "film_render.grain.amount") return &p.film_render.grain.amount;
+    if (path == "film_render.grain.particle_area_um2") return &p.film_render.grain.particle_area_um2;
+    if (path == "film_render.grain.blur") return &p.film_render.grain.blur;
     if (path == "film_render.overscan.fog") return &p.film_render.overscan.fog;
     if (path == "film_render.overscan.leaks") return &p.film_render.overscan.leaks;
     if (path == "film_render.overscan.f_number") return &p.film_render.overscan.f_number;

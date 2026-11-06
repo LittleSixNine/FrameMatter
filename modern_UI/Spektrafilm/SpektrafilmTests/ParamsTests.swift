@@ -72,7 +72,7 @@ final class ParamsTests: XCTestCase {
         // The names the Python schema declares (service/schema.py). A rename
         // there must be mirrored here or the delta is rejected at runtime.
         let known: Set<String> = ["film_stock", "print_stock", "exposure_compensation_ev", "film_format_mm",
-                                  "grain_active", "grain_sublayers_active", "halation_active", "print_exposure",
+                                  "grain_active", "grain_sublayers_active", "grain_particle_area_um2", "grain_blur", "halation_active", "print_exposure",
                                   "y_filter_shift", "m_filter_shift", "glare_active", "scan_film",
                                   "extended_dynamic_range",
                                   // RFC-015 §3. Shoot layer; absent from a legacy

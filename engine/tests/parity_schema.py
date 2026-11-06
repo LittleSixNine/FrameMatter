@@ -152,6 +152,15 @@ NATIVE_ONLY = {
         "path": "film_render.halation.scatter_amount", "type": "float", "layer": "shoot",
         "default": 1.0, "live": False, "range": [0.0, 1.0],
     },
+    # Spektrafilm 3bb2c2d GrainParams fields, newly exposed on the product wire.
+    "grain_particle_area_um2": {
+        "path": "film_render.grain.particle_area_um2", "type": "float", "layer": "shoot",
+        "default": 0.2, "live": False, "range": [0.01, 2.0],
+    },
+    "grain_blur": {
+        "path": "film_render.grain.blur", "type": "float", "layer": "shoot",
+        "default": 0.65, "live": False, "range": [0.0, 2.0],
+    },
     "grain_amount": {
         "path": "film_render.grain.amount", "type": "float", "layer": "shoot",
         "default": 1.0, "live": False, "range": [0.0, 2.0],
