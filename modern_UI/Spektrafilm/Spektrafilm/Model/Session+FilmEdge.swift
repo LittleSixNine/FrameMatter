@@ -37,7 +37,11 @@ import Metal
 /// crosses into the engine, and a field the file does not carry is left out —
 /// never invented.
 struct ShootingData: Equatable, Sendable {
-    struct Day: Equatable, Sendable { var year: Int, month: Int, day: Int }
+    struct Day: Equatable, Sendable {
+        var year: Int, month: Int, day: Int
+        var hour: Int? = nil
+        var minute: Int? = nil
+    }
 
     /// `DateTimeOriginal`: when the shutter fired.
     var captureDay: Day?
@@ -70,7 +74,15 @@ struct ShootingData: Equatable, Sendable {
         let parts = s.prefix(10).split(separator: ":").compactMap { Int($0) }
         guard parts.count == 3, (1...12).contains(parts[1]), (1...31).contains(parts[2]),
               parts[0] > 1800 else { return nil }
-        return Day(year: parts[0], month: parts[1], day: parts[2])
+        var result = Day(year: parts[0], month: parts[1], day: parts[2])
+        let clock = s.split(separator: " ")
+        if clock.count == 2 {
+            let time = clock[1].split(separator: ":").compactMap { Int($0) }
+            if time.count == 3, (0...23).contains(time[0]), (0...59).contains(time[1]), (0...59).contains(time[2]) {
+                result.hour = time[0]; result.minute = time[1]
+            }
+        }
+        return result
     }
 
     private static func positive(_ v: Any?) -> Double? {
@@ -82,7 +94,7 @@ struct ShootingData: Equatable, Sendable {
     /// (an empty text prints nothing).
     func dateText(order: DateBackOrder) -> String {
         guard let d = captureDay else { return "" }
-        return DateBackSettings.format(year: d.year, month: d.month, day: d.day, order: order)
+        return DateBackSettings.format(year: d.year, month: d.month, day: d.day, hour: d.hour, minute: d.minute, order: order)
     }
 
     /// The longest line Nikon's between-frames imprint holds (RFC-033 §5):
@@ -264,7 +276,7 @@ extension Session {
         p.filmEdge.framing = framingKey(geometry)
         p.dateBack.framing = geometry.isIdentity ? "" : framingKey(geometry)
         p.dateBack.text = p.dateBack.face == .data
-            ? shooting.dataText : shooting.dateText(order: p.dateBack.order)
+            ? shooting.dataText : p.dateBack.resolvedDateText(shooting: shooting)
         p.dateBack.dataText = shooting.dataText
         return p
     }
@@ -286,7 +298,7 @@ extension Session {
         if pair != nil {
             r.filmEdge.format = .f135Half
             let second = pairRightExif?.shooting ?? ShootingData()
-            r.dateBack.textB = r.dateBack.face == .data ? second.dataText : second.dateText(order: r.dateBack.order)
+            r.dateBack.textB = r.dateBack.face == .data ? second.dataText : r.dateBack.resolvedDateText(shooting: second)
             // A half-frame camera's back, with or without the film around it.
             r.dateBack.camera = .f135Half
             // The middle of the gap, along the piece's long edge: where the
@@ -585,5 +597,17 @@ extension Session {
                                              format: edge.format, view: edge.view, pair: edge.pair)
         guard max(canvas.width, canvas.height) > CGFloat(limit) else { return nil }
         return FilmEdgeTooLarge(canvas: canvas, limit: limit, format: edge.format)
+    }
+}
+
+
+extension DateBackSettings {
+    func resolvedDateText(shooting: ShootingData, order selectedOrder: DateBackOrder? = nil) -> String {
+        let chosen = selectedOrder ?? order
+        guard let customDateTime else { return shooting.dateText(order: chosen) }
+        guard Self.timeFormatter().date(from: customDateTime) != nil,
+              let d = ShootingData.day(customDateTime) else { return "" }
+        return Self.format(year: d.year, month: d.month, day: d.day,
+                           hour: d.hour, minute: d.minute, order: chosen)
     }
 }

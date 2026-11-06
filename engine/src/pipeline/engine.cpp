@@ -20,6 +20,9 @@
 // caller's own retention is the cache, and `spk_session_release` is when it
 // ends. The `session_cache` field stays in `capabilities` so the frontend's
 // status bar keeps working; it reports the sessions currently open.
+#ifdef __APPLE__
+#include <CoreText/CoreText.h>
+#endif
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -576,6 +579,18 @@ spk_engine* spk_engine_create(const char* resources_dir, void* device) {
     }
 
     if (!engine->print_luts.init(engine->resources_dir, error)) { g_error = error; return nullptr; }
+#ifdef __APPLE__
+    // Optional for legacy resources; choosing LCD Style 1 (DSEG7) checks the resolved font.
+    const std::string font_path = engine->resources_dir + "/fonts/DSEG7ClassicMini-BoldItalic.ttf";
+    CFURLRef font_url = CFURLCreateFromFileSystemRepresentation(nullptr,
+        reinterpret_cast<const UInt8*>(font_path.data()), font_path.size(), false);
+    if (font_url) {
+        CFErrorRef font_error = nullptr;
+        CTFontManagerRegisterFontsForURL(font_url, kCTFontManagerScopeProcess, &font_error);
+        if (font_error) CFRelease(font_error); // A second engine may register the same face.
+        CFRelease(font_url);
+    }
+#endif
 
 #ifndef __APPLE__
     if (device) { g_error = "Windows device-buffer input is not implemented yet; pass null"; return nullptr; }

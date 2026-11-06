@@ -1081,3 +1081,55 @@ Both values are persisted inside `FilmParams.effects`, default on legacy
 sidecars, participate in the wire stamp, and travel with the film-effects
 clipboard group. Reset Grain restores only grain settings and enables grain.
 No schema-version bump: these are additive native-product wire fields.
+
+
+## 17. Date Back: LCD Style 1, capture clock and diagonal margin
+
+LCD Style 2 remains `date_imprint_style = lcd`. Style 1 maps to `dseg`, using
+unmodified DSEG7 Classic Mini Bold Italic v0.46 (Keshikan, OFL-1.1), bundled
+under `engine/resources/fonts/` with its license and source. Display numbering
+does not migrate persisted IDs: `style2` remains DSEG (displayed Style 1), and
+`style1` remains the original face (displayed Style 2). CoreText supplies
+the glyph masks; no extra italic shear is applied. Missing fonts and unsupported
+characters fail explicitly. DSEG7 lacks an apostrophe: the existing apostrophe
+mask is reused. Both LCD styles support a colon. Projection blur, lamp exposure,
+halation, film development and grain remain the existing date-imprint chain.
+
+`date_imprint_margin`: float, shoot layer, non-live, range −1…100, default −1.
+−1 uses the previous millimetre insets. 0…100 positions the date inward from its
+chosen picture corner toward a centered text box, retaining the full text inside
+the picture where it fits. It is relative to the picture gate, excluding film
+borders. Only 135 full/half frames with in-picture dates use it; 120 margin
+imprints and between-frame data/date positions are unchanged. New app settings
+default to 20; legacy sidecars decode to nil and send −1 until the slider is moved.
+
+The app's order `dayTime` formats the capture day/hour/minute as `DD HH : MM`,
+zero-padded, without inventing a missing EXIF clock. `customDateTime` optionally
+stores an EXIF-format local wall time (`yyyy:MM:dd HH:mm:ss`) and overrides EXIF
+for both halves of a pair; disabling Manual Time restores EXIF. Old date formats
+and the original date style stay unchanged. New settings round-trip in the
+sidecar and participate in the existing render stamp and undo path. Random
+date-back illumination is intentionally deferred.
+
+The app removes the year apostrophe for LCD Style 1 before sending either frame's date text. Style 2 and dot-matrix text are unchanged; day/hour/minute retains its colon.
+
+
+LCD Style 1 spacing: `date_imprint_field_gap` maps to
+`film_render.date_imprint.field_gap_h` (float, shoot, non-live, 0.20–3.00,
+default 1.20). It replaces the font's space width between adjacent numeric
+fields, in digit-height units H. Consecutive digits receive fixed +0.20H
+tracking. Hour/minute clear spacing is split equally around the colon’s visible glyph, so the colon remains centered as spacing changes.
+The same glyph layout measures and draws the text, so alignment includes the
+spacing. These changes apply only to `dseg`; LCD Style 2 and dot-matrix/data
+faces do not read the field-gap setting. The app stores it as
+`params.dateBack.fieldGapH`, defaults missing values to 1.20, and exposes its
+slider only for LCD Style 1. Glyph outlines and optical processing are unchanged.
+
+
+All date faces share `size`: range 0.2–3, default/reset 0.5. Explicitly saved
+sizes remain unchanged; only new or missing settings receive the new default.
+The engine's default and validation range match the app. H is the actual digit height before
+optical softness; for a 135 in-picture LCD imprint the existing reference
+height is 1.3 mm × size. At size 0.5, H is 0.65 mm. Spacing scales with H,
+and raster pixel counts follow image resolution and the film-format pixel
+pitch. These are typography controls, not universal camera calibrations.

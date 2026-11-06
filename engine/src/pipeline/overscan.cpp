@@ -286,6 +286,11 @@ void seven_seg_polys(const std::string& text, double h, double s0, double t0, Op
     };
     for (char ch : text) {
         if (ch == ' ') { x += 0.45 * h; continue; }
+        if (ch == ':') {
+            rect(x + 0.1 * h, 0.28 * h, th, th);
+            rect(x + 0.1 * h, 0.62 * h, th, th);
+            x += 0.45 * h; continue;
+        }
         if (ch == '\'') { rect(x, 0.72 * h, th, 0.28 * h); x += 0.35 * h; continue; }
         if (ch < '0' || ch > '9') { x += 0.45 * h; continue; }
         const char* segs = kSeg[ch - '0'];
@@ -308,11 +313,98 @@ void seven_seg_polys(const std::string& text, double h, double s0, double t0, Op
 double seven_seg_width(const std::string& text, double h) {
     double x = 0.0;
     for (char ch : text) {
-        if (ch == ' ') x += 0.45 * h;
+        if (ch == ' ' || ch == ':') x += 0.45 * h;
         else if (ch == '\'') x += 0.35 * h;
         else x += 0.52 * h + 0.28 * h;
     }
     return std::max(0.0, x - 0.28 * h);
+}
+
+
+constexpr const char* kDateFont = "DSEG7ClassicMini-BoldItalic";
+
+// Read glyph geometry from the unmodified font; keep the old apostrophe mask,
+// which DSEG7 does not supply, rather than allowing a system-font fallback.
+double dseg_face(const std::string& text, double h, double field_gap_h, std::vector<Op>* out = nullptr) {
+    const size_t colon = text.find(':');
+    if (colon != std::string::npos && text.find(':', colon + 1) == std::string::npos) {
+        std::string before = text.substr(0, colon), after = text.substr(colon + 1);
+        const size_t end = before.find_last_not_of(' '), start = after.find_first_not_of(' ');
+        if (end != std::string::npos && start != std::string::npos) {
+            before.resize(end + 1); after.erase(0, start);
+            auto append = [&](const std::string& part, double x) {
+                const size_t first = out ? out->size() : 0;
+                const double width = dseg_face(part, h, field_gap_h, out);
+                if (out) for (size_t i = first; i < out->size(); ++i) {
+                    Op& op = (*out)[i];
+                    if (op.kind == Op::Poly) {
+                        for (size_t j = 0; j < op.pts.size(); j += 2) op.pts[j] += x;
+                    } else { op.s += x; }
+                }
+                return width;
+            };
+            const double left = append(before, 0), gap = field_gap_h * h;
+            // Split the clear spacing equally around the colon's visible ink.
+            const double middle = append(":", left + gap * 0.5);
+            const double right = append(after, left + gap + middle);
+            return left + gap + middle + right;
+        }
+    }
+    CTFontRef unit = CTFontCreateWithName(CFSTR("DSEG7ClassicMini-BoldItalic"), 1, nullptr);
+    const UniChar eight = '8';
+    CGGlyph g8;
+    CTFontGetGlyphsForCharacters(unit, &eight, &g8, 1);
+    const CGRect bounds = CTFontGetBoundingRectsForGlyphs(unit, kCTFontOrientationHorizontal, &g8, nullptr, 1);
+    const double size = h / bounds.size.height;
+    CFRelease(unit);
+    CTFontRef font = CTFontCreateWithName(CFSTR("DSEG7ClassicMini-BoldItalic"), size, nullptr);
+    double x = 0, xmin = 1e30, xmax = -1e30;
+    const size_t first = out ? out->size() : 0;
+    const double baseline = bounds.origin.y * size;
+    auto digit = [](char ch) { return ch >= '0' && ch <= '9'; };
+    for (size_t index = 0; index < text.size(); ++index) {
+        const char ch = text[index];
+        // Only adjacent digits get tracking; numeric-field separators replace
+        // the font's space advance. The time colon is placed above.
+        if (digit(ch) && index > 0 && digit(text[index - 1])) x += 0.20 * h;
+        if (ch == ' ' && index > 0 && index + 1 < text.size() &&
+            digit(text[index - 1]) && digit(text[index + 1])) {
+            x += field_gap_h * h;
+            continue;
+        }
+        if (ch == '\'') {
+            if (out) seven_seg_polys("'", h, x, 0, Op{}, *out);
+            xmin = std::min(xmin, x); xmax = std::max(xmax, x + 0.14 * h);
+            x += 0.35 * h;
+            continue;
+        }
+        UniChar character = static_cast<unsigned char>(ch);
+        CGGlyph glyph;
+        CTFontGetGlyphsForCharacters(font, &character, &glyph, 1);
+        CGSize advance;
+        CTFontGetAdvancesForGlyphs(font, kCTFontOrientationHorizontal, &glyph, &advance, 1);
+        if (ch != ' ') {
+            const CGRect ink = CTFontGetBoundingRectsForGlyphs(font, kCTFontOrientationHorizontal, &glyph, nullptr, 1);
+            xmin = std::min(xmin, x + ink.origin.x);
+            xmax = std::max(xmax, x + ink.origin.x + ink.size.width);
+        }
+        if (out && ch != ' ') {
+            Op op;
+            op.font = kDateFont; op.text = std::string(1, ch);
+            op.size_mm = size; op.s = x; op.t = baseline;
+            out->push_back(op);
+        }
+        x += advance.width;
+    }
+    CFRelease(font);
+    if (xmax < xmin) return 0;
+    if (out) for (size_t i = first; i < out->size(); ++i) {
+        Op& op = (*out)[i];
+        if (op.kind == Op::Poly) {
+            for (size_t j = 0; j < op.pts.size(); j += 2) op.pts[j] -= xmin;
+        } else { op.s -= xmin; }
+    }
+    return xmax - xmin;
 }
 
 // A light's per-layer exposure weights through this film: sum(L * T * S_c) /
@@ -2029,10 +2121,31 @@ void imprint_groups(const OverscanLayout& L, const Params& params, double frame_
     const double e = kMidGrey * std::pow(2.0, d.exposure_ev);
     for (int c = 0; c < 3; ++c) g.exposure[c] = L.date_rgb[c] * e;
     g.blur_mm = 0.015;
-    const double k = std::clamp(d.size, 0.4, 3.0);
+    const double k = std::clamp(d.size, 0.2, 3.0);
     // A face's glyphs, laid out in glyph space (x right, y up from the
     // baseline) and mapped to film mm by `place(x, y) -> (s, t)`.
     auto draw = [&](const std::string& text, const std::string& style, double h, auto place) {
+        if (style == "dseg") {
+            std::vector<Op> glyphs;
+            dseg_face(text, h, d.field_gap_h, &glyphs);
+            for (Op& op : glyphs) {
+                if (op.kind == Op::Poly) {
+                    for (size_t i = 0; i + 1 < op.pts.size(); i += 2) {
+                        double s, t;
+                        place(op.pts[i], -op.pts[i + 1], s, t);
+                        op.pts[i] = s; op.pts[i + 1] = t;
+                    }
+                } else {
+                    double s, t, sx, tx;
+                    place(op.s, -op.t, s, t);
+                    place(op.s + 1, -op.t, sx, tx);
+                    op.s = s; op.t = t;
+                    op.rot_deg = std::atan2(tx - t, sx - s) * 180.0 / M_PI;
+                }
+                g.ops.push_back(op);
+            }
+            return;
+        }
         if (style == "lcd") {
             Op proto;
             proto.skew = std::tan(8.0 * M_PI / 180.0);
@@ -2075,6 +2188,7 @@ void imprint_groups(const OverscanLayout& L, const Params& params, double frame_
     };
     auto text_width = [&](const std::string& text, const std::string& style, double h) {
         if (style == "lcd") return seven_seg_width(text, h);
+        if (style == "dseg") return dseg_face(text, h, d.field_gap_h);
         return dot_matrix(text, h, [](double, double, double) {});
     };
 
@@ -2137,8 +2251,28 @@ void imprint_groups(const OverscanLayout& L, const Params& params, double frame_
         // middle would otherwise carry the text off its edge. Text wider than
         // the frame starts at its left and is clipped by the gate.
         const double over = (d.style == "lcd" ? h * std::tan(8.0 * M_PI / 180.0) : 0.0) + 0.1;   // the slant, and the blur
-        const double s0 = std::clamp(right ? fs + fw - d.inset_x - w : fs + d.inset_x, fs + 0.1, std::max(fs + 0.1, fs + fw - w - over));
-        const double base = std::clamp(bottom ? ft + fh - d.inset_y : ft + d.inset_y + h, std::min(ft + h + 0.1, ft + fh - 0.1), ft + fh - 0.1);
+        double s0 = std::clamp(right ? fs + fw - d.inset_x - w : fs + d.inset_x, fs + 0.1, std::max(fs + 0.1, fs + fw - w - over));
+        double base = std::clamp(bottom ? ft + fh - d.inset_y : ft + d.inset_y + h, std::min(ft + h + 0.1, ft + fh - 0.1), ft + fh - 0.1);
+        if (d.margin_percent >= 0) {
+            // Only this 135 in-picture path uses the margin; the 120 margin
+            // and between-frame paths above keep their camera-defined positions.
+            const double q = std::clamp(d.margin_percent, 0.0, 100.0) / 100.0;
+            double left = 0, ink_width = w;
+            if (d.style == "lcd") {
+                Op proto; proto.skew = std::tan(8.0 * M_PI / 180.0);
+                std::vector<Op> glyphs;
+                seven_seg_polys(date_text, h, 0, 0, proto, glyphs);
+                double xmin = 1e30, xmax = -1e30;
+                for (const Op& op : glyphs) for (size_t i = 0; i < op.pts.size(); i += 2) {
+                    xmin = std::min(xmin, op.pts[i]); xmax = std::max(xmax, op.pts[i]);
+                }
+                if (xmax >= xmin) { left = xmin; ink_width = xmax - xmin; }
+            }
+            const double start_s = right ? std::max(0.1, fw - ink_width - 0.1) : 0.1;
+            const double start_t = bottom ? fh - 0.1 : std::min(h + 0.1, fh - 0.1);
+            s0 = fs + start_s + q * ((fw - ink_width) * 0.5 - start_s) - left;
+            base = ft + start_t + q * ((fh + h) * 0.5 - start_t);
+        }
         draw(date_text, d.style, h, [&](double x, double y, double& ss, double& tt) {
             const double sf = s0 + x, tf = base - y;
             if (!turned) { ss = sf; tt = tf; }
@@ -2189,9 +2323,21 @@ std::string Pipeline::overscan_geometry_json() const {
 bool Pipeline::node_overscan(const Image& in, Image& out, std::string& error) {
     const DateImprintParams& di = params_.film_render.date_imprint;
     if (di.active) {
-        if (di.style != "lcd" && di.style != "dots" && di.style != "data") {
-            error = "date_imprint: unknown style '" + di.style + "' (lcd, dots, data)";
+        if (di.style != "lcd" && di.style != "dseg" && di.style != "dots" && di.style != "data") {
+            error = "date_imprint: unknown style '" + di.style + "' (lcd, dseg, dots, data)";
             return false;
+        }
+        if (di.style == "dseg") {
+            CTFontRef font = CTFontCreateWithName(CFSTR("DSEG7ClassicMini-BoldItalic"), 1, nullptr);
+            CFStringRef name = CTFontCopyPostScriptName(font);
+            const bool found = CFEqual(name, CFSTR("DSEG7ClassicMini-BoldItalic"));
+            CFRelease(name); CFRelease(font);
+            if (!found) { error = "LCD Style 1 requires bundled DSEG7ClassicMini-BoldItalic.ttf"; return false; }
+            for (const std::string* text : {&di.text, &di.text_b}) {
+                for (char ch : *text) if (!(ch >= '0' && ch <= '9') && ch != ' ' && ch != ':' && ch != '\'') {
+                    error = "LCD Style 1 supports digits, spaces, apostrophes and colons"; return false;
+                }
+            }
         }
         if (di.corner != "br" && di.corner != "bl" && di.corner != "tr" && di.corner != "tl") {
             error = "date_imprint: unknown corner '" + di.corner + "' (br, bl, tr, tl)";

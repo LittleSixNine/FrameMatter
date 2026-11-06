@@ -18,9 +18,8 @@
 //  margin (no medium-format back printed in the picture), so it has no
 //  corner and needs the film edge.
 //
-//  **Not here yet:** the data face's colour (answer E12 wants both; the engine
-//  has one), the user's own text and the insets. Each needs a decision or
-//  engine work before it is a control.
+//  LCD styles share the existing optical chain. Manual wall time overrides
+//  EXIF; the diagonal margin belongs only to 135 in-picture imprints.
 
 import SwiftUI
 
@@ -59,7 +58,22 @@ struct DateBackSection: View {
                         .padding(.leading, Theme.Metric.sliderLabelWidth)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                if date.face == .lcd {
+                    PillMenu(label: L("LCD style", zh: "LCD 样式"), options: DateBackLCDStyle.allCases,
+                             title: { $0.title },
+                             selection: bind(\.lcdStyle))
+                        .help(L("Style 1: DSEG7 Classic Mini Bold Italic. Style 2: original segments.",
+                                zh: "样式 1：DSEG7 Classic Mini Bold Italic。样式 2：原有七段数字。"))
+                }
+                if date.face == .lcd, date.lcdStyle == .dseg {
+                    ScrubSlider(label: L("Field spacing", zh: "字段间距"), value: bind(\.fieldGapH),
+                                range: DateBackSettings.fieldGapRange, zero: 1.20, snap: 0.05,
+                                format: { String(format: "%.2fH", $0) })
+                        .help(L("H is the digit height. Spacing between date fields, including hour and minute; the colon stays centered. Extra spacing inside each number is fixed at 0.20H.",
+                                zh: "H 为数字高度。调整日期字段及小时、分钟之间的间距，冒号保持居中；字段内数字额外字距固定为 0.20H。"))
+                }
                 textRow
+                if date.face != .data { manualTimeRows }
                 if date.face != .data {
                     ToggleRow(label: L(.dateWithData), isOn: bind(\.withData),
                               enabled: date.prints(.data, filmEdge: edge), reason: dataNeedsFilmEdge,
@@ -91,6 +105,21 @@ struct DateBackSection: View {
                 ScrubSlider(label: L(.dateSize), value: bind(\.size), range: sizeRange,
                             zero: DateBackSettings.default.size, snap: 0.1,
                             format: { String(format: "%.1f×", $0) })
+                if date.face != .data, camera?.group == .film135 {
+                    ScrubSlider(label: L("Margin", zh: "边距"),
+                                value: Binding(get: { date.marginPercent ?? 20 }, set: { set(\.marginPercent, $0) }),
+                                range: DateBackSettings.marginRange, zero: 20, snap: 1,
+                                format: { String(format: "%.0f", $0) },
+                                disabled: date.placement != .frame)
+                        .help(L("135 only. 0 touches the picture corner; 100 centers the imprint. Film borders are excluded.",
+                                zh: "仅限 135 胶片。0 贴近照片内容角落，100 文字居中，沿对角线移动；不包含片边。"))
+                    if date.marginPercent == nil {
+                        Text(L("Legacy inset retained; moving Margin enables diagonal placement.",
+                               zh: "沿用旧版边距；调整后启用对角线定位。"))
+                            .font(Theme.Font.caption).foregroundStyle(Theme.Ink.tertiary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
                 ScrubSlider(label: L(.dateBrightness), sublabel: L(.dateStops),
                             value: bind(\.brightnessEV), range: DateBackSettings.brightnessRange,
                             zero: DateBackSettings.default.brightnessEV, snap: 0.5,
@@ -150,7 +179,8 @@ struct DateBackSection: View {
             Spacer(minLength: 6)
             // Wraps rather than widens the rail: "no date in EXIF" is the
             // longer of the two and the pill before it is fixed.
-            Text(date.text.isEmpty ? L("no date in EXIF", zh: "EXIF 中无日期") : L(.dateFromEXIF))
+            Text(date.customDateTime != nil ? L("Manual", zh: "手动")
+                 : date.text.isEmpty ? L("no date/time in EXIF", zh: "EXIF 中无所需日期或时间") : L(.dateFromEXIF))
                 .font(Theme.Font.caption).foregroundStyle(Theme.Ink.tertiary)
                 .multilineTextAlignment(.trailing)
                 .fixedSize(horizontal: false, vertical: true)
@@ -172,6 +202,31 @@ struct DateBackSection: View {
             Spacer(minLength: 0)
         }
         .padding(.vertical, 2)
+    }
+
+    @ViewBuilder private var manualTimeRows: some View {
+        ToggleRow(label: L("Manual time", zh: "手动时间"),
+                  isOn: Binding(get: { date.customDateTime != nil }, set: { on in
+                      var p = session.params
+                      p.dateBack.customText = nil
+                      if on {
+                          let d = session.shootingData.captureDay
+                          let components = DateComponents(calendar: Calendar(identifier: .gregorian),
+                                                          year: d?.year, month: d?.month, day: d?.day,
+                                                          hour: d?.hour, minute: d?.minute)
+                          let value = d == nil ? Date() : components.date ?? Date()
+                          p.dateBack.customDateTime = DateBackSettings.timeFormatter().string(from: value)
+                      } else { p.dateBack.customDateTime = nil }
+                      session.params = p
+                  }))
+        if date.customDateTime != nil {
+            DatePicker(L("Imprint time", zh: "打印时间"),
+                       selection: Binding(get: { DateBackSettings.timeFormatter().date(from: date.customDateTime ?? "") ?? Date() },
+                                          set: { set(\.customDateTime, DateBackSettings.timeFormatter().string(from: $0)) }),
+                       displayedComponents: [.date, .hourAndMinute])
+                .labelsHidden().datePickerStyle(.field).controlSize(.small)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     // MARK: words
@@ -242,12 +297,10 @@ struct DateBackSection: View {
     /// it as `DateBackSettings.format` does — three fields, the year behind an
     /// apostrophe — so the fields can be moved without the date itself.
     private func example(_ order: DateBackOrder) -> String {
-        let parts = date.text.split(separator: " ").map(String.init)
-        guard parts.count == 3 else {
-            return DateBackSettings.format(year: 2026, month: 10, day: 1, order: order)
-        }
-        let (y, m, d) = date.order == .japan ? (parts[0], parts[1], parts[2]) : (parts[2], parts[0], parts[1])
-        return order == .japan ? "\(y) \(m) \(d)" : "\(m) \(d) \(y)"
+        let resolved = date.resolvedDateText(shooting: session.shootingData, order: order)
+        return date.imprintText(resolved.isEmpty
+            ? DateBackSettings.format(year: 2026, month: 9, day: 15, hour: 12, minute: 37, order: order)
+            : resolved)
     }
 
     // MARK: writes

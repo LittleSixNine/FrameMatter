@@ -251,11 +251,19 @@ NATIVE_ONLY = {
     },
     "date_imprint_size": {
         "path": "film_render.date_imprint.size", "type": "float", "layer": "shoot",
-        "default": 1.0, "live": False, "range": [0.4, 3.0],
+        "default": 0.5, "live": False, "range": [0.2, 3.0],
     },
     "date_imprint_corner": {
         "path": "film_render.date_imprint.corner", "type": "str", "layer": "shoot",
         "default": 'br', "live": False, "range": None,
+    },
+    "date_imprint_field_gap": {
+        "path": "film_render.date_imprint.field_gap_h", "type": "float", "layer": "shoot",
+        "default": 1.20, "live": False, "range": [0.20, 3.00],
+    },
+    "date_imprint_margin": {
+        "path": "film_render.date_imprint.margin_percent", "type": "float", "layer": "shoot",
+        "default": -1.0, "live": False, "range": [-1.0, 100.0],
     },
     "date_imprint_inset_x": {
         "path": "film_render.date_imprint.inset_x", "type": "float", "layer": "shoot",

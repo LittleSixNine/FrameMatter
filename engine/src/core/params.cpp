@@ -167,8 +167,10 @@ const SchemaField kFields[] = {
     {"date_imprint_placement",   "film_render.date_imprint.placement",    S, SHOOT, false, 0, 0, false},
     {"date_imprint_ev",          "film_render.date_imprint.exposure_ev",  F, SHOOT, true, -2.0, 8.0, false},
     {"date_imprint_style",       "film_render.date_imprint.style",        S, SHOOT, false, 0, 0, false},
-    {"date_imprint_size",        "film_render.date_imprint.size",         F, SHOOT, true, 0.4, 3.0, false},
+    {"date_imprint_size",        "film_render.date_imprint.size",         F, SHOOT, true, 0.2, 3.0, false},
     {"date_imprint_corner",      "film_render.date_imprint.corner",       S, SHOOT, false, 0, 0, false},
+    {"date_imprint_field_gap",   "film_render.date_imprint.field_gap_h",   F, SHOOT, true, 0.20, 3.00, false},
+    {"date_imprint_margin",      "film_render.date_imprint.margin_percent", F, SHOOT, true, -1.0, 100.0, false},
     {"date_imprint_inset_x",     "film_render.date_imprint.inset_x",      F, SHOOT, true, 0.0, 30.0, false},
     {"date_imprint_inset_y",     "film_render.date_imprint.inset_y",      F, SHOOT, true, 0.0, 30.0, false},
     // The film with its anti-halation layer taken off (a cine negative with
@@ -278,6 +280,8 @@ double* float_slot(Params& p, const std::string& path) {
     if (path == "film_render.overscan.f_number") return &p.film_render.overscan.f_number;
     if (path == "film_render.date_imprint.exposure_ev") return &p.film_render.date_imprint.exposure_ev;
     if (path == "film_render.date_imprint.size") return &p.film_render.date_imprint.size;
+    if (path == "film_render.date_imprint.field_gap_h") return &p.film_render.date_imprint.field_gap_h;
+    if (path == "film_render.date_imprint.margin_percent") return &p.film_render.date_imprint.margin_percent;
     if (path == "film_render.date_imprint.inset_x") return &p.film_render.date_imprint.inset_x;
     if (path == "film_render.date_imprint.inset_y") return &p.film_render.date_imprint.inset_y;
     if (path == "print_render.glare.amount") return &p.print_render.glare.amount;
@@ -460,6 +464,11 @@ bool validate_delta(const Json& delta, std::string& error, std::string& param) {
         if (kv.first == "scene_latitude_norm" && !is_known_scene_latitude_norm(v.as_string())) {
             error = "'scene_latitude_norm' = '" + v.as_string() +
                     "' is not a norm (power, y, max)";
+            param = kv.first;
+            return false;
+        }
+        if (kv.first == "date_imprint_margin" && v.as_double() < 0.0 && v.as_double() != -1.0) {
+            error = "date_imprint_margin must be -1 (legacy) or within [0, 100]";
             param = kv.first;
             return false;
         }

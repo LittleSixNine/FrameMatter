@@ -58,7 +58,7 @@ enum S: String, CaseIterable, Sendable {
     case filmGroupPositive, filmGroupNegative
     case filmFormat, filmFormatSide, filmFormatShort, filmFormatLong
     case filmFormatSideLength
-    case filmGrain, filmHalation, filmGlare, grainParticleArea, grainSoftness
+    case filmGrain, filmHalation, filmGlare, grainParticleArea, grainSoftness, dateOrderDayTime
     // RFC-025, shown only with Settings → Decouple effects.
     case filmEffectStrength, filmGrainLayers, filmScatter, filmCouplers
 
@@ -274,6 +274,7 @@ extension S {
         case .filmFormatSideLength: "Side Length"
         case .grainParticleArea: "Particle Area"
         case .grainSoftness: "Softness"
+        case .dateOrderDayTime: "Day Hour : Minute"
         case .filmGrain: "Grain"
         case .filmHalation: "Halation"
         case .filmGlare: "Glare"
@@ -599,6 +600,7 @@ extension S {
         case .filmFormatSideLength: "边长"
         case .grainParticleArea: "粗细"
         case .grainSoftness: "柔化"
+        case .dateOrderDayTime: "日 时 : 分"
         case .filmGrain: "颗粒"
         case .filmHalation: "光晕"
         case .filmGlare: "耀光"
@@ -913,12 +915,25 @@ extension DateBackFace {
     }
 }
 
+extension DateBackLCDStyle {
+    @MainActor var title: String {
+        self == .dseg ? L("LCD Style 1 (DSEG7)", zh: "LCD 样式 1（DSEG7）")
+                     : L("LCD Style 2", zh: "LCD 样式 2")
+    }
+}
+
 extension DateBackPlacement {
     var key: S { self == .frame ? .dateInFrame : .dateBetween }
 }
 
 extension DateBackOrder {
-    var key: S { self == .japan ? .dateOrderJapan : .dateOrderUS }
+    var key: S {
+        switch self {
+        case .japan: .dateOrderJapan
+        case .us: .dateOrderUS
+        case .dayTime: .dateOrderDayTime
+        }
+    }
 }
 
 // MARK: - catalogue group headers

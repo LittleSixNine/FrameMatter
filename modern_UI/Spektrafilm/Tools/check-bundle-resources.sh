@@ -26,7 +26,7 @@ root=${SRCROOT:-$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)}
 res="$root/Spektrafilm/Resources"
 
 missing=""
-for f in spektrafilm_constants.bin spektrafilm.metallib neutral_print_filters.json print_luts.json; do
+for f in spektrafilm_constants.bin spektrafilm.metallib neutral_print_filters.json print_luts.json fonts/DSEG7ClassicMini-BoldItalic.ttf fonts/DSEG-LICENSE.txt; do
   [ -f "$res/engine/$f" ] || missing="$missing engine/$f"
 done
 [ -d "$res/engine/profiles" ] || missing="$missing engine/profiles/"

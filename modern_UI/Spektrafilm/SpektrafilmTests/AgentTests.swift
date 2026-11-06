@@ -47,6 +47,7 @@ final class AgentSchemaTests: XCTestCase {
         g.lockedRatio = 1.5                     // optional, like intendedSize
         var p = FilmParams()
         p.dateBack.customText = "'26 1 1"       // likewise
+        p.dateBack.customDateTime = "2026:09:15 12:37:00"
         let doc = try AgentDocument(params: p, adjustments: Adjustments(),
                                     geometry: g, decode: DecodeSettings()).json
         for f in AgentSchema.fields {

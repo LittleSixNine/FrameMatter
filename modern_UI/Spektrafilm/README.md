@@ -497,3 +497,40 @@ use a six-standard-error bound estimated from 30×30-pixel blocks (with the
 existing 0.004 floor); standard-deviation ratios, skewness and correlation
 use 8%, 0.25 and 0.05 bars. This is density-stage statistical parity, not
 pixel-identical random draws or full print-pipeline parity.
+
+
+## Date Back controls
+
+LCD has two substyles: Style 1 (DSEG7) is the bundled
+DSEG7 Classic Mini Bold Italic v0.46, by Keshikan (OFL-1.1; source and license
+in `engine/resources/fonts/`). It changes the exposure mask and keeps the
+existing optical/film processing. Style 2 is the original face. Stored style IDs
+are retained, so existing edits keep their selected glyphs. The new day/hour/minute order prints
+`15 12 : 37`; Manual Time overrides EXIF with a date-and-time picker.
+The 0–100 Margin slider (new settings: 20) is available only for 135 full/half
+frames, inside the picture: 0 near its selected corner, 100 centered. Film
+borders are excluded. It is disabled for between-frame printing; 120 retains
+its camera-defined margin. Existing saved insets stay active until Margin
+is moved. Date-light randomness is not changed.
+
+Date-back render checks (after `engine/build.sh dylib`):
+`python3 engine/tests/date_back_controls.py`. Uses synthetic frames and checks
+both LCD styles, all corners, 135 full/half frames, portrait/landscape, the
+content gate with film borders, preview/full resolution, export reprint, 120
+and between-frame placement, and invalid inputs.
+
+LCD Style 1 omits the apostrophe before the year (including both half-frame dates); Style 2 and the dot-matrix face retain their existing date text.
+
+
+LCD Style 1 has a Field Spacing slider, 0.20–3.00H, default 1.20H (H is the
+digit height). Extra tracking within each numeric field is fixed at +0.20H.
+Hour/minute spacing follows Field Spacing, with the colon centered between their visible glyphs. Other faces are unchanged.
+
+
+All date faces share `size`: range 0.2–3, default/reset 0.5. Explicitly saved
+sizes remain unchanged; only new or missing settings receive the new default.
+The engine's default and validation range match the app. H is the actual digit height before
+optical softness; for a 135 in-picture LCD imprint the existing reference
+height is 1.3 mm × size. At size 0.5, H is 0.65 mm. Spacing scales with H,
+and raster pixel counts follow image resolution and the film-format pixel
+pitch. These are typography controls, not universal camera calibrations.

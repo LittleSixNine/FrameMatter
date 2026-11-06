@@ -238,18 +238,33 @@ enum DateBackOrder: String, CaseIterable, Identifiable, Codable, Sendable {
     case us
     /// Year, month, day: `'26 10 1`.
     case japan
+    case dayTime
+    var id: String { rawValue }
+}
+
+enum DateBackLCDStyle: String, CaseIterable, Identifiable, Codable, Sendable {
+    // Keep stored IDs stable when the displayed style numbers change.
+    case dseg = "style2"
+    case original = "style1"
     var id: String { rawValue }
 }
 
 struct DateBackSettings: Codable, Equatable, Sendable {
     var active = false
     var face = DateBackFace.lcd
+    var lcdStyle = DateBackLCDStyle.original
+    var fieldGapH = 1.20
+    static let fieldGapRange = 0.20...3.00
+    // Nil keeps old sidecars' physical insets until the user moves the slider.
+    var marginPercent: Double? = 20
+    // EXIF-style local wall time: moving between time zones cannot change the imprint.
+    var customDateTime: String?
     var order = DateBackOrder.japan
     var placement = DateBackPlacement.frame
     var corner = DateBackCorner.br
     var insetXMM = 3.0             // 0…30
     var insetYMM = 2.4             // 0…30
-    var size = 1.0                 // 0.4…3
+    var size = 0.5                 // 0.2…3, all date faces
     var brightnessEV = 3.5         // −2…8
     /// What the engine prints, already formatted. Resolved by the session: the
     /// date from EXIF in `order` for `lcd`/`dots`, the shooting data for
@@ -284,8 +299,9 @@ struct DateBackSettings: Codable, Equatable, Sendable {
     /// of the frame (`FilmParams.wireFilmFormatMM`). 1 for the whole frame.
     var frameScale = 1.0
 
+    static let marginRange = 0.0...100.0
     static let insetRange = 0.0...30.0
-    static let sizeRange = 0.4...3.0
+    static let sizeRange = 0.2...3.0
     static let brightnessRange = -2.0...8.0
     /// `data` between half frames has only the 1 mm gap (answer B19).
     static let halfFrameDataSizeMax = 1.0
@@ -300,6 +316,10 @@ struct DateBackSettings: Codable, Equatable, Sendable {
         active = try c.decodeIfPresent(Bool.self, forKey: .active) ?? d.active
         face = (try? c.decodeIfPresent(DateBackFace.self, forKey: .face)) ?? d.face
         order = (try? c.decodeIfPresent(DateBackOrder.self, forKey: .order)) ?? d.order
+        lcdStyle = (try? c.decodeIfPresent(DateBackLCDStyle.self, forKey: .lcdStyle)) ?? d.lcdStyle
+        fieldGapH = try c.decodeIfPresent(Double.self, forKey: .fieldGapH) ?? d.fieldGapH
+        marginPercent = try c.decodeIfPresent(Double.self, forKey: .marginPercent)
+        customDateTime = try c.decodeIfPresent(String.self, forKey: .customDateTime)
         placement = (try? c.decodeIfPresent(DateBackPlacement.self, forKey: .placement)) ?? d.placement
         corner = (try? c.decodeIfPresent(DateBackCorner.self, forKey: .corner)) ?? d.corner
         insetXMM = try c.decodeIfPresent(Double.self, forKey: .insetXMM) ?? d.insetXMM
@@ -318,15 +338,31 @@ struct DateBackSettings: Codable, Equatable, Sendable {
 
     /// The date as a date back writes it: no leading zeros, a two-digit year
     /// behind an apostrophe.
-    static func format(year: Int, month: Int, day: Int, order: DateBackOrder) -> String {
+    static func format(year: Int, month: Int, day: Int, hour: Int? = nil, minute: Int? = nil, order: DateBackOrder) -> String {
         let yy = String(format: "'%02d", ((year % 100) + 100) % 100)
         switch order {
         case .us: return "\(month) \(day) \(yy)"
         case .japan: return "\(yy) \(month) \(day)"
+        case .dayTime:
+            guard let hour, let minute, (0...23).contains(hour), (0...59).contains(minute) else { return "" }
+            return String(format: "%02d %02d : %02d", day, hour, minute)
         }
     }
 
-    var printedText: String { customText ?? text }
+    static func timeFormatter() -> DateFormatter {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.calendar = Calendar(identifier: .gregorian)
+        f.dateFormat = "yyyy:MM:dd HH:mm:ss"
+        f.isLenient = false
+        return f
+    }
+
+    func imprintText(_ value: String) -> String {
+        face == .lcd && lcdStyle == .dseg ? value.replacingOccurrences(of: "'", with: "") : value
+    }
+
+    var printedText: String { imprintText(customText ?? text) }
 
     /// The size the wire carries: capped where the face has no room.
     func wireSize(on format: FilmEdgeFormat) -> Double {
@@ -383,10 +419,13 @@ struct DateBackSettings: Codable, Equatable, Sendable {
             fields.append(("overscan_format", .string(camera.rawValue), .shoot))
         }
         fields += [
-            ("date_imprint_style", .string(face.rawValue), .shoot),
+            ("date_imprint_style", .string(face == .lcd && lcdStyle == .dseg ? "dseg" : face.rawValue), .shoot),
             ("date_imprint_text", .string(printedText), .shoot),
             ("date_imprint_placement", .string(placement.rawValue), .shoot),
             ("date_imprint_corner", .string(corner.rawValue), .shoot),
+            ("date_imprint_field_gap", .double(face == .lcd && lcdStyle == .dseg
+                ? fieldGapH.clamped(to: Self.fieldGapRange) : Self.default.fieldGapH), .shoot),
+            ("date_imprint_margin", .double(marginPercent?.clamped(to: Self.marginRange) ?? -1), .shoot),
             ("date_imprint_inset_x", .double((insetXMM * scale).clamped(to: Self.insetRange)), .shoot),
             ("date_imprint_inset_y", .double((insetYMM * scale).clamped(to: Self.insetRange)), .shoot),
             ("date_imprint_size", .double((wireSize(on: camera) * scale).clamped(to: Self.sizeRange)), .shoot),
@@ -398,7 +437,7 @@ struct DateBackSettings: Codable, Equatable, Sendable {
             // the engine is told it is a pair here, since the film edge's own
             // rows are not sent.
             if !filmEdge.effective { fields.append(("overscan_pair", .bool(true), .shoot)) }
-            fields.append(("date_imprint_text_b", .string(customText ?? textB), .shoot))
+            fields.append(("date_imprint_text_b", .string(imprintText(customText ?? textB)), .shoot))
         }
         return fields
     }
