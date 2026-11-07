@@ -230,8 +230,8 @@ on run argv
       set label position of viewOptions to bottom
       set background picture of viewOptions to file ".background:background.tiff" of imageFolder
     end tell
-    set position of item "FrameMatter.app" of imageFolder to {180, 218}
-    set position of item "Applications" of imageFolder to {480, 218}
+    set position of item "FrameMatter.app" of imageFolder to {180, 271}
+    set position of item "Applications" of imageFolder to {480, 271}
     set extension hidden of item "FrameMatter.app" of imageFolder to true
     update imageFolder without registering applications
     delay 2

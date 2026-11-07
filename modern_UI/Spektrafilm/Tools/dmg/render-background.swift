@@ -4,7 +4,7 @@ import AppKit
 import CoreText
 
 let output = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
-// Supply a locally licensed font; the proprietary font is not distributed.
+// A locally licensed font is used only while regenerating artwork.
 guard let fontPath = ProcessInfo.processInfo.environment["DMG_TITLE_FONT_PATH"] else {
     fatalError("Set DMG_TITLE_FONT_PATH to your licensed Sigma Serif Headline font")
 }
@@ -45,6 +45,7 @@ for scale in [1, 2] {
         let x = CGFloat((seed >> 32) % 1320) / 2
         seed = seed &* 6364136223846793005 &+ 1
         let y = CGFloat((seed >> 32) % 880) / 2
+        if y >= 110 && y < 432 { continue }
         NSColor(white: seed & 1 == 0 ? 0 : 1, alpha: y < 108 ? 0.045 : 0.022).setFill()
         NSRect(x: x, y: y, width: 0.5, height: 0.5).fill()
     }
@@ -55,8 +56,8 @@ for scale in [1, 2] {
         let label = NSMutableAttributedString(string: string, attributes: attributes)
         if tracking != 0 {
             label.addAttribute(.kern, value: tracking, range: NSRange(location: 0, length: label.length - 1))
-            assert(font.pointSize == 28 && tracking == 4.5)
-            print("Title: 28 pt; added tracking: 4.5 pt; width: \(label.size().width) pt; center: 330 pt")
+            assert(font.pointSize == 28 && tracking == 1.5)
+            print("Title: 28 pt; added tracking: 1.5 pt; width: \(label.size().width) pt; center: 330 pt")
         }
         let bounds = label.size()
         context.saveGState()
@@ -65,18 +66,17 @@ for scale in [1, 2] {
         label.draw(at: .zero)
         context.restoreGState()
     }
-    text("FrameMatter", y: 37, color: .init(white: 0.95, alpha: 1), font: titleFont, tracking: 4.5)
-    text("拖动到 Applications 安装", y: 345, color: teal, font: .systemFont(ofSize: 16, weight: .regular), tracking: 0)
+    text("FrameMatter", y: 37, color: .init(white: 0.95, alpha: 1), font: titleFont, tracking: 1.5)
     copper.setStroke()
     let arrow = NSBezierPath()
     arrow.lineWidth = 2
     arrow.lineCapStyle = .round
     arrow.lineJoinStyle = .round
-    arrow.move(to: NSPoint(x: 303, y: 218))
-    arrow.line(to: NSPoint(x: 357, y: 218))
-    arrow.move(to: NSPoint(x: 348, y: 210))
-    arrow.line(to: NSPoint(x: 357, y: 218))
-    arrow.line(to: NSPoint(x: 348, y: 226))
+    arrow.move(to: NSPoint(x: 303, y: 271))
+    arrow.line(to: NSPoint(x: 357, y: 271))
+    arrow.move(to: NSPoint(x: 348, y: 263))
+    arrow.line(to: NSPoint(x: 357, y: 271))
+    arrow.line(to: NSPoint(x: 348, y: 279))
     arrow.stroke()
     NSGraphicsContext.restoreGraphicsState()
     let name = scale == 1 ? "background.png" : "background@2x.png"

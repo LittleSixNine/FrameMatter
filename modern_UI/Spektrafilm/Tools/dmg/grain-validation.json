@@ -1,0 +1,15 @@
+{
+  "engine": "existing native Metal dylib",
+  "film": "kodak_portra_400",
+  "paper": "kodak_portra_endura",
+  "film_format_mm": 16,
+  "neutral_input": 0.184,
+  "source_shape": [
+    322,
+    660
+  ],
+  "grayscale_residual": true,
+  "grain_off_control": "bit-exact on first generation",
+  "target_retina_std_8bit": 1.8,
+  "header_and_copper_unchanged": true
+}
