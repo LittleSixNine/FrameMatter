@@ -738,16 +738,27 @@ kernel void spk_wide_light_leak(device const float* rgb [[buffer(0)]],
     float film=1.0f;
     if (P[12]>0.5f) film=film_alpha(canvas_to_film(pixel.x-0.5f,pixel.y-0.5f,geometry),geometry);
     float2 q=pixel, span=float2(w,h);
-    const int direction=int(P[7]);
-    if (direction==1) q.x=span.x-q.x;
-    else if (direction==2) { q=float2(pixel.y,float(w)-pixel.x); span=float2(h,w); }
-    else if (direction==3) { q=float2(float(h)-pixel.y,pixel.x); span=float2(h,w); }
+    if (P[31]<0.5f) {
+        const int direction=int(P[7]);
+        if (direction==1) q.x=span.x-q.x;
+        else if (direction==2) { q=float2(pixel.y,float(w)-pixel.x); span=float2(h,w); }
+        else if (direction==3) { q=float2(float(h)-pixel.y,pixel.x); span=float2(h,w); }
+    }
     const float2 ts=float2(P[2],P[3]);
     const uint seed=uint(P[9]);
     const float jitter=0.03f*(hash_f(0,seed^0xA31u)-0.5f);
     const float vertical=0.03f*(hash_f(0,seed^0xA32u)-0.5f);
     float2 uv;
-    if (P[10]>0.5f) {
+    if (P[31]>0.5f) {
+        const float aspect=span.x/span.y, textureAspect=ts.x/ts.y;
+        const float2 window=float2(min(1.0f,aspect/textureAspect),min(1.0f,textureAspect/aspect));
+        float2 unit=q/span;
+        const uint flip=uint(P[34]);
+        if (flip&1u) unit.x=1.0f-unit.x;
+        if (flip&2u) unit.y=1.0f-unit.y;
+        // Flip inside the selected window so a mirror cannot crop away the retained edge.
+        uv=(1.0f-window)*float2(P[32],P[33])+unit*window;
+    } else if (P[10]>0.5f) {
         const float scale=max(span.x/ts.x,span.y/ts.y)*P[6]/1.2f;
         uv=((q-(span-ts*scale)*0.5f)/scale)/ts+float2(jitter,vertical);
     } else {
@@ -767,11 +778,12 @@ kernel void spk_wide_light_leak(device const float* rgb [[buffer(0)]],
     const float peak=max(light.x,max(light.y,light.z));
     if (film>1e-6f && peak>1e-8f) {
         const float strength=P[4];
-        const float gain=strength*(1.0f+3.0f*strength*strength*strength);
+        const float tail=clamp((strength-0.7f)/0.3f,0.0f,1.0f);
+        const float gain=min(strength/0.7f,1.0f)+3.0f*tail*tail;
         const float3 encoded=wide_encode(wide_matrix(original,P+13));
         float3 screen=encoded+max(1.0f-encoded,0.0f)*clamp(light*gain,0.0f,1.0f);
-        // High strength deliberately washes all channels to white, leaving coloured outer tails.
-        const float white=pow(strength,6.0f)*smoothstep(0.12f,0.65f,peak);
+        // The natural Screen range ends at 70%; only the remaining range lifts toward white.
+        const float white=smoothstep(0.0f,1.0f,tail)*smoothstep(0.12f,0.65f,peak);
         screen=mix(screen,max(screen,1.0f),white);
         result=mix(original,wide_matrix(wide_decode(screen),P+22),film);
     }

@@ -1430,23 +1430,27 @@ visual estimates, not calibrated film-base light-piping measurements.
 The Light Leaks card now has a master `active` and separate `perforationActive`
 (default true, preserving older edits) and `wideActive` (default false) groups.
 Wide light works without Film Edge and can overlap perforation light. Its saved
-fields are `wideMaterial` (11/14/28/36/42/17/34/39/15/23), `wideStrength` (default .5),
+fields are `wideMaterial` (41 stable choices: the original ten, 27 reviewed pool variants from 25 TIFFs, and four Onetake JPEGs), `wideStrength` (default .7),
 `wideDepth` (.28), `wideScale` (1.2), `wideSoftness` (0), `wideDirection` (0),
-`wideSeed` (1). Old light-setting objects decode missing keys to these defaults.
-Another changes only the wide material, direction and seed, retaining strength,
-depth, size and softness. Materials 17/34/15/23 retain full-frame light placement, so depth is
+`wideSeed` (1), `wideFlip` (0). Missing strength defaults to .7; existing explicitly saved strengths are retained. Missing flip decodes to original.
+Another changes the material within its current shape group, direction/flip and seed, retaining strength,
+depth, size and softness. The saved concrete ID/flip is reused for render, reopen and export; no draw-time material selection occurs. Materials 17/34/15/23 retain full-frame light placement, so depth is
 not editable for those materials. Perforation patterns and wear seeds are retained.
 
 | native field | type / range / default | layer |
 |---|---|---|
 | `wide_leak_active` | bool / false | print, non-live |
 | `wide_leak_texture` | string / empty | print, non-live |
-| `wide_leak_strength` | float / 0–1 / 0 | print, non-live |
+| `wide_leak_strength` | float / 0–1 / .7 | print, non-live |
 | `wide_leak_depth` | float / 0–1 / .28 | print, non-live |
 | `wide_leak_scale` | float / .5–3 / 1.2 | print, non-live |
 | `wide_leak_softness` | float / 0–1 / 0 | print, non-live |
 | `wide_leak_direction` | int / 0–3 / 0 (left,right,top,bottom) | print, non-live |
 | `wide_leak_seed` | int / 1–2³¹−1 / 1 | print, non-live |
+| `wide_leak_anchored` | bool / false | print, non-live |
+| `wide_leak_anchor_x` | float / 0–1 / .5 | print, non-live |
+| `wide_leak_anchor_y` | float / 0–1 / .5 | print, non-live |
+| `wide_leak_flip` | int / 0–3 / 0 (original,horizontal,vertical,both) | print, non-live |
 
 The app resolves the chosen file from its engine resources' `local_light_leaks`
 folder. Missing local assets are explained in the card and the app's wide wire
@@ -1466,10 +1470,15 @@ seeded jitter is at most 1.5% of the placement span. No per-render random seed
 or tiling is used. Softness blends the centre and four offset samples, radius
 .025×min(texture dimensions)×Softness² pixels, weights .4/.15/.15/.15/.15.
 
-At strength s, Screen light gain is s×(1+3s³). A white lift of
-s⁶×smoothstep(.12,.65,max(textureRGB)) then brings all channels toward at least
-encoded white, while retaining any existing HDR headroom. Thus low settings
-retain coloured transitions; 100% may deliberately wash the core to white.
+All wide materials now share one response. For strength s, let
+`t=clamp((s-.7)/.3,0,1)`. Screen light gain is `min(s/.7,1)+3t²`.
+The additional white lift is `smoothstep(0,1,t)×smoothstep(.12,.65,max(textureRGB))`.
+Thus 0–70% is ordinary encoded-sRGB Screen, with 70% the source's full strength;
+only the last 30% adds enhancement and white lift. A source's own white pixels
+can already reach white during ordinary Screen. At 100% the gain/white endpoint
+matches the prior implementation. Existing numeric strengths are not rewritten,
+but nonzero edits adopt the new response. No legacy-response toggle is added.
+The switch and subgroup still default off; only their strength/reset default changes.
 The actual film/perforation alpha gates the result where Film Edge is on, so
 holes/carrier are not coloured. An untouched texture region copies the original
 pixel without a colourspace round trip. Print reprints reuse the film negative. Dedicated DI exports omit this scan
@@ -1495,6 +1504,26 @@ unverified, so `Tools/package.sh` refuses release packaging while that local-onl
 folder is present. Explicit `--local` packaging permits a private, ad-hoc DMG
 without notarisation or publication; the default release guard stays in force. Source builds without these private assets still work, with
 the unavailable-material message and wide light off. No public release is made.
+
+The reviewed pool is imported with `--reviewed-pool-dir <complete-trial-directory>`;
+`engine/tools/import_wide_leaks.py` accepts only the 27 agreed IDs and verifies
+both source TIFF and approved derivative SHA-256 before copying. The two local
+spot experiments (10-spot/22-spot) are excluded. Grouped menus and Another share
+these material pools, without adding separate parameter systems for each asset.
+
+`--onetake-dir <private-Onetake-root>` imports four JPEGs, verifies APK/provenance
+and exact archive members, and writes decoded RGB8 values×257 to SPKL RGB16.
+No floor subtraction, normalisation, denoising or image stretching is applied.
+Anchored mapping is uniform Cover: du=min(1,q/r), dv=min(1,r/q), origin=(1-window)×anchor.
+Flip acts inside this selected window. Per-ID anchors are 020=(.27,.5),
+035=(.38,.5), 040=(1,.5), 060=(.5,1); these are product choices, not an Android replay.
+Anchored mapping ignores legacy entry direction, jitter, intrusion and size.
+The app hides those controls and sends softness=0 for these materials. Their
+four-way flip has its own saved field and never reinterprets legacy direction.
+
+The overlay remains before Layer 2 and on the source/film canvas. Ordinary
+later cropping can remove it; it is not glued to the final output crop. Grain,
+film/paper profiles and the existing perforation-light path remain unchanged.
 
 ## 19. Full-width 135 exposure
 

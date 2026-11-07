@@ -170,6 +170,10 @@ const SchemaField kFields[] = {
     {"wide_leak_softness",  "print_render.wide_leaks.softness",  F, PRINT, true, 0, 1, false},
     {"wide_leak_direction", "print_render.wide_leaks.direction", I, PRINT, true, 0, 3, false},
     {"wide_leak_seed",      "print_render.wide_leaks.seed",      I, PRINT, true, 1, 2147483647, false},
+    {"wide_leak_anchored",  "print_render.wide_leaks.anchored",  B, PRINT, false, 0, 0, false},
+    {"wide_leak_anchor_x",  "print_render.wide_leaks.anchor_x",  F, PRINT, true, 0, 1, false},
+    {"wide_leak_anchor_y",  "print_render.wide_leaks.anchor_y",  F, PRINT, true, 0, 1, false},
+    {"wide_leak_flip",      "print_render.wide_leaks.flip",      I, PRINT, true, 0, 3, false},
     {"scratch_active",          "film_render.scratches.active",         B, SHOOT, false, 0, 0, false},
     {"scratch_long_lines",      "film_render.scratches.long_lines",     F, SHOOT, true, 0, 1, false},
     {"scratch_strength",        "film_render.scratches.strength",       F, SHOOT, true, 0, 1, false},
@@ -264,6 +268,8 @@ double* float_slot(Params& p, const std::string& path) {
     if (path == "print_render.wide_leaks.depth") return &p.print_render.wide_leaks.depth;
     if (path == "print_render.wide_leaks.scale") return &p.print_render.wide_leaks.scale;
     if (path == "print_render.wide_leaks.softness") return &p.print_render.wide_leaks.softness;
+    if (path == "print_render.wide_leaks.anchor_y") return &p.print_render.wide_leaks.anchor_y;
+    if (path == "print_render.wide_leaks.anchor_x") return &p.print_render.wide_leaks.anchor_x;
     if (path == "film_render.scratches.long_lines") return &p.film_render.scratches.long_lines;
     if (path == "film_render.scratches.edge_marks") return &p.film_render.scratches.edge_marks;
     if (path == "film_render.scratches.leak_strength") return &p.film_render.scratches.leak_strength;
@@ -331,6 +337,7 @@ double* float_slot(Params& p, const std::string& path) {
 
 bool* bool_slot(Params& p, const std::string& path) {
     if (path == "print_render.wide_leaks.active") return &p.print_render.wide_leaks.active;
+    if (path == "print_render.wide_leaks.anchored") return &p.print_render.wide_leaks.anchored;
     if (path == "film_render.scratches.dust_full_frame") return &p.film_render.scratches.dust_full_frame;
     if (path == "film_render.scratches.active") return &p.film_render.scratches.active;
     if (path == "camera.auto_exposure") return &p.camera.auto_exposure;
@@ -392,6 +399,7 @@ std::string* str_slot(Params& p, const std::string& path) {
 
 int* int_slot(Params& p, const std::string& path) {
     if (path == "print_render.wide_leaks.direction") return &p.print_render.wide_leaks.direction;
+    if (path == "print_render.wide_leaks.flip") return &p.print_render.wide_leaks.flip;
     if (path == "print_render.wide_leaks.seed") return &p.print_render.wide_leaks.seed;
     if (path == "film_render.scratches.leak_enabled") return &p.film_render.scratches.leak_enabled;
     if (path == "film_render.scratches.leak_seed") return &p.film_render.scratches.leak_seed;
@@ -496,7 +504,7 @@ bool validate_delta(const Json& delta, std::string& error, std::string& param) {
         // A closed set of names is not a range, so `has_range` cannot express
         // it; this, `contrast_mask_scheme` and `scene_latitude_norm` are the enumerated strings.
         if ((kv.first == "scratch_leak_enabled" || kv.first == "scratch_leak_seed" ||
-             kv.first == "wide_leak_direction" || kv.first == "wide_leak_seed") &&
+             kv.first == "wide_leak_direction" || kv.first == "wide_leak_seed" || kv.first == "wide_leak_flip") &&
             v.as_double() != std::floor(v.as_double())) {
             error = kv.first + " must be an integer";
             param = kv.first;

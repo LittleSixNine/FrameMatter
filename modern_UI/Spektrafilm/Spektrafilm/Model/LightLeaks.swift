@@ -12,12 +12,13 @@ struct LightLeakSettings: Codable, Equatable, Sendable {
     var perforationActive = true
     var wideActive = false
     var wideMaterial = WideLeakMaterial.warm11
-    var wideStrength = 0.5
+    var wideStrength = 0.7
     var wideDepth = 0.28
     var wideScale = 1.2
     var wideSoftness = 0.0
     var wideDirection = WideLeakDirection.left
     var wideSeed = 1
+    var wideFlip = WideLeakFlip.original
     var style = LightLeakStyle.rim
     var rimStrength = 0.0
     var rimCoverage = 0.0
@@ -55,6 +56,7 @@ struct LightLeakSettings: Codable, Equatable, Sendable {
         wideSoftness = try c.decodeIfPresent(Double.self, forKey: .wideSoftness) ?? d.wideSoftness
         wideDirection = try c.decodeIfPresent(WideLeakDirection.self, forKey: .wideDirection) ?? d.wideDirection
         wideSeed = try c.decodeIfPresent(Int.self, forKey: .wideSeed) ?? d.wideSeed
+        wideFlip = try c.decodeIfPresent(WideLeakFlip.self, forKey: .wideFlip) ?? d.wideFlip
         style = try c.decodeIfPresent(LightLeakStyle.self, forKey: .style) ?? d.style
         rimStrength = try c.decodeIfPresent(Double.self, forKey: .rimStrength) ?? d.rimStrength
         rimCoverage = try c.decodeIfPresent(Double.self, forKey: .rimCoverage) ?? d.rimCoverage
@@ -75,6 +77,16 @@ struct LightLeakSettings: Codable, Equatable, Sendable {
         rimCoverage = old.leakCoverage
         rimSoftness = old.leakSoftness
     }
+    mutating func randomizeWide() {
+        let alternatives = wideMaterial.group.materials.filter { $0 != wideMaterial }
+        if let material = alternatives.randomElement() { wideMaterial = material }
+        if wideMaterial.isOnetake { wideFlip = WideLeakFlip.allCases.randomElement() ?? .original }
+        else { wideDirection = WideLeakDirection.allCases.randomElement() ?? .left }
+        let previous = wideSeed
+        wideSeed = Int.random(in: ScratchSettings.seedRange)
+        if wideSeed == previous { wideSeed = previous == ScratchSettings.seedRange.upperBound ? ScratchSettings.seedRange.lowerBound : previous + 1 }
+    }
+
     func available(on edge: FilmEdgeSettings) -> Bool {
         edge.effective && [.f135, .f135Half, .f135FullWidth].contains(edge.format)
     }
@@ -101,9 +113,13 @@ struct LightLeakSettings: Codable, Equatable, Sendable {
                 ("wide_leak_strength", .double(wideStrength.clamped(to: ScratchSettings.amountRange)), .print),
                 ("wide_leak_depth", .double(wideDepth.clamped(to: ScratchSettings.amountRange)), .print),
                 ("wide_leak_scale", .double(wideScale.clamped(to: 0.5...3.0)), .print),
-                ("wide_leak_softness", .double(wideSoftness.clamped(to: ScratchSettings.amountRange)), .print),
+                ("wide_leak_softness", .double(wideMaterial.isOnetake ? 0 : wideSoftness.clamped(to: ScratchSettings.amountRange)), .print),
                 ("wide_leak_direction", .double(Double(wideDirection.rawValue)), .print),
                 ("wide_leak_seed", .double(Double(wideSeed.clamped(to: ScratchSettings.seedRange))), .print),
+                ("wide_leak_anchored", .bool(wideMaterial.isOnetake), .print),
+                ("wide_leak_anchor_x", .double(wideMaterial.anchor.x), .print),
+                ("wide_leak_anchor_y", .double(wideMaterial.anchor.y), .print),
+                ("wide_leak_flip", .double(Double(wideFlip.rawValue)), .print),
             ]
         }
         return fields

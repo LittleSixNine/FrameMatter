@@ -300,8 +300,10 @@ bool is_known_contrast_mask_scheme(const std::string& scheme);
 struct WideLeakParams {
     bool active = false;
     std::string texture;
-    double strength = 0.0, depth = 0.28, scale = 1.2, softness = 0.0;
-    int direction = 0, seed = 1;
+    double strength = 0.7, depth = 0.28, scale = 1.2, softness = 0.0;
+    bool anchored = false;
+    double anchor_x = 0.5, anchor_y = 0.5;
+    int direction = 0, seed = 1, flip = 0;
 };
 
 struct PrintRenderParams {

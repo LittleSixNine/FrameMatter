@@ -2641,7 +2641,7 @@ bool Pipeline::node_wide_leak(const Image& in, Image& out, std::string& error) {
         wide_texture_w_ = header.w; wide_texture_h_ = header.h;
         wide_texture_local_ = header.local; wide_texture_front_ = header.front;
     }
-    std::vector<float> P(31, 0.0f);
+    std::vector<float> P(35, 0.0f);
     P[0] = float(in.w); P[1] = float(in.h);
     P[2] = float(wide_texture_w_); P[3] = float(wide_texture_h_);
     P[4] = float(look.strength); P[5] = float(look.depth); P[6] = float(look.scale);
@@ -2649,6 +2649,8 @@ bool Pipeline::node_wide_leak(const Image& in, Image& out, std::string& error) {
     P[9] = float(uint32_t(look.seed) & 0xFFFFFFu);
     P[10] = float(wide_texture_local_); P[11] = wide_texture_front_;
     P[12] = overscan_wanted() ? 1.0f : 0.0f;
+    P[31] = look.anchored ? 1.0f : 0.0f;
+    P[32] = float(look.anchor_x); P[33] = float(look.anchor_y); P[34] = float(look.flip);
     Mat3 to_srgb, from_srgb;
     if (!colour_->matrix_RGB_to_RGB(params_.io.output_color_space, "sRGB", "CAT02", to_srgb, error) ||
         !colour_->matrix_RGB_to_RGB("sRGB", params_.io.output_color_space, "CAT02", from_srgb, error)) return false;

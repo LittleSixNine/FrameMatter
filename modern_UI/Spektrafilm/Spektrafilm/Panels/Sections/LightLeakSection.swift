@@ -25,8 +25,8 @@ struct LightLeakSection: View {
                         : L("Switch wide light leaks on first.", zh: "先开启漏光总开关和大范围漏光。"))
             }
             Text(settings.wideMaterial.available
-                 ? L("Perforation and wide light can overlap. Each remembers its settings. At 100%, wide light can wash the lit area to white.",
-                     zh: "两组漏光可同时开启并分别保存参数。大范围漏光100%可将亮区冲至全白。")
+                 ? L("Perforation and wide light can overlap. Each remembers its settings. Wide light is natural through 70%, then progressively washes the lit area to white.",
+                     zh: "两组漏光可同时开启并分别保存参数。大范围漏光前70%保留自然叠加，超过70%逐渐增强冲白。")
                  : L("Local wide-light textures are missing; prepare and bundle your own assets first.", zh: "本地大范围漏光素材缺失，需先准备并同步素材。"))
                 .font(Theme.Font.caption).foregroundStyle(Theme.Ink.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -58,28 +58,37 @@ struct LightLeakSection: View {
             HStack(spacing: 0) {
                 RowLabel(L("Material", zh: "素材"))
                 Picker(L("Wide light material", zh: "大范围漏光素材"), selection: bind(\.wideMaterial)) {
-                    ForEach(WideLeakMaterial.allCases, id: \.self) { Text($0.title).tag($0) }
+                    ForEach(WideLeakGroup.allCases, id: \.self) { group in
+                        Section(group.title) {
+                            ForEach(group.materials, id: \.self) { Text($0.title).tag($0) }
+                        }
+                    }
                 }.labelsHidden().pickerStyle(.menu)
             }.frame(height: Theme.Metric.rowHeight)
-            amount(L("Strength", zh: "强度"), \.wideStrength, zero: 0.5)
-            HStack(spacing: 0) {
-                RowLabel(L("Direction", zh: "方向"))
-                Picker(L("Entry direction", zh: "入光方向"), selection: bind(\.wideDirection)) {
-                    ForEach(WideLeakDirection.allCases, id: \.self) { Text($0.title).tag($0) }
-                }.labelsHidden().pickerStyle(.menu)
-            }.frame(height: Theme.Metric.rowHeight)
-            amount(L("Intrusion", zh: "侵入范围"), \.wideDepth, zero: 0.28)
-                .disabled(!settings.wideMaterial.usesIntrusion)
-            ScrubSlider(label: L("Size", zh: "大小"), value: bind(\.wideScale), range: 0.5...3,
-                        zero: 1.2, snap: 0.01, format: { String(format: "%.0f%%", $0*100) })
-            amount(L("Softness", zh: "柔化"), \.wideSoftness, zero: 0)
+            amount(L("Strength", zh: "强度"), \.wideStrength, zero: 0.7)
+            if settings.wideMaterial.isOnetake {
+                HStack(spacing: 0) {
+                    RowLabel(L("Flip", zh: "翻转方向"))
+                    Picker(L("Texture flip", zh: "素材翻转"), selection: bind(\.wideFlip)) {
+                        ForEach(WideLeakFlip.allCases, id: \.self) { Text($0.title).tag($0) }
+                    }.labelsHidden().pickerStyle(.menu)
+                }.frame(height: Theme.Metric.rowHeight)
+            } else {
+                HStack(spacing: 0) {
+                    RowLabel(L("Direction", zh: "方向"))
+                    Picker(L("Entry direction", zh: "入光方向"), selection: bind(\.wideDirection)) {
+                        ForEach(WideLeakDirection.allCases, id: \.self) { Text($0.title).tag($0) }
+                    }.labelsHidden().pickerStyle(.menu)
+                }.frame(height: Theme.Metric.rowHeight)
+                amount(L("Intrusion", zh: "侵入范围"), \.wideDepth, zero: 0.28)
+                    .disabled(!settings.wideMaterial.usesIntrusion)
+                ScrubSlider(label: L("Size", zh: "大小"), value: bind(\.wideScale), range: 0.5...3,
+                            zero: 1.2, snap: 0.01, format: { String(format: "%.0f%%", $0*100) })
+                amount(L("Softness", zh: "柔化"), \.wideSoftness, zero: 0)
+            }
             patternRow {
                 var p = session.params
-                let materials = WideLeakMaterial.allCases
-                let current = materials.firstIndex(of: settings.wideMaterial) ?? 0
-                p.lightLeaks.wideMaterial = materials[FilmEdgeSection.another(than: current, in: 0...(materials.count-1))]
-                p.lightLeaks.wideDirection = WideLeakDirection(rawValue: Int.random(in: 0...3)) ?? .left
-                p.lightLeaks.wideSeed = FilmEdgeSection.another(than: settings.wideSeed, in: ScratchSettings.seedRange)
+                p.lightLeaks.randomizeWide()
                 session.params = p
             }
         }

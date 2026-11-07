@@ -486,12 +486,12 @@ Wide material light (2026-11-07) is the second group in that card. Its print-lay
 `wide_leak_*` wire feeds a scan-look node after EDR, before CCTF. The node uses
 processed local RGB16 textures, sRGB Screen plus high-strength white lift, then
 converts back to the selected output space; the material profiles are untouched.
-Film alpha keeps perforations/carrier clear. Ten user-provided derivatives live
+Film alpha keeps perforations/carrier clear. Forty-one local material choices (ten original, 27 reviewed variants, four Onetake JPEGs) live
 in ignored `engine/resources/local_light_leaks`, prepared explicitly by
 `engine/tools/prepare_wide_leaks.py`, with no Python at runtime/build. Their
 redistribution is unverified; the release packager rejects the local-only folder.
 The normal source build remains valid without them, with a clear unavailable
-message. API-SPEC §18.2 holds the binary format, controls and platform boundaries.
+message. All wide materials use natural Screen up to 70%, followed by an enhanced white tail; new settings default to 70% strength with the switch off. Onetake uses anchored Cover and persisted window flips, while the other groups retain their placement controls. API-SPEC §18.2 holds the binary format, controls and platform boundaries.
 
 ### 7.12 The half-frame pair
 

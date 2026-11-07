@@ -120,5 +120,18 @@ if __name__ == '__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source-dir',type=Path,required=True)
     parser.add_argument('--output-dir',type=Path,default=Path(__file__).resolve().parents[1]/'resources/local_light_leaks')
+    parser.add_argument('--reviewed-pool-dir',type=Path)
+    parser.add_argument('--onetake-dir',type=Path)
     args=parser.parse_args()
     prepare(args.source_dir,args.output_dir)
+
+    if args.reviewed_pool_dir or args.onetake_dir:
+        from import_wide_leaks import import_pool, import_onetake
+        manifest_path = args.output_dir/'manifest.json'
+        manifest = json.loads(manifest_path.read_text())
+        if args.reviewed_pool_dir:
+            manifest['materials'] += import_pool(args.reviewed_pool_dir,args.output_dir)
+        if args.onetake_dir:
+            manifest['materials'] += import_onetake(args.onetake_dir,args.output_dir)
+        manifest_path.write_text(json.dumps(manifest,ensure_ascii=False,indent=2))
+        print(f"Total local textures: {len(manifest['materials'])}")

@@ -70,8 +70,63 @@ final class WideLeakTests: XCTestCase {
         }
     }
 
-    func testAllTenMaterialsAndExpandedCard() throws {
-        XCTAssertEqual(WideLeakMaterial.allCases.map(\.rawValue), ["11","14","28","36","42","17","34","39","15","23"])
+    func testSeventyPercentDefaultAndStoredValuesSurvive() throws {
+        XCTAssertEqual(LightLeakSettings().wideStrength, 0.7)
+        XCTAssertEqual(FilmParams.default.lightLeaks.wideStrength, 0.7)
+        var old = LightLeakSettings()
+        old.wideStrength = 0.42
+        var json = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(old)) as? [String: Any])
+        json.removeValue(forKey: "wideFlip")
+        let restored = try JSONDecoder().decode(LightLeakSettings.self, from: JSONSerialization.data(withJSONObject: json))
+        XCTAssertEqual(restored.wideStrength, 0.42)
+        XCTAssertEqual(restored.wideFlip, .original)
+    }
+
+    func testOnetakeWireAndSavedFlip() throws {
+        for material in WideLeakGroup.onetake.materials {
+            XCTAssertFalse(material.usesIntrusion)
+            for flip in WideLeakFlip.allCases {
+                var p = FilmParams.default
+                p.lightLeaks.active = true; p.lightLeaks.wideActive = true
+                p.lightLeaks.wideMaterial = material; p.lightLeaks.wideFlip = flip
+                p.lightLeaks.wideSoftness = 1
+                XCTAssertEqual(try JSONDecoder().decode(FilmParams.self, from: JSONEncoder().encode(p)), p)
+                if material.available {
+                    XCTAssertEqual(p.fullDelta["wide_leak_anchored"], .bool(true))
+                    XCTAssertEqual(p.fullDelta["wide_leak_anchor_x"], .double(material.anchor.x))
+                    XCTAssertEqual(p.fullDelta["wide_leak_anchor_y"], .double(material.anchor.y))
+                    XCTAssertEqual(p.fullDelta["wide_leak_flip"], .double(Double(flip.rawValue)))
+                    XCTAssertEqual(p.fullDelta["wide_leak_softness"], .double(0))
+                    XCTAssertEqual(p.fullDelta["wide_leak_strength"], .double(0.7))
+                }
+            }
+        }
+    }
+
+    func testAnotherStaysWithinItsMaterialPoolAndKeepsStrength() {
+        for group in WideLeakGroup.allCases {
+            var settings = LightLeakSettings()
+            settings.wideMaterial = group.materials[0]
+            settings.wideStrength = 0.62
+            for _ in 0..<20 {
+                let previous = settings
+                settings.randomizeWide()
+                XCTAssertEqual(settings.wideMaterial.group, group)
+                if group.materials.count > 1 { XCTAssertNotEqual(settings.wideMaterial, previous.wideMaterial) }
+                XCTAssertNotEqual(settings.wideSeed, previous.wideSeed)
+                XCTAssertEqual(settings.wideStrength, 0.62)
+                XCTAssertEqual(settings.rimSeed, previous.rimSeed)
+                XCTAssertEqual(settings.haloSeed, previous.haloSeed)
+            }
+        }
+    }
+
+    func testAllMaterialsAndExpandedCard() throws {
+        XCTAssertEqual(Array(WideLeakMaterial.allCases.prefix(10)).map(\.rawValue), ["11","14","28","36","42","17","34","39","15","23"])
+        XCTAssertEqual(WideLeakMaterial.allCases.count, 41)
+        XCTAssertEqual(Set(WideLeakMaterial.allCases.map(\.rawValue)).count, 41)
+        XCTAssertFalse(WideLeakMaterial.allCases.contains { $0.rawValue.contains("spot") })
+        XCTAssertEqual(WideLeakGroup.allCases.flatMap(\.materials).count, 41)
         let key = Session.uiKey + "section." + LightLeakSection.key
         let old = UserDefaults.standard.object(forKey: key)
         let language = Localization.shared.language
@@ -80,10 +135,20 @@ final class WideLeakTests: XCTestCase {
         let session = Session()
         for lang in [LanguageSetting.english, .simplifiedChinese] {
             Localization.shared.language = lang
+            if let directory = ProcessInfo.processInfo.environment["SPK_RENDER_DIR"] {
+                let rows: [[String: Any]] = WideLeakMaterial.allCases.map { material in
+                    ["id": material.rawValue, "title": material.title,
+                     "group": String(describing: material.group), "groupTitle": material.group.title,
+                     "anchored": material.isOnetake, "anchor": [material.anchor.x, material.anchor.y],
+                     "usesIntrusion": material.usesIntrusion]
+                }
+                let data = try JSONSerialization.data(withJSONObject: rows, options: [.prettyPrinted, .sortedKeys])
+                try data.write(to: URL(fileURLWithPath: directory).appending(path: "catalog-\(lang).json"))
+            }
             for material in WideLeakMaterial.allCases {
                 var p = session.params
                 p.lightLeaks.active = true; p.lightLeaks.perforationActive = false
-                p.lightLeaks.wideActive = true; p.lightLeaks.wideStrength = 1
+                p.lightLeaks.wideActive = true; p.lightLeaks.wideStrength = 0.7
                 p.lightLeaks.wideMaterial = material
                 session.params = p
                 let host = NSHostingController(rootView: LightLeakSection(session: session).background(Theme.card))
