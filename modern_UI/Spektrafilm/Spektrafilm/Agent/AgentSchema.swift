@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 //  AgentSchema.swift — the edit document an agent reads and patches (RFC-026 §3).
 //
 //  The document is the sidecar's four editable sections, `params`,

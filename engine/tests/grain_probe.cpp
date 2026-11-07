@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 // Test-only probe of the shipping grain stage, without print/scan transforms.
 // Build against engine/build/*.o after engine/build.sh dylib.
 #include "pipeline/pipeline.hpp"

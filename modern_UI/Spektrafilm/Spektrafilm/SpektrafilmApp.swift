@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 //  SpektrafilmApp.swift — @main. One window, one session, one service; or,
 //  with `cli` or `mcp` as the first argument, the same session without a
 //  window (RFC-026).

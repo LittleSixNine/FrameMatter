@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 //  Strings.swift — every user-visible string in the main editor, in both
 //  languages, and the one function that looks them up.
 //

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 LittleSixNine
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 """Negative dust: actual Metal output, saved seed, scope and zero bypass."""
 import numpy as np
 from spk_ctypes import Engine, EngineError

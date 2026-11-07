@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 // Explicit boundaries for effects added upstream after the first Windows port.
 // Included only by Windows call sites; macOS retains its upstream behavior.
 #pragma once

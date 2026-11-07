@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 //  Sidecar.swift — one frame's settings, in the app's own store. Never writes
 //  the source file. Small enough to rewrite whole on every change.
 

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 //  FilmEdgeSection.swift — RFC-032's film edge: the rebate, the holes and the
 //  edge print around the picture, as that camera and that scan made them.
 //

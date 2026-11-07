@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 LittleSixNine
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 """Actual Metal rim softening with no outer halo: wider light, retained core."""
 import numpy as np
 from spk_ctypes import Engine, EngineError

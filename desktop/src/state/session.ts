@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 // session.ts — the one session (the Mac's `Model/Session.swift`, reduced to
 // what this port carries): the library, the open frame and its edits, the
 // engine session behind it, undo, the clipboard and the view.

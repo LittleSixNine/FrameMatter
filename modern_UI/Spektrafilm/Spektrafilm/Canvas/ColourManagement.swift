@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 //  ColourManagement.swift — the working space, and the one conversion out of it.
 //
 //  RFC-018 §5.4. FrameMatter grades in **one** space (ProPhoto RGB, the session's

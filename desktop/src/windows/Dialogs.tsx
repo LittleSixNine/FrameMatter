@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 // Dialogs.tsx — Settings (`Windows/SettingsWindow.swift`, the pages this port
 // carries), About (licences: CC BY-SA requires the attribution be visible),
 // and the engine-failure dialog.

@@ -1,6 +1,10 @@
 Licences and credits
 ====================
 
+FrameMatter additions and modifications: Copyright (C) 2026 LittleSixNine.
+This claim covers only those contributions; upstream copyrights are retained.
+See FrameMatter-COPYRIGHT.txt for scope, provenance and third-party exclusions.
+
 FrameMatter is independently developed by LittleSixNine from SpektraLab,
 by Hanze Qiu (https://github.com/JamesQiu2005/SpektraLab). The original app,
 native engine port and four black-and-white profiles retain their attribution.

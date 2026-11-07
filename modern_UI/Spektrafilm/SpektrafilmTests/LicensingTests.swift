@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 //  LicensingTests.swift — the obligations a shipped bundle carries.
 //
 //  `Tools/check-bundle-resources.sh` already fails the *build* when the
@@ -36,6 +40,7 @@ final class LicensingTests: XCTestCase {
     /// four times would pass the existence check above.
     func testEachTextIsTheLicenceItClaimsToBe() throws {
         let expected = [
+            "FrameMatter-COPYRIGHT.txt": "Copyright (C) 2026 LittleSixNine",
             "FrameMatter-GPL-3.0.txt": "GNU GENERAL PUBLIC LICENSE",
             "Profiles-and-LUTs-CC-BY-SA-4.0.txt": "Attribution-ShareAlike 4.0 International",
             "FilmDamageSimulator-Data-CC-BY-4.0.txt": "Attribution 4.0 International",
@@ -87,6 +92,7 @@ final class LicensingTests: XCTestCase {
                       "the shipped licence file lost the upstream attribution")
         XCTAssertTrue(readme.contains("Andrea Volpato"))
         XCTAssertTrue(readme.contains("Hanze Qiu"))
+        XCTAssertTrue(readme.contains("Copyright (C) 2026 LittleSixNine"))
         XCTAssertTrue(readme.contains(AboutWindow.originalAppURL))
         XCTAssertEqual(AboutWindow.sourceURL, "https://github.com/LittleSixNine/FrameMatter")
     }

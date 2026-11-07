@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 //  Diagnostics.swift — the settings model, and the app's two entry points.
 //
 //  RFC-016 §6 is the Settings page's diagnostics column, and this is the model

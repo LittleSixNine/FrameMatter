@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 //  ParameterSections.swift — the Pre-Dev tab's three sections after Latitude
 //  and Camera: Film Format, Scene Placement and the Tone Mask (v4).
 //

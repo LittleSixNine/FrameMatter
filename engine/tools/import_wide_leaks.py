@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 LittleSixNine
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 """Import reviewed local derivatives and four original JPEGs; never downloads assets."""
 from pathlib import Path
 import hashlib

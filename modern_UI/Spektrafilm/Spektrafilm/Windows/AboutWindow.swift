@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 //  AboutWindow.swift — who made this, under what licence, and where the
 //  source is.
 //
@@ -59,6 +63,7 @@ struct AboutWindow: View {
     static let upstreamURL = "https://github.com/andreavolpato/spektrafilm"
 
     static let licences = [
+        Licence(id: "FrameMatter-COPYRIGHT.txt", title: "FrameMatter contributions — LittleSixNine"),
         Licence(id: "DSEG-OFL-1.1.txt", title: "SIL OFL 1.1 — DSEG fonts by Keshikan"),
         Licence(id: "FrameMatter-GPL-3.0.txt", title: "GNU GPL v3 — the application and the engine"),
         Licence(id: "Profiles-and-LUTs-CC-BY-SA-4.0.txt", title: "CC BY-SA 4.0 — the profiles and the print LUTs"),
@@ -116,6 +121,9 @@ struct AboutWindow: View {
 
     private var credits: some View {
         VStack(alignment: .leading, spacing: 10) {
+            Text("FrameMatter additions and modifications © 2026 LittleSixNine. GPL v3 or later; upstream copyrights retained.")
+                .font(Theme.Font.sublabel).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             // The one line that says which name belongs to which thing. This
             // app is FrameMatter; the engine, the profiles and the LUTs it uses
             // are spektrafilm's, and `SPEKTRAFILM_LICENSE.txt` asks that the

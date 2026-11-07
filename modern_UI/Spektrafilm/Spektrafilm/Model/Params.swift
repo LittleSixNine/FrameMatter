@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 //  Params.swift — Layer 1: the engine's parameters, as the UI holds them.
 //
 //  Mirrors `src/spektrafilm/service/schema.py` field for field. Two rules:

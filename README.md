@@ -75,6 +75,8 @@ FrameMatter 的构建独立于上游安装包，不继承上游的 Developer ID 
 
 ## 原作者与许可
 
+FrameMatter 新增代码及对上游代码的修改贡献：Copyright © 2026 LittleSixNine，依 GPL-3.0-or-later 授权。此声明仅覆盖这些贡献；上游代码和第三方素材保留原有版权、署名及许可。历史提交中的“六九”与 LittleSixNine 为同一贡献者。具体范围见 [版权与贡献说明](COPYRIGHT.txt)。
+
 | 部分 | 作者／来源 | 许可 |
 |---|---|---|
 | 原始应用、原生 C++/Metal 移植及四款黑白胶片配置 | [Hanze Qiu／SpektraLab](https://github.com/JamesQiu2005/SpektraLab) | GPL-3.0-or-later；配置数据保留其原始声明 |

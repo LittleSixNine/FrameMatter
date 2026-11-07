@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 // params.hpp -- the parameter tree, the transport schema, and delta application.
 //
 // Two things live here, and keeping them together is deliberate.

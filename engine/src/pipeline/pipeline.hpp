@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 // pipeline.hpp -- the render graph.
 //
 // A port of `runtime/pipeline.SimulationPipeline` plus the three stage objects

@@ -1,0 +1,51 @@
+FrameMatter — copyright and attribution
+======================================
+
+Copyright (C) 2026 LittleSixNine — FrameMatter additions and modifications only.
+These code contributions are licensed under GPL-3.0-or-later; see LICENSE.txt.
+This notice does not claim ownership of the entire application, inherited
+code, third-party assets, measured profiles, fonts, or LUTs.
+
+SpektraLab's original application and native C++/Metal engine port are by
+Hanze Qiu. The film model and measured profiles originate from spektrafilm
+by Andrea Volpato. Their copyright, licence and attribution notices, and
+those of all other upstream contributors, remain in force.
+
+Scope and provenance
+--------------------
+FrameMatter's fork point is SpektraLab commit
+02d82b56cf65f0f8e802a708612edc4e9a4790af. The Git history records the
+subsequent additions and modifications. Historical FrameMatter commits
+whose author name is 六九 identify the same contributor as LittleSixNine;
+this clarification does not rewrite those commits or upstream authorship.
+
+The dated file notices added on 2026-11-08 cover only LittleSixNine's
+FrameMatter contributions, including the current local changes. In an
+inherited or mixed-origin file, they cover only those additions and
+modifications, not the pre-existing code. Creating a new file by reusing
+upstream code does not transfer ownership of that code.
+
+FrameMatter contributions include grain controls; date-back typography,
+formats, spacing and placement; scratches, dust/fiber controls, perforation
+and wide light-leak controls; aging-texture integration; full-width 135
+exposure; export metadata and progress/results; associated UI, state,
+CLI/MCP, tests, tools, build and branding changes. Existing models,
+algorithms and assets used by these features retain their original owners.
+
+Third-party works
+-----------------
+Code is GPL-3.0-or-later except where its own notices specify otherwise.
+Profiles and derived print LUTs retain Andrea Volpato's CC BY-SA 4.0 notices.
+Daniela Ivanova's dust/fiber scans and their derived atlas retain CC BY 4.0;
+FilmDamageSimulator algorithm references retain their MIT notices. DSEG
+fonts retain Keshikan's SIL OFL 1.1 notices, and metal-cpp retains Apple's
+Apache-2.0 notices. Other vendored works retain their respective notices.
+Local research textures and leak assets are not claimed by LittleSixNine
+and are not granted redistribution rights by this notice.
+
+Project source: https://github.com/LittleSixNine/FrameMatter
+Original application: https://github.com/JamesQiu2005/SpektraLab
+Film model and profiles: https://github.com/andreavolpato/spektrafilm
+
+FrameMatter is an independent fork, not an official or endorsed upstream
+release. This notice adds no restrictions to any applicable licence.

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 //  SettingsClipboardTests.swift — RFC-027's paste semantics, with no window,
 //  no engine and no file: `SettingsClip.applied(to:)` is Sidecar in, Sidecar
 //  out, and everything a paste *means* is decided there.

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 //! SpektraLab's Tauri core: the window, the engine host process, and the
 //! narrow file commands the webview needs. Everything else — the interface,
 //! the session, the menus — is the TypeScript app in `desktop/src`.

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 //  FilmEdgeTests.swift — what the host owes the engine for the film edge and
 //  the date back, without a session: the wire, the text it prints, the
 //  per-stock formats, the gate's crop, and the frame the engine is cut.

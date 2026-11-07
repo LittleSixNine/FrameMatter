@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 LittleSixNine
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 """Full-width 135: source exposure reaches the hole rows; holes stay empty."""
 import numpy as np
 from spk_ctypes import Engine

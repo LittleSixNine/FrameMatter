@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 LittleSixNine
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 """Regenerate Spektrafilm.xcodeproj/project.pbxproj from the filesystem.
 
     Tools/gen-project.py            # write

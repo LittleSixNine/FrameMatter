@@ -1,4 +1,8 @@
 #!/bin/bash
+# SPDX-FileCopyrightText: 2026 LittleSixNine
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 # package.sh -- build, sign, notarise and wrap FrameMatter in a DMG.
 #
 # HANDOFF-DISTRIBUTION §2.1 and §2.5: there was no archive step, no `.dmg`, no

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 LittleSixNine
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 """Bake approved grayscale masks into the engine; Pillow is needed only to rebake."""
 from pathlib import Path
 import json

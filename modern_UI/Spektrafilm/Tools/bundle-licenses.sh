@@ -1,4 +1,8 @@
 #!/bin/bash
+# SPDX-FileCopyrightText: 2026 LittleSixNine
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 # bundle-licenses.sh -- put the licence texts the .app is obliged to carry
 # into `Spektrafilm/Resources/Licenses/`, from their canonical copies.
 #
@@ -40,6 +44,7 @@ source_url="https://github.com/LittleSixNine/FrameMatter"
 # A different work under a different licence; not a substitute for the above.
 upstream_url="https://github.com/andreavolpato/spektrafilm"
 
+cp "$root/COPYRIGHT.txt" "$out/FrameMatter-COPYRIGHT.txt"
 cp "$root/license/LICENSE" "$out/FrameMatter-GPL-3.0.txt"
 cp "$root/engine/resources/fonts/DSEG-LICENSE.txt" "$out/DSEG-OFL-1.1.txt"
 cp "$root/license/SPEKTRAFILM_LICENSE.txt" "$out/Profiles-and-LUTs-CC-BY-SA-4.0.txt"
@@ -115,6 +120,10 @@ CHANGELOG
 cat > "$out/README.txt" <<README
 Licences and credits
 ====================
+
+FrameMatter additions and modifications: Copyright (C) 2026 LittleSixNine.
+This claim covers only those contributions; upstream copyrights are retained.
+See FrameMatter-COPYRIGHT.txt for scope, provenance and third-party exclusions.
 
 FrameMatter is independently developed by LittleSixNine from SpektraLab,
 by Hanze Qiu (https://github.com/JamesQiu2005/SpektraLab). The original app,

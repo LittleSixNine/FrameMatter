@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 //  UpdateCheck.swift — the one request that says whether a newer release exists.
 //
 //  RFC-021. This is deliberately not an updater: the app is ad-hoc signed and

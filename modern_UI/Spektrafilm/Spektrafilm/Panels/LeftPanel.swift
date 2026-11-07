@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 //  LeftPanel.swift — the material rail (v4, 2026-09-26): **Film and Print**.
 //
 //  v4 made this rail the choices of *material* and nothing else: the

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 //  BootWindow.swift — the small window the app shows while the engine starts.
 //
 //  Photoshop and Capture One both do this, and the reason is not decoration:

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 //  Tools/live-window.swift — print the app's on-screen window ids, largest first.
 //
 //  `screencapture -l<id>` needs a window id, and only the window server sees

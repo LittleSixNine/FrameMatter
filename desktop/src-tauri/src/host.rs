@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 //! The engine host as a child process (HOST-PROTOCOL.md).
 //!
 //! One `spektralab-host` per app. The core owns its lifetime: it spawns it,

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 // Run: swift Tools/dmg/render-background.swift Tools/dmg
 // Then: tiffutil -cathidpicheck Tools/dmg/background{,@2x}.png -out Tools/dmg/background.tiff
 import AppKit

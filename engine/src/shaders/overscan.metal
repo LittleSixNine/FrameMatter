@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 // overscan.metal -- RFC-032 §26-§27: the film outside the frame, as exposure.
 //
 // All three kernels read one parameter block `P` (floats; layout in

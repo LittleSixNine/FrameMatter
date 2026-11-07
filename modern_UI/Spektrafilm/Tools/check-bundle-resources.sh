@@ -1,4 +1,8 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 LittleSixNine
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 # check-bundle-resources.sh -- a pre-build check, run by the app target.
 #
 # Two things must be in `Spektrafilm/Resources/` before a build is worth
@@ -40,7 +44,7 @@ if [ -n "$missing" ]; then
 fi
 
 licences=""
-for f in README.txt DSEG-OFL-1.1.txt FrameMatter-GPL-3.0.txt Profiles-and-LUTs-CC-BY-SA-4.0.txt \
+for f in README.txt FrameMatter-COPYRIGHT.txt DSEG-OFL-1.1.txt FrameMatter-GPL-3.0.txt Profiles-and-LUTs-CC-BY-SA-4.0.txt \
          Profiles-and-LUTs-CHANGELOG.txt metal-cpp-Apache-2.0.txt \
          FilmDamageSimulator-Data-CC-BY-4.0.txt FilmDamageSimulator-Dust-Attribution.txt; do
   [ -f "$res/Licenses/$f" ] || licences="$licences $f"

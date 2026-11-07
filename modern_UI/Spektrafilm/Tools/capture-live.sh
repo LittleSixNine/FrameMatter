@@ -1,4 +1,8 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 LittleSixNine
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 #  Tools/capture-live.sh — capture the REAL window, through the window server.
 #
 #      Tools/capture-live.sh [image.NEF] [out.png]

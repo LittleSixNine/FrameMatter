@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 //  Session+FilmEdge.swift — what the host owes the engine for RFC-032's film
 //  edge and RFC-031's date back, and what the rest of the app must do while a
 //  film edge is on.

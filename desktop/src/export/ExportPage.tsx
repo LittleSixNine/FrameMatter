@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 // ExportPage.tsx — the export page (`Export/ExportPage.swift`, drawn to
 // `reference_layout/Export_Page`): recipes on the left, the frame in the
 // middle, the batch (the picked frames) on the right.

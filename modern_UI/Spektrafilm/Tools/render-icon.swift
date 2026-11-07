@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 //  render-icon.swift — the app's icon as macOS draws it, to a PNG.
 //
 //      swiftc -O Tools/render-icon.swift -o /tmp/render-icon

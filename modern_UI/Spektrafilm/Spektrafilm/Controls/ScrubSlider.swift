@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 LittleSixNine
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
+
 //  ScrubSlider.swift — the one slider. Label | track with a pill knob | value.
 //
 //  Built once and used everywhere. Drag anywhere on the track, ⌥ for ×0.25

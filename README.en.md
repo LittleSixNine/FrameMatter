@@ -71,6 +71,8 @@ FrameMatter builds are separate from upstream's installers and do not inherit up
 
 ## Credits and licenses
 
+FrameMatter additions and modifications: Copyright © 2026 LittleSixNine, licensed under GPL-3.0-or-later. This claim covers only those contributions; upstream code and third-party assets retain their original copyrights, attribution and licences. Historical commits authored by “六九” identify the same contributor as LittleSixNine. See [copyright and contribution scope](COPYRIGHT.txt).
+
 | Contribution | Author / source | License |
 |---|---|---|
 | Original application, native C++/Metal port and four black-and-white profiles | [Hanze Qiu / SpektraLab](https://github.com/JamesQiu2005/SpektraLab) | GPL-3.0-or-later; profile data retains its notices |
