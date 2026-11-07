@@ -493,6 +493,16 @@ redistribution is unverified; the release packager rejects the local-only folder
 The normal source build remains valid without them, with a clear unavailable
 message. All wide materials use natural Screen up to 70%, followed by an enhanced white tail; new settings default to 70% strength with the switch off. Onetake uses anchored Cover and persisted window flips, while the other groups retain their placement controls. API-SPEC §18.2 holds the binary format, controls and platform boundaries.
 
+The independent **Aging Textures / 做旧纹理** card follows Scratches & Dust.
+Five local full-frame scuff/scratch textures have their own switch, strength,
+quarter-turn rotation and mirror state (`FilmParams.agingTextures`), require no
+Film Edge, and can coexist with the existing random density dust and light leaks.
+Native print_output composites them after wide light and before encoding, in
+sRGB-encoded Screen with a linear 0–1 contribution and a separate texture cache.
+They share preview/export and per-photo persistence; DI excludes them. Source-canvas
+mapping means later geometry crops the appearance too. See API-SPEC §20 for
+orientation, resource checks and local-only provenance.
+
 ### 7.12 The half-frame pair
 
 - **A pair is a file**, `.spektrapair` JSON under `Sidecars/Pairs`, and its URL

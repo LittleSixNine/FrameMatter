@@ -162,6 +162,11 @@ const SchemaField kFields[] = {
     {"overscan_f_number",        "film_render.overscan.f_number",         F, SHOOT, true, 0.0, 64.0, false},
     {"overscan_gate",            "film_render.overscan.gate",             S, SHOOT, false, 0, 0, false},
     {"overscan_holes",           "film_render.overscan.holes",            S, SHOOT, false, 0, 0, false},
+    {"aging_active", "print_render.aging.active", B, PRINT, false, 0, 0, false},
+    {"aging_texture", "print_render.aging.texture", S, PRINT, false, 0, 0, false},
+    {"aging_strength", "print_render.aging.strength", F, PRINT, true, 0, 1, false},
+    {"aging_rotation", "print_render.aging.rotation", I, PRINT, true, 0, 3, false},
+    {"aging_flip", "print_render.aging.flip", I, PRINT, true, 0, 3, false},
     {"wide_leak_active",    "print_render.wide_leaks.active",    B, PRINT, false, 0, 0, false},
     {"wide_leak_texture",   "print_render.wide_leaks.texture",   S, PRINT, false, 0, 0, false},
     {"wide_leak_strength",  "print_render.wide_leaks.strength",  F, PRINT, true, 0, 1, false},
@@ -264,6 +269,7 @@ const SchemaField* find_field(const std::string& name) {
 // error here and a test failure there, never a silently ignored slider.
 
 double* float_slot(Params& p, const std::string& path) {
+    if (path == "print_render.aging.strength") return &p.print_render.aging.strength;
     if (path == "print_render.wide_leaks.strength") return &p.print_render.wide_leaks.strength;
     if (path == "print_render.wide_leaks.depth") return &p.print_render.wide_leaks.depth;
     if (path == "print_render.wide_leaks.scale") return &p.print_render.wide_leaks.scale;
@@ -336,6 +342,7 @@ double* float_slot(Params& p, const std::string& path) {
 }
 
 bool* bool_slot(Params& p, const std::string& path) {
+    if (path == "print_render.aging.active") return &p.print_render.aging.active;
     if (path == "print_render.wide_leaks.active") return &p.print_render.wide_leaks.active;
     if (path == "print_render.wide_leaks.anchored") return &p.print_render.wide_leaks.anchored;
     if (path == "film_render.scratches.dust_full_frame") return &p.film_render.scratches.dust_full_frame;
@@ -371,6 +378,7 @@ bool* bool_slot(Params& p, const std::string& path) {
 }
 
 std::string* str_slot(Params& p, const std::string& path) {
+    if (path == "print_render.aging.texture") return &p.print_render.aging.texture;
     if (path == "print_render.wide_leaks.texture") return &p.print_render.wide_leaks.texture;
     if (path == "film.info.stock") return &p.film_stock;
     if (path == "print.info.stock") return &p.print_stock;
@@ -398,7 +406,9 @@ std::string* str_slot(Params& p, const std::string& path) {
 }
 
 int* int_slot(Params& p, const std::string& path) {
+    if (path == "print_render.aging.rotation") return &p.print_render.aging.rotation;
     if (path == "print_render.wide_leaks.direction") return &p.print_render.wide_leaks.direction;
+    if (path == "print_render.aging.flip") return &p.print_render.aging.flip;
     if (path == "print_render.wide_leaks.flip") return &p.print_render.wide_leaks.flip;
     if (path == "print_render.wide_leaks.seed") return &p.print_render.wide_leaks.seed;
     if (path == "film_render.scratches.leak_enabled") return &p.film_render.scratches.leak_enabled;
@@ -504,6 +514,7 @@ bool validate_delta(const Json& delta, std::string& error, std::string& param) {
         // A closed set of names is not a range, so `has_range` cannot express
         // it; this, `contrast_mask_scheme` and `scene_latitude_norm` are the enumerated strings.
         if ((kv.first == "scratch_leak_enabled" || kv.first == "scratch_leak_seed" ||
+             kv.first == "aging_rotation" || kv.first == "aging_flip" ||
              kv.first == "wide_leak_direction" || kv.first == "wide_leak_seed" || kv.first == "wide_leak_flip") &&
             v.as_double() != std::floor(v.as_double())) {
             error = kv.first + " must be an integer";
@@ -730,6 +741,7 @@ bool digest(Params& p, const Json& neutral_filters, std::string& error) {
 
     if (p.debug.deactivate_spatial_effects) {
         p.print_render.wide_leaks.active = false;
+        p.print_render.aging.active = false;
         p.film_render.halation.active = false;
         set3(p.film_render.halation.scatter_core_um, 0.0, 0.0, 0.0);
         set3(p.film_render.halation.scatter_tail_um, 0.0, 0.0, 0.0);

@@ -737,7 +737,16 @@ kernel void spk_wide_light_leak(device const float* rgb [[buffer(0)]],
     const float2 pixel=float2(float(i%w)+0.5f,float(i/w)+0.5f);
     float film=1.0f;
     if (P[12]>0.5f) film=film_alpha(canvas_to_film(pixel.x-0.5f,pixel.y-0.5f,geometry),geometry);
+    const bool aging=P[35]>0.5f;
     float2 q=pixel, span=float2(w,h);
+    if (aging) {
+        const uint mirror=uint(P[34]);
+        if (mirror&1u) q.x=span.x-q.x;
+        if (mirror&2u) q.y=span.y-q.y;
+        // Match portrait orientation first, then apply saved clockwise quarter-turns.
+        const int turns=(h>w ? 1 : 0)+int(P[36]);
+        for (int turn=0;turn<turns;++turn) { q=float2(q.y,span.x-q.x); span=span.yx; }
+    }
     if (P[31]<0.5f) {
         const int direction=int(P[7]);
         if (direction==1) q.x=span.x-q.x;
@@ -754,8 +763,8 @@ kernel void spk_wide_light_leak(device const float* rgb [[buffer(0)]],
         const float2 window=float2(min(1.0f,aspect/textureAspect),min(1.0f,textureAspect/aspect));
         float2 unit=q/span;
         const uint flip=uint(P[34]);
-        if (flip&1u) unit.x=1.0f-unit.x;
-        if (flip&2u) unit.y=1.0f-unit.y;
+        if (!aging && (flip&1u)) unit.x=1.0f-unit.x;
+        if (!aging && (flip&2u)) unit.y=1.0f-unit.y;
         // Flip inside the selected window so a mirror cannot crop away the retained edge.
         uv=(1.0f-window)*float2(P[32],P[33])+unit*window;
     } else if (P[10]>0.5f) {
@@ -767,7 +776,16 @@ kernel void spk_wide_light_leak(device const float* rgb [[buffer(0)]],
                   (q.y-(span.y-ts.y*scale)*0.5f)/(scale*ts.y)+vertical);
     }
     float3 light=wide_sample(texture,uint(ts.x),uint(ts.y),uv);
-    if (P[8]>0.0f) {
+    if (aging) {
+        const float aspect=span.x/span.y, textureAspect=ts.x/ts.y;
+        const float2 window=float2(min(1.0f,aspect/textureAspect),min(1.0f,textureAspect/aspect));
+        const float2 footprint=0.25f*window/span;
+        light=0.25f*(wide_sample(texture,uint(ts.x),uint(ts.y),uv+footprint)+
+                    wide_sample(texture,uint(ts.x),uint(ts.y),uv-footprint)+
+                    wide_sample(texture,uint(ts.x),uint(ts.y),uv+float2(footprint.x,-footprint.y))+
+                    wide_sample(texture,uint(ts.x),uint(ts.y),uv+float2(-footprint.x,footprint.y)));
+    }
+    if (P[8]>0.0f && !aging) {
         const float radius=0.025f*min(ts.x,ts.y)*P[8]*P[8];
         const float2 dx=float2(radius/ts.x,0),dy=float2(0,radius/ts.y);
         light=0.4f*light+0.15f*(wide_sample(texture,uint(ts.x),uint(ts.y),uv-dx)+
@@ -778,8 +796,8 @@ kernel void spk_wide_light_leak(device const float* rgb [[buffer(0)]],
     const float peak=max(light.x,max(light.y,light.z));
     if (film>1e-6f && peak>1e-8f) {
         const float strength=P[4];
-        const float tail=clamp((strength-0.7f)/0.3f,0.0f,1.0f);
-        const float gain=min(strength/0.7f,1.0f)+3.0f*tail*tail;
+        const float tail=aging ? 0.0f : clamp((strength-0.7f)/0.3f,0.0f,1.0f);
+        const float gain=aging ? strength : min(strength/0.7f,1.0f)+3.0f*tail*tail;
         const float3 encoded=wide_encode(wide_matrix(original,P+13));
         float3 screen=encoded+max(1.0f-encoded,0.0f)*clamp(light*gain,0.0f,1.0f);
         // The natural Screen range ends at 70%; only the remaining range lifts toward white.

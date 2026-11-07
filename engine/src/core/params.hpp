@@ -306,8 +306,16 @@ struct WideLeakParams {
     int direction = 0, seed = 1, flip = 0;
 };
 
+struct AgingTextureParams {
+    bool active = false;
+    std::string texture;
+    double strength = 0.5;
+    int rotation = 0, flip = 0;
+};
+
 struct PrintRenderParams {
     WideLeakParams wide_leaks;
+    AgingTextureParams aging;
     GlareParams glare;
     ContrastMaskParams contrast_mask;
     PrintCurvesMorphParams density_curves_morph;

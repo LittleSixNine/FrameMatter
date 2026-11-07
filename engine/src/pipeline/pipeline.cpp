@@ -293,6 +293,11 @@ bool Pipeline::build(const Params& params, std::string& error) {
         error = "wide light leaks are unavailable in Digital Intermediate or striped rendering";
         return false;
     }
+    if (params_.print_render.aging.active && params_.print_render.aging.strength > 0 &&
+        (di_active_ || params_.settings.striped)) {
+        error = "aging textures are unavailable in Digital Intermediate or striped rendering";
+        return false;
+    }
     if (di_active_) {
         if (!di_constants(*colour_, *blob_, params_, tc_lut_host_, baked_.tc_lut_side, tc_b_host_,
                           film_sensitivity_, di_, error)) return false;
@@ -2062,6 +2067,7 @@ bool Pipeline::print_output(const Chain& in, Chain& out, std::string& error) {
     Image cur = in.cur, next;
     SPK_NODE(node_edr(cur, next, error)); cur = next;
     SPK_NODE(node_wide_leak(cur, next, error)); cur = next;
+    SPK_NODE(node_aging_texture(cur, next, error)); cur = next;
     out = in;
     // `cctf` writes into the destination, exactly as it did when it was the
     // segment's last call -- the destination is the caller's `out.cur`, not a

@@ -378,3 +378,4 @@ You_Still_Fucked_Film_Simulation/
 
 # User-supplied wide-leak textures: local development, redistribution unverified.
 /engine/resources/local_light_leaks/
+/engine/resources/local_aging_textures/

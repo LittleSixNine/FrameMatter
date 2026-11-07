@@ -50,8 +50,8 @@ for arg in "$@"; do
 done
 
 # Local texture derivatives have not been cleared for redistribution.
-if ! $local_build && [[ -d "$proj/Spektrafilm/Resources/engine/local_light_leaks" ]]; then
-  echo "error: local-only wide light leak textures are present; remove them before release packaging." >&2
+if ! $local_build && { [[ -d "$proj/Spektrafilm/Resources/engine/local_light_leaks" ]] || [[ -d "$proj/Spektrafilm/Resources/engine/local_aging_textures" ]]; }; then
+  echo "error: local-only texture assets are present; remove them before release packaging." >&2
   exit 1
 fi
 

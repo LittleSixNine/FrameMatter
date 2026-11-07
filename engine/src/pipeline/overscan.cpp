@@ -2614,13 +2614,25 @@ bool Pipeline::node_overscan_light(const Image& in, Image& out, std::string& err
 
 // A display-referred scan appearance, after EDR and before output encoding.
 bool Pipeline::node_wide_leak(const Image& in, Image& out, std::string& error) {
-    const auto& look = params_.print_render.wide_leaks;
+    return node_texture_overlay(in, out, params_.print_render.wide_leaks, wide_texture_, false, 0, error);
+}
+
+bool Pipeline::node_aging_texture(const Image& in, Image& out, std::string& error) {
+    const auto& aging = params_.print_render.aging;
+    WideLeakParams look;
+    look.active = aging.active; look.texture = aging.texture; look.strength = aging.strength;
+    look.anchored = true; look.flip = aging.flip;
+    return node_texture_overlay(in, out, look, aging_texture_, true, aging.rotation, error);
+}
+
+bool Pipeline::node_texture_overlay(const Image& in, Image& out, const WideLeakParams& look,
+                                     OverlayTexture& texture, bool aging, int rotation, std::string& error) {
     if (!look.active || look.strength <= 0.0) { out = in; return true; }
-    if (!wide_texture_ || wide_texture_path_ != look.texture) {
+    if (!texture.pixels || texture.path != look.texture) {
         struct Header { char magic[4]; uint32_t version, w, h, local; float front; } header{};
         static_assert(sizeof(Header) == 24);
         std::ifstream file(look.texture, std::ios::binary | std::ios::ate);
-        if (!file) { error = "wide light leak texture is missing: " + look.texture; return false; }
+        if (!file) { error = "overlay texture is missing: " + look.texture; return false; }
         const auto bytes = file.tellg();
         file.seekg(0);
         if (!file.read(reinterpret_cast<char*>(&header), sizeof(header)) ||
@@ -2628,26 +2640,27 @@ bool Pipeline::node_wide_leak(const Image& in, Image& out, std::string& error) {
             header.w < 2 || header.h < 2 || header.w > 4096 || header.h > 4096 ||
             header.local > 1 || !std::isfinite(header.front) || header.front < 0 || header.front > 1 ||
             bytes != std::streamoff(sizeof(header) + uint64_t(header.w) * header.h * 6)) {
-            error = "invalid wide light leak texture: " + look.texture; return false;
+            error = "invalid overlay texture: " + look.texture; return false;
         }
         std::vector<uint16_t> pixels(size_t(header.w) * header.h * 3);
         if (!file.read(reinterpret_cast<char*>(pixels.data()), std::streamsize(pixels.size()*2))) {
-            error = "cannot read wide light leak texture: " + look.texture; return false;
+            error = "cannot read overlay texture: " + look.texture; return false;
         }
-        auto texture = gpu_->upload_persistent(pixels.data(), pixels.size()*2, error);
-        if (!texture) return false;
-        wide_texture_ = texture;
-        wide_texture_path_ = look.texture;
-        wide_texture_w_ = header.w; wide_texture_h_ = header.h;
-        wide_texture_local_ = header.local; wide_texture_front_ = header.front;
+        auto uploaded = gpu_->upload_persistent(pixels.data(), pixels.size()*2, error);
+        if (!uploaded) return false;
+        texture.pixels = uploaded;
+        texture.path = look.texture;
+        texture.w = header.w; texture.h = header.h;
+        texture.local = header.local; texture.front = header.front;
     }
-    std::vector<float> P(35, 0.0f);
+    std::vector<float> P(37, 0.0f);
+    P[35] = aging ? 1.0f : 0.0f; P[36] = float(rotation);
     P[0] = float(in.w); P[1] = float(in.h);
-    P[2] = float(wide_texture_w_); P[3] = float(wide_texture_h_);
+    P[2] = float(texture.w); P[3] = float(texture.h);
     P[4] = float(look.strength); P[5] = float(look.depth); P[6] = float(look.scale);
     P[7] = float(look.direction); P[8] = float(look.softness);
     P[9] = float(uint32_t(look.seed) & 0xFFFFFFu);
-    P[10] = float(wide_texture_local_); P[11] = wide_texture_front_;
+    P[10] = float(texture.local); P[11] = texture.front;
     P[12] = overscan_wanted() ? 1.0f : 0.0f;
     P[31] = look.anchored ? 1.0f : 0.0f;
     P[32] = float(look.anchor_x); P[33] = float(look.anchor_y); P[34] = float(look.flip);
@@ -2666,7 +2679,7 @@ bool Pipeline::node_wide_leak(const Image& in, Image& out, std::string& error) {
     auto gb = gpu_->upload(geometry.data(), geometry.size()*sizeof(float), error);
     if (!pb || !gb || !alloc_like(in, out, error)) return false;
     return gpu_->dispatch("spk_wide_light_leak",
-        {gpu::Arg::buf(in.buf), gpu::Arg::buf(pb), gpu::Arg::buf(wide_texture_),
+        {gpu::Arg::buf(in.buf), gpu::Arg::buf(pb), gpu::Arg::buf(texture.pixels),
          gpu::Arg::buf(gb), gpu::Arg::buf(out.buf)}, in.pixels(), error);
 }
 

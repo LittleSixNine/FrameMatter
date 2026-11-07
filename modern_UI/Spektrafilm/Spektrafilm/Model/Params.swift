@@ -486,7 +486,7 @@ struct FilmParams: Codable, Equatable, Sendable {
         case filmFormatMM, filmFrame, filmSide, sideLengthMM, grainActive, halationActive
         case printBrightnessStops, yFilterShift, mFilterShift, glareActive, scanFilm
         case extendedDynamicRange, preflashExposure, contrastMask, sceneLatitude, effects, printEffects
-        case digitalIntermediate, filmEdge, dateBack, scratches, lightLeaks
+        case digitalIntermediate, filmEdge, dateBack, scratches, lightLeaks, agingTextures
         case sceneLatitudeOther, placementIsRight, pairSplit
     }
 
@@ -677,6 +677,7 @@ struct FilmParams: Codable, Equatable, Sendable {
     var dateBack = DateBackSettings()
     var scratches = ScratchSettings()
     var lightLeaks = LightLeakSettings()
+    var agingTextures = AgingTextureSettings()
 
     init() {
         filmStock = "kodak_portra_400"
@@ -707,6 +708,7 @@ struct FilmParams: Codable, Equatable, Sendable {
         dateBack = DateBackSettings()
         scratches = ScratchSettings()
         lightLeaks = LightLeakSettings()
+        agingTextures = AgingTextureSettings()
     }
 
     /// Keep sidecars written before EDR readable. Stored properties with
@@ -749,6 +751,7 @@ struct FilmParams: Codable, Equatable, Sendable {
         printEffects = try c.decodeIfPresent(Bool.self, forKey: .printEffects) ?? true
         filmEdge = try c.decodeIfPresent(FilmEdgeSettings.self, forKey: .filmEdge) ?? FilmEdgeSettings()
         scratches = try c.decodeIfPresent(ScratchSettings.self, forKey: .scratches) ?? ScratchSettings()
+        agingTextures = try c.decodeIfPresent(AgingTextureSettings.self, forKey: .agingTextures) ?? AgingTextureSettings()
         lightLeaks = try c.decodeIfPresent(LightLeakSettings.self, forKey: .lightLeaks) ?? LightLeakSettings(migrating: scratches)
         dateBack = try c.decodeIfPresent(DateBackSettings.self, forKey: .dateBack) ?? DateBackSettings()
     }
@@ -862,6 +865,7 @@ struct FilmParams: Codable, Equatable, Sendable {
         fields += filmEdge.wire
         fields += scratches.wire(filmEdge: filmEdge)
         fields += lightLeaks.wire(filmEdge: filmEdge, digitalIntermediate: digitalIntermediate)
+        fields += agingTextures.wire(digitalIntermediate: digitalIntermediate)
         fields += dateBack.wire(filmEdge: filmEdge, scale: dateScale)
         return fields
     }

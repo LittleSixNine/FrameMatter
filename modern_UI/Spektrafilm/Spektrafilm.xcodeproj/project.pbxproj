@@ -158,6 +158,7 @@
 			sourceTree = "<group>";
 		};
 		757296FA0954F05C85A8DF36 /* Adjustments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Adjustments.swift"; sourceTree = "<group>"; };
+		C230121A2AA2818111B69D9A /* AgingTextures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AgingTextures.swift"; sourceTree = "<group>"; };
 		84E1A9EFD37DC4FCA386919E /* CachePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CachePolicy.swift"; sourceTree = "<group>"; };
 		2C3EFD7B5DE8EA57D406BDBB /* CurveMath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurveMath.swift"; sourceTree = "<group>"; };
 		1FBA54A8DDF9F7C6003FE5D2 /* DecodeResidency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DecodeResidency.swift"; sourceTree = "<group>"; };
@@ -184,6 +185,7 @@
 			isa = PBXGroup;
 			children = (
 				757296FA0954F05C85A8DF36 /* Adjustments.swift */,
+				C230121A2AA2818111B69D9A /* AgingTextures.swift */,
 				84E1A9EFD37DC4FCA386919E /* CachePolicy.swift */,
 				2C3EFD7B5DE8EA57D406BDBB /* CurveMath.swift */,
 				1FBA54A8DDF9F7C6003FE5D2 /* DecodeResidency.swift */,
@@ -210,6 +212,7 @@
 			path = "Model";
 			sourceTree = "<group>";
 		};
+		5C01F781036958D2EA9C63B0 /* AgingTextureSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AgingTextureSection.swift"; sourceTree = "<group>"; };
 		831653CD6B716B9CB37E7445 /* CameraSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CameraSection.swift"; sourceTree = "<group>"; };
 		927C1341FFF10E11B804120C /* ClipboardSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ClipboardSection.swift"; sourceTree = "<group>"; };
 		773B97297FE5E4580B7CE70F /* CropSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CropSection.swift"; sourceTree = "<group>"; };
@@ -230,6 +233,7 @@
 		6D96546C1610FE27FA9014C7 /* Sections */ = {
 			isa = PBXGroup;
 			children = (
+				5C01F781036958D2EA9C63B0 /* AgingTextureSection.swift */,
 				831653CD6B716B9CB37E7445 /* CameraSection.swift */,
 				927C1341FFF10E11B804120C /* ClipboardSection.swift */,
 				773B97297FE5E4580B7CE70F /* CropSection.swift */,
@@ -359,6 +363,7 @@
 			sourceTree = "<group>";
 		};
 		701C800DBBB33B39A15D78A5 /* AgentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AgentTests.swift"; sourceTree = "<group>"; };
+		17D94C017FB2B12A61B1153C /* AgingTextureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AgingTextureTests.swift"; sourceTree = "<group>"; };
 		52AA7B49AA76968939624751 /* CachePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CachePolicyTests.swift"; sourceTree = "<group>"; };
 		5F3A463963EF5A09D20AC677 /* CanvasViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CanvasViewTests.swift"; sourceTree = "<group>"; };
 		B11659A441BF567B3A2F9D9B /* CineStillTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CineStillTests.swift"; sourceTree = "<group>"; };
@@ -428,6 +433,7 @@
 			isa = PBXGroup;
 			children = (
 				701C800DBBB33B39A15D78A5 /* AgentTests.swift */,
+				17D94C017FB2B12A61B1153C /* AgingTextureTests.swift */,
 				52AA7B49AA76968939624751 /* CachePolicyTests.swift */,
 				5F3A463963EF5A09D20AC677 /* CanvasViewTests.swift */,
 				B11659A441BF567B3A2F9D9B /* CineStillTests.swift */,
@@ -681,6 +687,7 @@
 		3F943E2C3A3ABE740621CF6A /* Localization.swift */ = {isa = PBXBuildFile; fileRef = 1CC1E55A9F47D4518AE30974; };
 		C132072E827EC648F0EF3A98 /* Strings.swift */ = {isa = PBXBuildFile; fileRef = A649699A5D48C90003A81CF9; };
 		BEA2D1F2705731339EA674B1 /* Adjustments.swift */ = {isa = PBXBuildFile; fileRef = 757296FA0954F05C85A8DF36; };
+		1432FF35B670F0E552F0DFCC /* AgingTextures.swift */ = {isa = PBXBuildFile; fileRef = C230121A2AA2818111B69D9A; };
 		EE83664DB0A731881AA7AC0B /* CachePolicy.swift */ = {isa = PBXBuildFile; fileRef = 84E1A9EFD37DC4FCA386919E; };
 		E886BD4074E7E3786311553F /* CurveMath.swift */ = {isa = PBXBuildFile; fileRef = 2C3EFD7B5DE8EA57D406BDBB; };
 		4DBB0A11BA317C74BFCD4D8E /* DecodeResidency.swift */ = {isa = PBXBuildFile; fileRef = 1FBA54A8DDF9F7C6003FE5D2; };
@@ -703,6 +710,7 @@
 		495103DED5BC4AF1790BAE6B /* StockCatalog.swift */ = {isa = PBXBuildFile; fileRef = 54760792255D82D0FCE4FE92; };
 		3B9DD29CA88CB7BA4E13D6C1 /* ToneMask.swift */ = {isa = PBXBuildFile; fileRef = 73CD38122A0624F1B181E883; };
 		56C018BA6EDC355DE18A2F22 /* WideLightLeaks.swift */ = {isa = PBXBuildFile; fileRef = 4D9AEF6AF65A8416D2971AAF; };
+		325718A5B2A5A9DF9A87F6AE /* AgingTextureSection.swift */ = {isa = PBXBuildFile; fileRef = 5C01F781036958D2EA9C63B0; };
 		31490F929F81724E9A336A94 /* CameraSection.swift */ = {isa = PBXBuildFile; fileRef = 831653CD6B716B9CB37E7445; };
 		40F8BD8BF544616033F3E633 /* ClipboardSection.swift */ = {isa = PBXBuildFile; fileRef = 927C1341FFF10E11B804120C; };
 		15B6AEDCC3FE5FBED0DC689E /* CropSection.swift */ = {isa = PBXBuildFile; fileRef = 773B97297FE5E4580B7CE70F; };
@@ -820,6 +828,7 @@
 				3F943E2C3A3ABE740621CF6A /* Localization.swift */,
 				C132072E827EC648F0EF3A98 /* Strings.swift */,
 				BEA2D1F2705731339EA674B1 /* Adjustments.swift */,
+				1432FF35B670F0E552F0DFCC /* AgingTextures.swift */,
 				EE83664DB0A731881AA7AC0B /* CachePolicy.swift */,
 				E886BD4074E7E3786311553F /* CurveMath.swift */,
 				4DBB0A11BA317C74BFCD4D8E /* DecodeResidency.swift */,
@@ -842,6 +851,7 @@
 				495103DED5BC4AF1790BAE6B /* StockCatalog.swift */,
 				3B9DD29CA88CB7BA4E13D6C1 /* ToneMask.swift */,
 				56C018BA6EDC355DE18A2F22 /* WideLightLeaks.swift */,
+				325718A5B2A5A9DF9A87F6AE /* AgingTextureSection.swift */,
 				31490F929F81724E9A336A94 /* CameraSection.swift */,
 				40F8BD8BF544616033F3E633 /* ClipboardSection.swift */,
 				15B6AEDCC3FE5FBED0DC689E /* CropSection.swift */,
@@ -926,6 +936,7 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		D9C3C8DCFE21EC997B8F9448 /* AgentTests.swift */ = {isa = PBXBuildFile; fileRef = 701C800DBBB33B39A15D78A5; };
+		04098B57AA2E0B4E4739D37B /* AgingTextureTests.swift */ = {isa = PBXBuildFile; fileRef = 17D94C017FB2B12A61B1153C; };
 		0475C190194643CFAEE4F9BD /* CachePolicyTests.swift */ = {isa = PBXBuildFile; fileRef = 52AA7B49AA76968939624751; };
 		5E11C56528BFC0565D351F2E /* CanvasViewTests.swift */ = {isa = PBXBuildFile; fileRef = 5F3A463963EF5A09D20AC677; };
 		3919899DAC290526AD9B9EB1 /* CineStillTests.swift */ = {isa = PBXBuildFile; fileRef = B11659A441BF567B3A2F9D9B; };
@@ -1043,6 +1054,7 @@
 		C32D9E7188674C824BB718C1 /* Localization.swift */ = {isa = PBXBuildFile; fileRef = 1CC1E55A9F47D4518AE30974; };
 		07099AF767156E71C3EAA913 /* Strings.swift */ = {isa = PBXBuildFile; fileRef = A649699A5D48C90003A81CF9; };
 		DCA8A4CFBBF2CE80CD44E521 /* Adjustments.swift */ = {isa = PBXBuildFile; fileRef = 757296FA0954F05C85A8DF36; };
+		31D8B4676A80956010C3B008 /* AgingTextures.swift */ = {isa = PBXBuildFile; fileRef = C230121A2AA2818111B69D9A; };
 		8B3873684B00443EECCEC693 /* CachePolicy.swift */ = {isa = PBXBuildFile; fileRef = 84E1A9EFD37DC4FCA386919E; };
 		945B7C96E6D95C47077CA637 /* CurveMath.swift */ = {isa = PBXBuildFile; fileRef = 2C3EFD7B5DE8EA57D406BDBB; };
 		842D1F1ADDED2E0D85465F76 /* DecodeResidency.swift */ = {isa = PBXBuildFile; fileRef = 1FBA54A8DDF9F7C6003FE5D2; };
@@ -1065,6 +1077,7 @@
 		2F1C84D952E02D091BF4FD75 /* StockCatalog.swift */ = {isa = PBXBuildFile; fileRef = 54760792255D82D0FCE4FE92; };
 		877A4E321C0E2EFDCAAB662C /* ToneMask.swift */ = {isa = PBXBuildFile; fileRef = 73CD38122A0624F1B181E883; };
 		D22047325D8CEF45C39D3FE0 /* WideLightLeaks.swift */ = {isa = PBXBuildFile; fileRef = 4D9AEF6AF65A8416D2971AAF; };
+		02E0B89FCF97F1AE8A880443 /* AgingTextureSection.swift */ = {isa = PBXBuildFile; fileRef = 5C01F781036958D2EA9C63B0; };
 		FD3265098AA8A6AC64068557 /* CameraSection.swift */ = {isa = PBXBuildFile; fileRef = 831653CD6B716B9CB37E7445; };
 		DEE999778942877A40E1F1DA /* ClipboardSection.swift */ = {isa = PBXBuildFile; fileRef = 927C1341FFF10E11B804120C; };
 		3949D904607209196C68D6D2 /* CropSection.swift */ = {isa = PBXBuildFile; fileRef = 773B97297FE5E4580B7CE70F; };
@@ -1130,6 +1143,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D9C3C8DCFE21EC997B8F9448 /* AgentTests.swift */,
+				04098B57AA2E0B4E4739D37B /* AgingTextureTests.swift */,
 				0475C190194643CFAEE4F9BD /* CachePolicyTests.swift */,
 				5E11C56528BFC0565D351F2E /* CanvasViewTests.swift */,
 				3919899DAC290526AD9B9EB1 /* CineStillTests.swift */,
@@ -1247,6 +1261,7 @@
 				C32D9E7188674C824BB718C1 /* Localization.swift */,
 				07099AF767156E71C3EAA913 /* Strings.swift */,
 				DCA8A4CFBBF2CE80CD44E521 /* Adjustments.swift */,
+				31D8B4676A80956010C3B008 /* AgingTextures.swift */,
 				8B3873684B00443EECCEC693 /* CachePolicy.swift */,
 				945B7C96E6D95C47077CA637 /* CurveMath.swift */,
 				842D1F1ADDED2E0D85465F76 /* DecodeResidency.swift */,
@@ -1269,6 +1284,7 @@
 				2F1C84D952E02D091BF4FD75 /* StockCatalog.swift */,
 				877A4E321C0E2EFDCAAB662C /* ToneMask.swift */,
 				D22047325D8CEF45C39D3FE0 /* WideLightLeaks.swift */,
+				02E0B89FCF97F1AE8A880443 /* AgingTextureSection.swift */,
 				FD3265098AA8A6AC64068557 /* CameraSection.swift */,
 				DEE999778942877A40E1F1DA /* ClipboardSection.swift */,
 				3949D904607209196C68D6D2 /* CropSection.swift */,
@@ -1391,7 +1407,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.2;
+				CURRENT_PROJECT_VERSION = 1.3;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1440,7 +1456,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.2;
+				CURRENT_PROJECT_VERSION = 1.3;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1513,7 +1529,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.2;
+				CURRENT_PROJECT_VERSION = 1.3;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1559,7 +1575,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.2;
+				CURRENT_PROJECT_VERSION = 1.3;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;

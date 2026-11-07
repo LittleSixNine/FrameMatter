@@ -1665,6 +1665,7 @@ spk_status spk_render_digital_intermediate(spk_session* session, spk_result* out
     params.io.digital_intermediate = true;
     params.io.scan_film = false;
     params.print_render.wide_leaks.active = false; // A scan appearance is not part of the DI negative.
+    params.print_render.aging.active = false;
     gpu->begin_frame();
     std::string error;
     Image tier_source, negative, rgb;

@@ -1593,3 +1593,49 @@ the existing pipeline rather than painting RGB dots. Neutral CMY attenuation is
 an approximation, not a calibrated scanner-only spectral or defocus simulation.
 The data license, creator, dataset link and extraction changes ship in About
 and Resources/Licenses; code's MIT license is separate from the CC BY data.
+
+## 20. Whole-frame aging textures (local research assets)
+
+Independent of `scratch_active`, negative-scan dust, Film Edge and light leaks.
+Disabled by default; a missing `agingTextures` sidecar member decodes to the
+new disabled settings. The left-rail Aging Textures card follows Scratches & Dust.
+
+| wire field | type / range / default | layer |
+|---|---|---|
+| `aging_active` | bool / false | print, non-live |
+| `aging_texture` | string / empty, absolute SPKL resource path | print, non-live |
+| `aging_strength` | float / 0–1 / .5 | print, non-live |
+| `aging_rotation` | integer / 0–3 / 0, clockwise quarter-turns | print, non-live |
+| `aging_flip` | integer / 0–3 / 0, original/horizontal/vertical/both | print, non-live |
+
+The two discrete fields reject fractional values. Settings persist per photograph
+and are excluded from the settings clipboard like saved light-leak patterns.
+The resolved material ID, rotation and flip survive preview, reopening and export;
+there is no render-time randomness. Inactive or zero strength is a strict bypass,
+including resource reads. A selected missing or malformed texture reports an error.
+
+Native print_output applies aging **after wide light leaks and before CCTF**,
+using the same checked SPKL loader and colour conversion helpers with a separate
+persistent texture cache. sRGB-encoded Screen uses gain=strength throughout 0–1;
+it has no 70% knee, brightness boost, blur or white-wash segment. It does not alter
+the material profiles or the existing density dust. DI/striped rendering rejects
+an active nonzero native effect; the app suppresses it in DI, and DI export explicitly
+bypasses it without changing the saved appearance. Windows explicitly rejects this
+unported effect rather than silently dropping it.
+
+UV uses uniform centred Cover, with one automatic clockwise turn for portrait
+source canvases followed by the saved clockwise turns. Mirrors operate in source-canvas axes, including portraits, independently of
+the saved rotation. All angles preserve aspect; square crops can
+lose edge scratches, and wide crops may increase apparent mark size. Four footprint
+taps reduce fine-line aliasing. Mapping is attached to the source/film canvas, not
+relaid on each later output crop. With Film Edge, the shared film-alpha mask excludes
+holes and carrier; existing date pixels on the film remain part of the composited
+image (there is no separate date exclusion mask).
+
+The five local IDs `dust01`–`dust05` are read from `local_aging_textures/`.
+`engine/tools/import_aging_textures.py` checks the original APK SHA and exact archive
+members before expanding native 2000×1333 RGB8 JPEG values ×257 to RGB16. No resize,
+normalisation, black-floor removal or preprocessing blur occurs. The source,
+checksums and rights notice remain in the local manifest. Derivatives are ignored
+by Git and covered by the release-package local-assets guard; public redistribution
+and commercial permission have not been established.
