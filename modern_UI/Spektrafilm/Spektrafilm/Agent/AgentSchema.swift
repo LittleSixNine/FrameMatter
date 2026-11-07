@@ -158,7 +158,7 @@ enum AgentSchema {
             .init("params.lightLeaks.active", .bool, "Master light-leak switch. Perforation and wide light have separate sub-switches."),
             .init("params.lightLeaks.perforationActive", .bool, "Perforation light sub-switch; requires 135 Film Edge."),
             .init("params.lightLeaks.wideActive", .bool, "Wide texture light sub-switch; works without Film Edge; unavailable in DI."),
-            .init("params.lightLeaks.wideMaterial", .choice(WideLeakMaterial.allCases.map(\.rawValue)), "Local material: 11,14,28,36,42,17. Assets must exist locally."),
+            .init("params.lightLeaks.wideMaterial", .choice(WideLeakMaterial.allCases.map(\.rawValue)), "Local material: 11,14,28,36,42,17,34,39,15,23. Assets must exist locally."),
             .init("params.lightLeaks.wideDirection", .integer(0...3), "Entry edge: 0 left,1 right,2 top,3 bottom."),
             .init("params.lightLeaks.wideScale", .number(0.5...3), "Uniform texture scale; default 1.2."),
             .init("params.lightLeaks.wideSeed", .integer(ScratchSettings.seedRange), "Stable wide-light placement seed, independent of perforations and wear."),

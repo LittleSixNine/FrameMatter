@@ -486,7 +486,7 @@ Wide material light (2026-11-07) is the second group in that card. Its print-lay
 `wide_leak_*` wire feeds a scan-look node after EDR, before CCTF. The node uses
 processed local RGB16 textures, sRGB Screen plus high-strength white lift, then
 converts back to the selected output space; the material profiles are untouched.
-Film alpha keeps perforations/carrier clear. Six user-provided derivatives live
+Film alpha keeps perforations/carrier clear. Ten user-provided derivatives live
 in ignored `engine/resources/local_light_leaks`, prepared explicitly by
 `engine/tools/prepare_wide_leaks.py`, with no Python at runtime/build. Their
 redistribution is unverified; the release packager rejects the local-only folder.

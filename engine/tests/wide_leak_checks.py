@@ -91,7 +91,7 @@ with tempfile.TemporaryDirectory() as directory,Engine() as engine:
         else:raise AssertionError('malformed texture accepted')
     print('PASS directions, bounds, seeds, white output spaces, print caching, holes, export and malformed files',flush=True)
     materials=ROOT/'resources/local_light_leaks'
-    for number in [11,14,28,36,42,17]:
+    for number in [11,14,28,36,42,17,34,39,15,23]:
         material=materials/f'{number:02d}.spkleak'
         if not material.exists():
             print('SKIP private material absent:',number,flush=True);continue

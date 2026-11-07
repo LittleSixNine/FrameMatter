@@ -119,7 +119,7 @@ enum UpdateCheck {
             guard let latest = version(fromTag: release.tagName) else {
                 return .failed(reason: "The latest release tag '\(release.tagName)' is not in the expected build-N form.")
             }
-            guard let installed = version(fromString: currentVersion) else {
+            guard let installed = installedVersion(currentVersion) else {
                 return .failed(reason: "This build's version '\(currentVersion)' could not be read.")
             }
 
@@ -137,6 +137,15 @@ enum UpdateCheck {
         let prefix = "build-"
         guard tag.hasPrefix(prefix) else { return nil }
         return version(fromString: String(tag.dropFirst(prefix.count)))
+    }
+
+    private static func installedVersion(_ text: String) -> Version? {
+        let parts = text.split(separator: ".", omittingEmptySubsequences: false)
+        guard (1...3).contains(parts.count), parts.allSatisfy({ part in
+            !part.isEmpty && part.utf8.allSatisfy({ $0 >= 48 && $0 <= 57 }) && Int(part) != nil
+        }) else { return nil }
+        // Local revisions stay on their parent integer release train.
+        return version(fromString: String(parts[0]))
     }
 
     private static func version(fromString text: String) -> Version? {

@@ -11,6 +11,7 @@
 #
 #   Tools/package.sh                 as far as this machine's credentials allow
 #   Tools/package.sh --dry-run       say what would happen and stop
+#   Tools/package.sh --local         private local DMG; never notarise or publish
 #
 # WHAT YOU NEED, and what happens without it
 # ------------------------------------------
@@ -39,10 +40,17 @@ here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 proj=$(CDPATH= cd -- "$here/.." && pwd)
 out="$proj/build/release"
 dry=false
-[[ "${1:-}" == "--dry-run" ]] && dry=true
+local_build=false
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) dry=true ;;
+    --local) local_build=true ;;
+    *) echo "error: unknown option $arg" >&2; exit 2 ;;
+  esac
+done
 
 # Local texture derivatives have not been cleared for redistribution.
-if [[ -d "$proj/Spektrafilm/Resources/engine/local_light_leaks" ]]; then
+if ! $local_build && [[ -d "$proj/Spektrafilm/Resources/engine/local_light_leaks" ]]; then
   echo "error: local-only wide light leak textures are present; remove them before release packaging." >&2
   exit 1
 fi
@@ -50,6 +58,12 @@ fi
 identity=${SPEKTRAFILM_SIGN_IDENTITY:--}
 team=${SPEKTRAFILM_TEAM_ID:-}
 profile=${SPEKTRAFILM_NOTARY_PROFILE:-}
+if $local_build; then
+  identity=-
+  team=""
+  profile=""
+  unset SPEKTRAFILM_SIGN_IDENTITY SPEKTRAFILM_TEAM_ID SPEKTRAFILM_NOTARY_PROFILE
+fi
 signed=false
 [[ "$identity" != "-" && -n "$team" ]] && signed=true
 
@@ -62,8 +76,8 @@ if [[ -z "$marketing_version" ]]; then
   exit 1
 fi
 build_number=$(sed -n 's/^BUILD_NUMBER = "\(.*\)"$/\1/p' "$here/gen-project.py")
-if [[ ! "$build_number" =~ ^[1-9][0-9]*$ ]]; then
-  echo "error: BUILD_NUMBER must be a positive integer" >&2
+if [[ ! "$build_number" =~ ^[1-9][0-9]*(\.[0-9]+){0,2}$ ]]; then
+  echo "error: BUILD_NUMBER must be a positive build number with up to two local revision components" >&2
   exit 1
 fi
 version="Build $build_number"
@@ -280,6 +294,10 @@ else
     echo "  NOT ACCEPTED. This artefact is not distributable yet."
     $signed || echo "  Cause: no Developer ID Application certificate (§2.1)."
     [[ -n "$profile" ]] || echo "  Cause: not notarised (§2.1 steps 4-5)."
+    if $local_build; then
+      echo "  LOCAL BUILD ONLY -- DMG created; not notarised or approved for redistribution."
+      exit 0
+    fi
     echo "  Verify on a machine that has never seen this checkout; spctl on the"
     echo "  build machine can pass for reasons a stranger's Mac will not have."
     exit 1

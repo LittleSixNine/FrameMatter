@@ -60,6 +60,20 @@ final class UpdateCheckTests: XCTestCase {
         XCTAssertEqual(status, .upToDate(version: "Build 9"))
     }
 
+    func testLocalRevisionUsesItsParentReleaseBuild() async {
+        let old = await UpdateCheck.check(currentVersion: "1.1", transport:
+            StubTransport(status: 200, body: release("build-1")))
+        XCTAssertEqual(old, .upToDate(version: "Build 1"))
+        let next = await UpdateCheck.check(currentVersion: "1.1", transport:
+            StubTransport(status: 200, body: release("build-2")))
+        guard case .updateAvailable = next else { return XCTFail("expected Build 2, got \(next)") }
+        for version in ["1.", "1.bad", "1..1", "1.-1", "1.1.1.1"] {
+            let result = await UpdateCheck.check(currentVersion: version, transport:
+                StubTransport(status: 200, body: release("build-2")))
+            guard case .failed = result else { return XCTFail("accepted invalid local version: \(version)") }
+        }
+    }
+
     func testOnlyPositiveIntegerReleaseTagsAreAccepted() async {
         for tag in ["build-0", "build--1", "build-1.2", "build-+2", "build-2beta", "build- 2"] {
             let status = await UpdateCheck.check(currentVersion: "1", transport:

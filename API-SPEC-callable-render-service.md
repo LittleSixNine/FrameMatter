@@ -1430,12 +1430,12 @@ visual estimates, not calibrated film-base light-piping measurements.
 The Light Leaks card now has a master `active` and separate `perforationActive`
 (default true, preserving older edits) and `wideActive` (default false) groups.
 Wide light works without Film Edge and can overlap perforation light. Its saved
-fields are `wideMaterial` (11/14/28/36/42/17), `wideStrength` (default .5),
+fields are `wideMaterial` (11/14/28/36/42/17/34/39/15/23), `wideStrength` (default .5),
 `wideDepth` (.28), `wideScale` (1.2), `wideSoftness` (0), `wideDirection` (0),
 `wideSeed` (1). Old light-setting objects decode missing keys to these defaults.
 Another changes only the wide material, direction and seed, retaining strength,
-depth, size and softness. Material 17 keeps its local light spot, so depth is
-not editable for that material. Perforation patterns and wear seeds are retained.
+depth, size and softness. Materials 17/34/15/23 retain full-frame light placement, so depth is
+not editable for those materials. Perforation patterns and wear seeds are retained.
 
 | native field | type / range / default | layer |
 |---|---|---|
@@ -1479,14 +1479,21 @@ refuse an active nonzero overlay. The app disables it in DI; Vulkan refuses it
 explicitly rather than silently omitting the effect.
 
 `engine/tools/prepare_wide_leaks.py --source-dir <TIFF directory>` makes local
-1536-long-edge textures from the six selected original RGB16 TIFFs: darkest-15%
+1536-long-edge textures from the original six RGB16 TIFFs: darkest-15%
 per-channel median subtraction, smooth residual gate .015–.09, then direction
 normalisation/front measurement. Untagged source colour is assumed sRGB for
-this visual effect; this is not spectral calibration. Source TIFFs are intact.
+this visual effect; this is not spectral calibration. Four additional approved
+materials use 1200-wide processing: 34 extracts an orange streak from its blue
+backing, 39 expands grayscale RGB16 and removes the grey/black carrier boundary,
+and 15/23 suppress scan defects before extracting cyan/violet mist. These offline
+steps use SciPy; no build/runtime dependency is added. 34, 15 and 23 use full-frame
+placement like 17, with intrusion disabled; 39 uses edge placement. The existing
+six derivatives remain byte-identical. Source TIFFs are intact.
 Derivatives and manifests are ignored by Git. `engine/build.sh bundle` copies
 them into this machine's development app. Redistribution terms remain
 unverified, so `Tools/package.sh` refuses release packaging while that local-only
-folder is present. Source builds without these private assets still work, with
+folder is present. Explicit `--local` packaging permits a private, ad-hoc DMG
+without notarisation or publication; the default release guard stays in force. Source builds without these private assets still work, with
 the unavailable-material message and wide light off. No public release is made.
 
 ## 19. Full-width 135 exposure

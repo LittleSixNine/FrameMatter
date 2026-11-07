@@ -69,7 +69,7 @@ struct LightLeakSection: View {
                 }.labelsHidden().pickerStyle(.menu)
             }.frame(height: Theme.Metric.rowHeight)
             amount(L("Intrusion", zh: "侵入范围"), \.wideDepth, zero: 0.28)
-                .disabled(settings.wideMaterial == .spot17)
+                .disabled(!settings.wideMaterial.usesIntrusion)
             ScrubSlider(label: L("Size", zh: "大小"), value: bind(\.wideScale), range: 0.5...3,
                         zero: 1.2, snap: 0.01, format: { String(format: "%.0f%%", $0*100) })
             amount(L("Softness", zh: "柔化"), \.wideSoftness, zero: 0)

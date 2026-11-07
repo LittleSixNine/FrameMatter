@@ -51,8 +51,27 @@ final class WideLeakTests: XCTestCase {
         XCTAssertEqual(p.lightLeaks.wideStrength, 1)
     }
 
-    func testAllSixMaterialsAndExpandedCard() throws {
-        XCTAssertEqual(WideLeakMaterial.allCases.map(\.rawValue), ["11","14","28","36","42","17"])
+    func testNewMaterialsRoundTripAndPlacementControls() throws {
+        for material in [WideLeakMaterial.streak34, .neutral39, .cyan15, .violet23] {
+            var p = FilmParams.default
+            p.lightLeaks.active = true
+            p.lightLeaks.wideActive = true
+            p.lightLeaks.wideMaterial = material
+            p.lightLeaks.wideStrength = 0.75
+            p.lightLeaks.wideDirection = .right
+            p.lightLeaks.wideScale = 1.5
+            p.lightLeaks.wideSoftness = 0.4
+            XCTAssertEqual(try JSONDecoder().decode(FilmParams.self, from: JSONEncoder().encode(p)), p)
+            XCTAssertEqual(material.usesIntrusion, material == .neutral39)
+            if material.available {
+                XCTAssertEqual(p.fullDelta["wide_leak_texture"], .string(material.textureURL.path))
+                XCTAssertEqual(p.fullDelta["wide_leak_active"], .bool(true))
+            }
+        }
+    }
+
+    func testAllTenMaterialsAndExpandedCard() throws {
+        XCTAssertEqual(WideLeakMaterial.allCases.map(\.rawValue), ["11","14","28","36","42","17","34","39","15","23"])
         let key = Session.uiKey + "section." + LightLeakSection.key
         let old = UserDefaults.standard.object(forKey: key)
         let language = Localization.shared.language
@@ -61,7 +80,7 @@ final class WideLeakTests: XCTestCase {
         let session = Session()
         for lang in [LanguageSetting.english, .simplifiedChinese] {
             Localization.shared.language = lang
-            for material in [WideLeakMaterial.warm11, .spot17] {
+            for material in WideLeakMaterial.allCases {
                 var p = session.params
                 p.lightLeaks.active = true; p.lightLeaks.perforationActive = false
                 p.lightLeaks.wideActive = true; p.lightLeaks.wideStrength = 1
