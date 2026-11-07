@@ -16,8 +16,17 @@ enum AgingTextureMaterial: String, Codable, CaseIterable, Sendable {
         case .dust05: L("05 · Heavy wear", zh: "05 · 重度做旧")
         }
     }
+    var assetName: String {
+        switch self {
+        case .dust01: "aging-001"
+        case .dust02: "aging-002"
+        case .dust03: "aging-003"
+        case .dust04: "aging-004"
+        case .dust05: "aging-005"
+        }
+    }
     var textureURL: URL {
-        EngineClient.defaultResources().appendingPathComponent("local_aging_textures/\(rawValue).spkleak")
+        EngineClient.defaultResources().appendingPathComponent("textures/aging/\(assetName).spkleak")
     }
     var available: Bool { FileManager.default.fileExists(atPath: textureURL.path) }
 }

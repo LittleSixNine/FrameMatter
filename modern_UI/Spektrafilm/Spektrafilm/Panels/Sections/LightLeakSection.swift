@@ -31,7 +31,7 @@ struct LightLeakSection: View {
             Text(settings.wideMaterial.available
                  ? L("Perforation and wide light can overlap. Each remembers its settings. Wide light is natural through 70%, then progressively washes the lit area to white.",
                      zh: "两组漏光可同时开启并分别保存参数。大范围漏光前70%保留自然叠加，超过70%逐渐增强冲白。")
-                 : L("Local wide-light textures are missing; prepare and bundle your own assets first.", zh: "本地大范围漏光素材缺失，需先准备并同步素材。"))
+                 : L("Bundled light-leak textures are missing; reinstall FrameMatter.", zh: "内置漏光素材缺失，请重新安装 FrameMatter。"))
                 .font(Theme.Font.caption).foregroundStyle(Theme.Ink.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
         }

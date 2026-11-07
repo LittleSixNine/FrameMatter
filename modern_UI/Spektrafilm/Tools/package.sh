@@ -53,12 +53,6 @@ for arg in "$@"; do
   esac
 done
 
-# Local texture derivatives have not been cleared for redistribution.
-if ! $local_build && { [[ -d "$proj/Spektrafilm/Resources/engine/local_light_leaks" ]] || [[ -d "$proj/Spektrafilm/Resources/engine/local_aging_textures" ]]; }; then
-  echo "error: local-only texture assets are present; remove them before release packaging." >&2
-  exit 1
-fi
-
 identity=${SPEKTRAFILM_SIGN_IDENTITY:--}
 team=${SPEKTRAFILM_TEAM_ID:-}
 profile=${SPEKTRAFILM_NOTARY_PROFILE:-}

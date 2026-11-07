@@ -44,7 +44,7 @@ struct AgingTextureSection: View {
                             ? L("Unavailable in Digital Intermediate.", zh: "数字中间片模式不应用做旧纹理。")
                             : L("Switch Aging Textures on in its header.", zh: "先在标题栏开启做旧纹理。"))
             Text(!settings.material.available
-                 ? L("Texture unavailable. Restore the local research assets.", zh: "素材缺失，请恢复本地做旧素材。")
+                 ? L("Bundled texture is missing. Reinstall FrameMatter.", zh: "内置纹理缺失，请重新安装 FrameMatter。")
                  : L("Whole-frame wear; independent of dust and Film Edge. Portraits align automatically before rotation.",
                      zh: "整幅做旧，独立于灰尘和片边；竖图先自动转向，再应用旋转。"))
                 .font(Theme.Font.caption).foregroundStyle(Theme.Ink.tertiary).fixedSize(horizontal: false, vertical: true)

@@ -1498,12 +1498,12 @@ and 15/23 suppress scan defects before extracting cyan/violet mist. These offlin
 steps use SciPy; no build/runtime dependency is added. 34, 15 and 23 use full-frame
 placement like 17, with intrusion disabled; 39 uses edge placement. The existing
 six derivatives remain byte-identical. Source TIFFs are intact.
-Derivatives and manifests are ignored by Git. `engine/build.sh bundle` copies
-them into this machine's development app. Redistribution terms remain
-unverified, so `Tools/package.sh` refuses release packaging while that local-only
-folder is present. Explicit `--local` packaging permits a private, ad-hoc DMG
-without notarisation or publication; the default release guard stays in force. Source builds without these private assets still work, with
-the unavailable-material message and wide light off. No public release is made.
+Release derivatives are tracked under `engine/resources/textures/light-leaks/`
+as `light-leak-001.spkleak` through `light-leak-041.spkleak`. Original material
+IDs remain stable in saved settings; `WideLeakMaterial.assetName` maps them to
+neutral bundle names. The original sources remain in private development
+storage. `check-texture-resources.py` checks the complete manifest, SPKL header,
+dimensions and SHA-256 before building; missing textures fail the build.
 
 The reviewed pool is imported with `--reviewed-pool-dir <complete-trial-directory>`;
 `engine/tools/import_wide_leaks.py` accepts only the 27 agreed IDs and verifies
@@ -1632,10 +1632,11 @@ relaid on each later output crop. With Film Edge, the shared film-alpha mask exc
 holes and carrier; existing date pixels on the film remain part of the composited
 image (there is no separate date exclusion mask).
 
-The five local IDs `dust01`–`dust05` are read from `local_aging_textures/`.
+The saved IDs `dust01`–`dust05` map to `textures/aging/aging-001.spkleak`
+through `aging-005.spkleak` in the release resources.
 `engine/tools/import_aging_textures.py` checks the original APK SHA and exact archive
 members before expanding native 2000×1333 RGB8 JPEG values ×257 to RGB16. No resize,
 normalisation, black-floor removal or preprocessing blur occurs. The source,
-checksums and rights notice remain in the local manifest. Derivatives are ignored
-by Git and covered by the release-package local-assets guard; public redistribution
+checksums and original mapping remain in the private development record. The
+renamed release derivatives are tracked and validated before bundling. Original-source redistribution
 and commercial permission have not been established.

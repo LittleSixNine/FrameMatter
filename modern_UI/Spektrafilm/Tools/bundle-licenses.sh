@@ -44,6 +44,7 @@ source_url="https://github.com/LittleSixNine/FrameMatter"
 # A different work under a different licence; not a substitute for the above.
 upstream_url="https://github.com/andreavolpato/spektrafilm"
 
+cp "$root/license/Effect-Textures-NOTICE.txt" "$out/Effect-Textures-NOTICE.txt"
 cp "$root/license/PhotoTrail-Metadata-NOTICE.txt" "$out/PhotoTrail-Metadata-NOTICE.txt"
 cp "$root/COPYRIGHT.txt" "$out/FrameMatter-COPYRIGHT.txt"
 cp "$root/license/LICENSE" "$out/FrameMatter-GPL-3.0.txt"

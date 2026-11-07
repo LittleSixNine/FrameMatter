@@ -66,6 +66,7 @@ struct AboutWindow: View {
     static let upstreamURL = "https://github.com/andreavolpato/spektrafilm"
 
     static let licences = [
+        Licence(id: "Effect-Textures-NOTICE.txt", title: "Effect textures — source credits", chineseTitle: "漏光与做旧纹理 — 来源说明"),
         Licence(id: "PhotoTrail-Metadata-NOTICE.txt", title: "PhotoTrail — metadata code provenance and licence", chineseTitle: "PhotoTrail — 元数据代码来源与授权"),
         Licence(id: "FrameMatter-COPYRIGHT.txt", title: "FrameMatter contributions — LittleSixNine", chineseTitle: "FrameMatter 新增与修改贡献 — LittleSixNine"),
         Licence(id: "DSEG-OFL-1.1.txt", title: "SIL OFL 1.1 — DSEG fonts by Keshikan", chineseTitle: "SIL OFL 1.1 — Keshikan 的 DSEG 字体"),

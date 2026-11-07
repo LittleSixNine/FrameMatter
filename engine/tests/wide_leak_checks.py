@@ -140,15 +140,15 @@ with tempfile.TemporaryDirectory() as directory,Engine() as engine:
         except EngineError:pass
         else:raise AssertionError('malformed texture accepted')
     print('PASS directions, bounds, seeds, white output spaces, print caching, holes, export and malformed files',flush=True)
-    materials=ROOT/'resources/local_light_leaks'
+    materials=ROOT/'resources/textures/light-leaks'
     manifest=materials/'manifest.json'
     if manifest.exists():
         entries=json.loads(manifest.read_text())['materials']
-        assert len(entries)==41, 'local catalog is incomplete'
+        assert len(entries)==41, 'release catalog is incomplete'
         for entry in entries:
             material=materials/entry['file']
             options=dict(BASE,wide_leak_active=True,wide_leak_strength=1.,wide_leak_texture=str(material))
-            if str(entry.get('id','')).startswith('onetake_'):
+            if 'anchor' in entry:
                 options.update(wide_leak_anchored=True,wide_leak_anchor_x=entry['anchor'][0],wide_leak_anchor_y=entry['anchor'][1])
             with engine.open(source,options) as session:image,_=session.render('full')
             white_fraction=np.all(image[...,:3]>65000,axis=2).mean()
@@ -156,8 +156,8 @@ with tempfile.TemporaryDirectory() as directory,Engine() as engine:
             options['wide_leak_strength']=.7
             with engine.open(source,options) as session:natural,_=session.render('full')
             assert np.all(image[...,:3].astype(int)>=natural[...,:3].astype(int)-2),(entry['file'],'white tail darkened the image')
-        print('PASS all 41 local materials render; maximum is never darker than natural 70%',flush=True)
-    else:print('SKIP private material manifest absent',flush=True)
+        print('PASS all 41 release materials render; maximum is never darker than natural 70%',flush=True)
+    else:raise AssertionError('release material manifest absent')
     source=np.full((1800,3600,3),.035,np.float32)
     baseline={}
     with engine.open(source,BASE) as session:

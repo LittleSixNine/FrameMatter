@@ -8,6 +8,17 @@ import XCTest
 
 @MainActor
 final class WideLeakTests: XCTestCase {
+    func testAllReleaseTexturesAreBundled() throws {
+        XCTAssertEqual(Set(WideLeakMaterial.allCases.map(\.assetName)).count, 41)
+        for material in WideLeakMaterial.allCases {
+            XCTAssertTrue(material.available, material.assetName)
+            let header = try Data(contentsOf: material.textureURL).prefix(4)
+            XCTAssertEqual(header, Data("SPKL".utf8))
+            XCTAssertEqual(try JSONDecoder().decode(WideLeakMaterial.self,
+                from: JSONEncoder().encode(material)), material)
+        }
+    }
+
     func testOlderLightSettingsDecodeWithWideLightOff() throws {
         var value = LightLeakSettings()
         value.active = true; value.style = .halo
@@ -24,7 +35,7 @@ final class WideLeakTests: XCTestCase {
     }
 
     func testWideWireWithoutFilmEdgeAndPrintLayer() throws {
-        guard WideLeakMaterial.warm11.available else { throw XCTSkip("private local textures not installed") }
+        XCTAssertTrue(WideLeakMaterial.warm11.available, "Release texture is missing")
         var p = FilmParams.default
         p.lightLeaks.active = true
         p.lightLeaks.perforationActive = false

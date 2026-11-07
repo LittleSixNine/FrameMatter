@@ -541,6 +541,7 @@
 		3B5B23434C9E6560483E822B /* bundle-licenses.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "bundle-licenses.sh"; sourceTree = "<group>"; };
 		769986EEE867DFEAEA6221C8 /* capture-live.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "capture-live.sh"; sourceTree = "<group>"; };
 		58B2C0307BBC444C754E5565 /* check-bundle-resources.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "check-bundle-resources.sh"; sourceTree = "<group>"; };
+		3FFDE2E60E3EDC5C2AE3BA27 /* check-texture-resources.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = "check-texture-resources.py"; sourceTree = "<group>"; };
 		1E85E1F5E0D2DC3770A53E08 /* compare-design.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "compare-design.swift"; sourceTree = "<group>"; };
 		10478F93C01D4A12794B8E8D /* compare-layout.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = "compare-layout.py"; sourceTree = "<group>"; };
 		7A1377F4B609B3CE3513CAFD /* gen-catalog.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = "gen-catalog.py"; sourceTree = "<group>"; };
@@ -558,6 +559,7 @@
 				3B5B23434C9E6560483E822B /* bundle-licenses.sh */,
 				769986EEE867DFEAEA6221C8 /* capture-live.sh */,
 				58B2C0307BBC444C754E5565 /* check-bundle-resources.sh */,
+				3FFDE2E60E3EDC5C2AE3BA27 /* check-texture-resources.py */,
 				1E85E1F5E0D2DC3770A53E08 /* compare-design.swift */,
 				10478F93C01D4A12794B8E8D /* compare-layout.py */,
 				7A1377F4B609B3CE3513CAFD /* gen-catalog.py */,

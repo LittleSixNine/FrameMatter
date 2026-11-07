@@ -8,6 +8,14 @@ import AppKit
 
 @MainActor
 final class AgingTextureTests: XCTestCase {
+    func testAllReleaseTexturesAreBundled() throws {
+        XCTAssertEqual(Set(AgingTextureMaterial.allCases.map(\.assetName)).count, 5)
+        for material in AgingTextureMaterial.allCases {
+            XCTAssertTrue(material.available, material.assetName)
+            XCTAssertEqual(try Data(contentsOf: material.textureURL).prefix(4), Data("SPKL".utf8))
+        }
+    }
+
     func testSavedControlsIndependentAndPrintOnly() throws {
         var p = FilmParams.default
         let before = p
@@ -21,7 +29,7 @@ final class AgingTextureTests: XCTestCase {
         XCTAssertEqual(p.fullDelta["aging_active"], .bool(true))
         XCTAssertEqual(p.fullDelta["aging_rotation"], .double(3))
         XCTAssertEqual(p.fullDelta["aging_flip"], .double(1))
-        XCTAssertTrue(p.fullDelta["aging_texture"]?.stringValue?.hasSuffix("dust04.spkleak") == true)
+        XCTAssertTrue(p.fullDelta["aging_texture"]?.stringValue?.hasSuffix("aging-004.spkleak") == true)
         XCTAssertEqual(p.delta(from: before).layers, [.print])
         XCTAssertEqual(p.scratches, before.scratches)
         XCTAssertEqual(p.lightLeaks, before.lightLeaks)

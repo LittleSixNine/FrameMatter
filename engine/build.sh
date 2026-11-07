@@ -154,7 +154,7 @@ bundle_resources() {
     exit 1
   fi
   mkdir -p "$app"
-  rsync -a --delete "$here/resources/" "$app/"
+  rsync -a --delete --delete-excluded --exclude=/local_light_leaks/ --exclude=/local_aging_textures/ "$here/resources/" "$app/"
   # The product's own profiles (black and white; `resources_product/NOTICE.md`)
   # go in beside spektrafilm's, because the engine opens a stock from one
   # `profiles/` directory. They are not spektrafilm's and the notice travels

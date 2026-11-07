@@ -105,8 +105,54 @@ enum WideLeakMaterial: String, Codable, CaseIterable, Sendable {
         case .onetake060: L("Rose and violet haze", zh: "玫红紫雾")
         }
     }
+    // Stable filenames are independent of the saved material IDs.
+    var assetName: String {
+        switch self {
+        case .warm11: "light-leak-001"
+        case .warm14: "light-leak-002"
+        case .warm28: "light-leak-003"
+        case .warm36: "light-leak-004"
+        case .warm42: "light-leak-005"
+        case .spot17: "light-leak-006"
+        case .streak34: "light-leak-007"
+        case .neutral39: "light-leak-008"
+        case .cyan15: "light-leak-009"
+        case .violet23: "light-leak-010"
+        case .edge01: "light-leak-011"
+        case .edge02: "light-leak-012"
+        case .edge03: "light-leak-013"
+        case .edge04: "light-leak-014"
+        case .edge05: "light-leak-015"
+        case .edge06: "light-leak-016"
+        case .edge07: "light-leak-017"
+        case .edge09: "light-leak-018"
+        case .edge10: "light-leak-019"
+        case .edge12: "light-leak-020"
+        case .edge13: "light-leak-021"
+        case .edge16: "light-leak-022"
+        case .edge18: "light-leak-023"
+        case .edge19: "light-leak-024"
+        case .edge20: "light-leak-025"
+        case .edge22: "light-leak-026"
+        case .edge24: "light-leak-027"
+        case .edge26: "light-leak-028"
+        case .edge27: "light-leak-029"
+        case .edge29: "light-leak-030"
+        case .edge31: "light-leak-031"
+        case .edge32: "light-leak-032"
+        case .mist38: "light-leak-033"
+        case .edge41: "light-leak-034"
+        case .pair40: "light-leak-035"
+        case .warm40: "light-leak-036"
+        case .cool40: "light-leak-037"
+        case .onetake020: "light-leak-038"
+        case .onetake035: "light-leak-039"
+        case .onetake040: "light-leak-040"
+        case .onetake060: "light-leak-041"
+        }
+    }
     var textureURL: URL {
-        EngineClient.defaultResources().appendingPathComponent("local_light_leaks/\(rawValue).spkleak")
+        EngineClient.defaultResources().appendingPathComponent("textures/light-leaks/\(assetName).spkleak")
     }
     var available: Bool { FileManager.default.fileExists(atPath: textureURL.path) }
 }

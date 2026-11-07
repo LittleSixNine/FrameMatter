@@ -1,6 +1,6 @@
 # DMG 打包资源
 
-从仓库根目录运行 `modern_UI/Spektrafilm/Tools/package.sh --local` 可生成本地安装包。公开分发构建使用不带 `--local` 的模式，并受脚本中的素材许可、签名及公证检查约束。
+从仓库根目录运行 `modern_UI/Spektrafilm/Tools/package.sh --local` 可生成本地安装包。公开分发构建使用不带 `--local` 的模式，并受脚本中的资源完整性、签名及公证检查约束。
 
 打包直接使用本目录已生成的 `background.tiff`；两份 PNG 是 1×／2× 预览。窗口为 660×440 pt，应用与 Applications 链接由 Finder 排布，不画入背景。普通打包不需要重绘背景、安装字体或运行 Python。
 
