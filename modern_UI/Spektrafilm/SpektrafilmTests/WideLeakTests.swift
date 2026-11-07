@@ -86,8 +86,28 @@ final class WideLeakTests: XCTestCase {
         XCTAssertEqual(restored.wideFlip, .original)
     }
 
+    @MainActor
+    func testMaterialMenuUsesVisualNamesInBothLanguages() {
+        let old = Localization.shared.language
+        defer { Localization.shared.language = old }
+        for language in [LanguageSetting.english, .simplifiedChinese] {
+            Localization.shared.language = language
+            let titles = WideLeakMaterial.allCases.map(\.title)
+            XCTAssertEqual(Set(titles).count, 41)
+            XCTAssertTrue(titles.allSatisfy { !$0.contains(where: \.isNumber) })
+            XCTAssertFalse(WideLeakGroup.allCases.contains {
+                $0.title.contains("Onetake") || $0.title.contains("一闪")
+            })
+            let grouped = WideLeakGroup.allCases.flatMap(\.materials)
+            XCTAssertEqual(grouped.count, 41)
+            XCTAssertEqual(Set(grouped), Set(WideLeakMaterial.allCases))
+        }
+    }
+
     func testOnetakeWireAndSavedFlip() throws {
-        for material in WideLeakGroup.onetake.materials {
+        XCTAssertEqual(Set(WideLeakMaterial.allCases.filter(\.isOnetake).map(\.rawValue)),
+                       ["onetake_020_v1", "onetake_035_v1", "onetake_040_v1", "onetake_060_v1"])
+        for material in WideLeakMaterial.allCases.filter(\.isOnetake) {
             XCTAssertFalse(material.usesIntrusion)
             for flip in WideLeakFlip.allCases {
                 var p = FilmParams.default

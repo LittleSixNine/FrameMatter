@@ -155,7 +155,7 @@ export async function installMenu(): Promise<void> {
   const help = await Submenu.new({
     text: tz('&Help', '帮助(&H)'),
     items: [
-      await item(tz('About SpektraLab', '关于 SpektraLab'), () => setPages({ aboutOpen: true })),
+      await item(tz('About FrameMatter', '关于 FrameMatter'), () => setPages({ aboutOpen: true })),
       await item(tz('Show Logs', '显示日志'), () => void platform().appPaths().then((p) => platform().reveal(p.logs))),
     ],
   });

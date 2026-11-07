@@ -1,6 +1,6 @@
 # ARCHITECTURE.md
 
-How SpektraLab is put together: a SwiftUI app with a C++ Metal render engine
+How FrameMatter is put together: a SwiftUI app with a C++ Metal render engine
 compiled into it. Written for someone about to change the pipeline, the app or
 the release. Current as of **1.3.0, 2026-10-04**.
 
@@ -14,7 +14,7 @@ they stay put; new material goes in new subsections.
 ## 0. The product, end to end
 
 ```
-  ┌─ SpektraLab.app ── one arm64 binary, 32 MB, macOS 15+ ────────────────┐
+  ┌─ FrameMatter.app ── one arm64 binary, 32 MB, macOS 15+ ────────────────┐
   │  SwiftUI + AppKit + Metal · English / 简体中文                         │
   │                                                                       │
   │  Import/      RAW + TIFF decode (Core Image) → linear ProPhoto float  │
@@ -48,8 +48,8 @@ they stay put; new material goes in new subsections.
   travel through a `Decodable`.
 - **The engine returns pixels, never files.** `Exporter.swift` writes every
   file through ImageIO (§8.8).
-- **Three front doors, one implementation.** The window, `SpektraLab cli`
-  and `SpektraLab mcp` drive the same `Session` and save to the same sidecar
+- **Three front doors, one implementation.** The window, `FrameMatter cli`
+  and `FrameMatter mcp` drive the same `Session` and save to the same sidecar
   (§7.9).
 
 **Who owns what.** `CONTRACT-frontend-backend.md` §1 governs the wire: a field
@@ -437,9 +437,9 @@ surface applies the geometry itself.
 ### 7.9 Agents (RFC-026)
 
 ```
-SpektraLab             the window
-SpektraLab cli <cmd>   one tool call, JSON out   (installed as `spektralab`)
-SpektraLab mcp         a Model Context Protocol server on stdio
+FrameMatter           the window
+FrameMatter cli <cmd> one tool call, JSON out   (installed as `framematter`)
+FrameMatter mcp       a Model Context Protocol server on stdio
 ```
 
 - **Parity by construction.** All three run `Session` in the same binary:

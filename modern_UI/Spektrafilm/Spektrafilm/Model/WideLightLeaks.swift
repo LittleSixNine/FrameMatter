@@ -5,15 +5,15 @@
 import Foundation
 
 enum WideLeakGroup: CaseIterable, Sendable {
-    case warm, colour, neutral, bands, spots, onetake
+    case fineEdges, wideEdges, mist, neutralEdges, bands, spots
     @MainActor var title: String {
         switch self {
-        case .warm: L("Warm edges", zh: "暖色边缘")
-        case .colour: L("Colour mist and edges", zh: "彩色光雾与边缘")
-        case .neutral: L("Neutral edges", zh: "无色边缘")
-        case .bands: L("Light bands", zh: "光带")
-        case .spots: L("Local spots", zh: "局部光斑")
-        case .onetake: L("Onetake · local", zh: "一闪 · 本地素材")
+        case .fineEdges: L("Fine edge leaks", zh: "细边漏光")
+        case .wideEdges: L("Wide edge leaks", zh: "宽边漏光")
+        case .mist: L("Coloured mist", zh: "彩色光雾")
+        case .neutralEdges: L("White edges", zh: "白色边缘")
+        case .bands: L("Light streaks", zh: "线状光带")
+        case .spots: L("Local glow", zh: "局部光斑")
         }
     }
     var materials: [WideLeakMaterial] { WideLeakMaterial.allCases.filter { $0.group == self } }
@@ -29,15 +29,22 @@ enum WideLeakMaterial: String, Codable, CaseIterable, Sendable {
     case onetake020 = "onetake_020_v1", onetake035 = "onetake_035_v1", onetake040 = "onetake_040_v1", onetake060 = "onetake_060_v1"
     var group: WideLeakGroup {
         switch self {
-        case .spot17: .spots
-        case .cyan15, .violet23, .edge10, .mist38, .edge41: .colour
-        case .neutral39, .edge16, .edge22, .edge26, .edge29: .neutral
+        case .warm11, .warm14, .warm28, .warm36, .warm42, .edge18, .edge19,
+             .edge20, .edge27, .edge32, .edge41, .onetake020: .wideEdges
+        case .cyan15, .violet23, .edge10, .mist38, .onetake035, .onetake040, .onetake060: .mist
+        case .neutral39, .edge16, .edge22, .edge26, .edge29: .neutralEdges
         case .streak34, .edge24, .pair40, .warm40, .cool40: .bands
-        case .onetake020, .onetake035, .onetake040, .onetake060: .onetake
-        default: .warm
+        case .spot17: .spots
+        default: .fineEdges
         }
     }
-    var isOnetake: Bool { group == .onetake }
+    // Anchoring follows the texture format, independently of its visual menu category.
+    var isOnetake: Bool {
+        switch self {
+        case .onetake020, .onetake035, .onetake040, .onetake060: true
+        default: false
+        }
+    }
     var anchor: (x: Double, y: Double) {
         switch self {
         case .onetake020: (0.27, 0.5)
@@ -55,28 +62,47 @@ enum WideLeakMaterial: String, Codable, CaseIterable, Sendable {
     }
     @MainActor var title: String {
         switch self {
-        case .spot17: L("Spot 17", zh: "光斑 17")
-        case .streak34: L("Streak 34", zh: "橙色窄光带 34")
-        case .neutral39: L("Neutral 39", zh: "无色柔光 39")
-        case .cyan15: L("Cyan mist 15", zh: "青绿光雾 15")
-        case .violet23: L("Violet mist 23", zh: "蓝紫光雾 23")
-        case .edge10: L("Cool/warm 10", zh: "冷暖分段 10")
-        case .edge12: L("Purple/gold 12", zh: "紫橙分段 12")
-        case .edge16: L("Hard edge 16", zh: "干净硬边 16")
-        case .edge22: L("Fine edge 22", zh: "丝状细边 22")
-        case .edge24: L("Cool line 24", zh: "冷白窄边 24")
-        case .edge26: L("Wave edge 26", zh: "波浪边缘 26")
-        case .edge29: L("Feather 29", zh: "羽状白边 29")
-        case .mist38: L("Green mist 38", zh: "浅绿光雾 38")
-        case .edge41: L("Violet arc 41", zh: "粉紫弧边 41")
-        case .pair40: L("Dual band 40", zh: "冷暖双带 40")
-        case .warm40: L("Warm band 40", zh: "橙色光带 40")
-        case .cool40: L("Cool line 40", zh: "冷色细线 40")
-        case .onetake020: L("Pink edge 020", zh: "粉红边缘 020")
-        case .onetake035: L("Red mist 035", zh: "宽红光雾 035")
-        case .onetake040: L("Glow/spot 040", zh: "红边光斑 040")
-        case .onetake060: L("Soft red 060", zh: "红紫柔雾 060")
-        default: L("Warm \(rawValue)", zh: "暖色 \(rawValue)")
+        case .warm11: L("Amber haze edge", zh: "琥珀雾边")
+        case .warm14: L("Red-orange gradient", zh: "橙红渐变")
+        case .warm28: L("Pale gold gradient", zh: "浅金渐边")
+        case .warm36: L("Layered red-orange edge", zh: "橙红叠层")
+        case .warm42: L("Golden wash", zh: "金黄漫边")
+        case .spot17: L("Blue-white flare", zh: "蓝白光斑")
+        case .streak34: L("Soft orange streak", zh: "橙色柔光带")
+        case .neutral39: L("Diffuse white glow", zh: "白色漫光")
+        case .cyan15: L("Turquoise haze", zh: "青绿光雾")
+        case .violet23: L("Indigo haze", zh: "蓝紫光雾")
+        case .edge01: L("Fiery orange fine edge", zh: "火橙细边")
+        case .edge02: L("Soft red-orange edge", zh: "橙红柔边")
+        case .edge03: L("Rose-red fine edge", zh: "玫红细边")
+        case .edge04: L("Bright orange edge", zh: "橙色亮边")
+        case .edge05: L("Violet-red frayed edge", zh: "紫红毛边")
+        case .edge06: L("Pale orange fade", zh: "浅橙渐边")
+        case .edge07: L("Golden fine edge", zh: "金黄细边")
+        case .edge09: L("Sharp red-orange edge", zh: "橙红硬边")
+        case .edge10: L("Cyan and gold haze", zh: "青金光雾")
+        case .edge12: L("Violet-gold fine edge", zh: "紫金细边")
+        case .edge13: L("Soft orange-white edge", zh: "橙白柔边")
+        case .edge16: L("Clean white edge", zh: "平直白边")
+        case .edge18: L("Rust-orange glow", zh: "锈橙漫边")
+        case .edge19: L("Gold-violet transition", zh: "金紫过渡")
+        case .edge20: L("Honey-gold glow", zh: "蜜金光晕")
+        case .edge22: L("Wispy white edge", zh: "丝状白边")
+        case .edge24: L("Icy white filament", zh: "冷白细线")
+        case .edge26: L("Wavy white edge", zh: "波浪白边")
+        case .edge27: L("Lemon-yellow glow", zh: "柠黄亮边")
+        case .edge29: L("Feathered white edge", zh: "羽状白边")
+        case .edge31: L("Vermilion fine edge", zh: "朱红细边")
+        case .edge32: L("Soft yellow wash", zh: "柔黄漫边")
+        case .mist38: L("Mottled green haze", zh: "斑驳绿雾")
+        case .edge41: L("Lavender curved edge", zh: "淡紫弧边")
+        case .pair40: L("Orange-cyan twin streaks", zh: "橙青双光带")
+        case .warm40: L("Fiery orange streak", zh: "火橙光带")
+        case .cool40: L("Cyan filament", zh: "青色细线")
+        case .onetake020: L("Pink wash edge", zh: "粉红宽边")
+        case .onetake035: L("Diffuse red haze", zh: "红色弥散光雾")
+        case .onetake040: L("Coral glow", zh: "珊瑚红光晕")
+        case .onetake060: L("Rose and violet haze", zh: "玫红紫雾")
         }
     }
     var textureURL: URL {

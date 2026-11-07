@@ -1,7 +1,7 @@
 // exporter.ts — write the open frame through a recipe (`Export/Exporter.swift`).
 //
 // The file is the canvas's frame (trap 33): the engine's print, Layer 2, then
-// the geometry. With the host's `write_image` (PROTOCOL-REQUESTS R1) the app
+// the geometry. With the host's `write_image` (local-only pravite/开发记录/desktop/PROTOCOL-REQUESTS.md §R1) the app
 // renders `full` as rgba16 in the recipe's space, grades and crops it here —
 // the same arithmetic as the canvas shader (`layer2Pixel`, `sourcePoint`) —
 // and hands the pixels to the host, which embeds the ICC profile and lands

@@ -32,6 +32,11 @@ exposure; export metadata and progress/results; associated UI, state,
 CLI/MCP, tests, tools, build and branding changes. Existing models,
 algorithms and assets used by these features retain their original owners.
 
+Selected original metadata-handling code is adapted from LittleSixNine's
+PhotoTrail project and separately authorized under GPL-3.0-or-later for
+this FrameMatter copy. PhotoTrail itself retains its independent licence.
+See license/PhotoTrail-Metadata-NOTICE.txt for scope and source attribution.
+
 Third-party works
 -----------------
 Code is GPL-3.0-or-later except where its own notices specify otherwise.

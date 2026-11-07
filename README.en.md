@@ -25,23 +25,23 @@ The upstream application provides the spectral film/print pipeline, native C++/M
 
 Full-width 135 exposure (the example also includes perforation light leaks and dust):
 
-![Full-width 135 exposure with the scene extending around the perforations](docs/assets/readme/full-width-135.jpg)
+![Full-width 135 exposure with the scene extending around the perforations](screenshots/full-width-135.jpg)
 
 Date Back: additional DSEG7 fonts, with hour/minute underlines inspired by the Nikon MF-16 back for the day–hour–minute format, plus formats such as hour–minute–second and year–month–day–hour–minute–second (between frames), inspired by the MF-28 back.
 
-![Three Date Back styles, cropped closely around the bottom-right date imprints](docs/assets/readme/date-back-closeup.jpg)
+![Three Date Back styles, cropped closely around the bottom-right date imprints](screenshots/date-back-closeup.jpg)
 
 Sprocket scratches and wear (subtle friction marks caused by the inner guide rails during film advance)
 
-![Sprocket-friction scratches and perforation-edge wear](docs/assets/readme/sprocket-scratches.jpg)
+![Sprocket-friction scratches and perforation-edge wear](screenshots/sprocket-scratches.jpg)
 
 Dust and fibers
 
-![Dust and fibers on a simulated negative scan](docs/assets/readme/dust.jpg)
+![Dust and fibers on a simulated negative scan](screenshots/dust.jpg)
 
 | Perforation light leaks | Wide light leaks |
 |---|---|
-| ![Light leaking around the perforations](docs/assets/readme/perforation-light-leak.jpg) | ![A wide light leak extending into the image](docs/assets/readme/wide-light-leak.jpg) |
+| ![Light leaking around the perforations](screenshots/perforation-light-leak.jpg) | ![A wide light leak extending into the image](screenshots/wide-light-leak.jpg) |
 
 ## Build and test
 

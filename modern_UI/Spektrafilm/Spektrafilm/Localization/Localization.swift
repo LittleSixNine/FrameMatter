@@ -124,10 +124,9 @@ final class Localization {
     /// is not followed by anything else either, and the setting is re-read on
     /// the next launch.
     ///
-    /// `Bundle.preferredLocalizations` would be the other candidate and is not
-    /// usable: the bundle declares no localizations at all (`knownRegions` is
-    /// `en` and `Base` in the project generator), so it can answer nothing
-    /// but English.
+    /// The bundle declares en/zh-Hans for native macOS menu localization.
+    /// Resolve the app's live language setting here rather than using Bundle,
+    /// whose language choice is fixed for the lifetime of the process.
     private static let systemPreferredLanguages = Locale.preferredLanguages
 
     private let defaults: UserDefaults

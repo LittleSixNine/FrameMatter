@@ -125,7 +125,7 @@ enum S: String, CaseIterable, Sendable {
     case setAgentsAccess, setAgentsToggle, setAgentsToggleCaption
     case setAgentsCommandLine, setAgentsInstall, setAgentsReinstall, setAgentsUninstall
     case setAgentsInstalled, setAgentsNotInstalled, setAgentsInstalledOther, setAgentsInstallCaption
-    case setAgentsMCP, setAgentsClaudeCode, setAgentsClaudeDesktop, setAgentsMCPCaption
+    case setAgentsMCP, setAgentsGenericConfig, setAgentsCodex, setAgentsClaudeCode, setAgentsMCPCaption
     case setAgentsCopy, setAgentsCopied, setAgentsTools
 
     // MARK: Film Edge and Date Back (RFC-032, RFC-031; 2026-10-01 drawings)
@@ -225,7 +225,7 @@ extension S {
         case .setScaleCaption: "Scales type across the editor, Settings and Export. Changes apply immediately."
         case .setAgentsAccess: "Access"
         case .setAgentsToggle: "Allow command line and agent access"
-        case .setAgentsToggleCaption: "Lets the framematter command and MCP agents (Claude Code, Claude Desktop, any MCP client) open, edit, process and export photographs on this Mac — the same edits this window makes, saved where it reads them. Off, every call is refused, including one from an agent already connected. Local only: nothing listens on the network, and originals are never written."
+        case .setAgentsToggleCaption: "Lets the framematter command and MCP clients that support local stdio servers open, edit, process and export photographs on this Mac — the same edits this window makes, saved where it reads them. Off, every call is refused, including one from an agent already connected. Local only: nothing listens on the network, and originals are never written."
         case .setAgentsCommandLine: "Command line"
         case .setAgentsInstall: "Install framematter"
         case .setAgentsReinstall: "Reinstall"
@@ -235,9 +235,10 @@ extension S {
         case .setAgentsInstalledOther: "Installed for another copy of the app"
         case .setAgentsInstallCaption: "Writes a two-line script to ~/.local/bin/framematter that runs this app without a window. Try `framematter help`; every command prints JSON."
         case .setAgentsMCP: "MCP server"
-        case .setAgentsClaudeCode: "Claude Code"
-        case .setAgentsClaudeDesktop: "Claude Desktop"
-        case .setAgentsMCPCaption: "Add FrameMatter to an agent with one of these. The agent starts the server itself over stdio when it needs it; nothing runs in the background."
+        case .setAgentsClaudeCode: "Claude Code — command example"
+        case .setAgentsGenericConfig: "Generic MCP configuration — JSON example"
+        case .setAgentsCodex: "Codex — command example"
+        case .setAgentsMCPCaption: "Connect with any client that can launch a local stdio MCP server; FrameMatter is not limited to Claude. Use this app executable as command and [\"mcp\"] as args. The JSON below is a common example; configuration formats vary by client. No HTTP server URL is provided."
         case .setAgentsCopy: "Copy"
         case .setAgentsCopied: "Copied"
         case .setAgentsTools: "Tools"
@@ -551,7 +552,7 @@ extension S {
         case .setScaleCaption: "同步调整主界面、设置与导出页的字体大小；更改立即生效。"
         case .setAgentsAccess: "访问"
         case .setAgentsToggle: "允许命令行与智能体访问"
-        case .setAgentsToggleCaption: "允许 framematter 命令与 MCP 智能体（Claude Code、Claude Desktop 或任何 MCP 客户端）在本机打开、编辑、冲印与导出照片——与本窗口的编辑完全相同，并保存在本窗口读取的位置。关闭时所有调用都会被拒绝，包括已连接的智能体。仅限本机：不监听网络，也从不改写原片。"
+        case .setAgentsToggleCaption: "允许 framematter 命令与 支持本地 stdio 服务的 MCP 客户端在本机打开、编辑、冲印与导出照片——与本窗口的编辑完全相同，并保存在本窗口读取的位置。关闭时所有调用都会被拒绝，包括已连接的智能体。仅限本机：不监听网络，也从不改写原片。"
         case .setAgentsCommandLine: "命令行"
         case .setAgentsInstall: "安装 framematter"
         case .setAgentsReinstall: "重新安装"
@@ -561,9 +562,10 @@ extension S {
         case .setAgentsInstalledOther: "已为另一份应用安装"
         case .setAgentsInstallCaption: "在 ~/.local/bin/framematter 写入一个两行脚本，以无窗口方式运行本应用。可先试 `framematter help`；每条命令都输出 JSON。"
         case .setAgentsMCP: "MCP 服务"
-        case .setAgentsClaudeCode: "Claude Code"
-        case .setAgentsClaudeDesktop: "Claude Desktop"
-        case .setAgentsMCPCaption: "用以下任一方式把 FrameMatter 添加给智能体。服务由智能体在需要时通过 stdio 自行启动，不在后台常驻。"
+        case .setAgentsClaudeCode: "Claude Code — 命令示例"
+        case .setAgentsGenericConfig: "通用 MCP 配置 — JSON 示例"
+        case .setAgentsCodex: "Codex — 命令示例"
+        case .setAgentsMCPCaption: "支持能够启动本地 stdio MCP 服务的客户端，不限于 Claude。command 为本应用可执行文件，args 为 [\"mcp\"]。下方 JSON 是常见配置示例，不同客户端的格式可能不同；这里不提供 HTTP 服务地址。"
         case .setAgentsCopy: "复制"
         case .setAgentsCopied: "已复制"
         case .setAgentsTools: "工具"

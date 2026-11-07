@@ -52,9 +52,10 @@ struct AgentsSettingsPage: View {
         SettingsGroup(L(.setAgentsMCP)) {
             SettingsRows {
                 VStack(alignment: .leading, spacing: 6) {
-                    snippet(L(.setAgentsClaudeCode), AgentAccess.claudeCodeCommand)
-                    snippet(L(.setAgentsClaudeDesktop), AgentAccess.desktopConfig)
                     caption(L(.setAgentsMCPCaption))
+                    snippet(L(.setAgentsGenericConfig), AgentAccess.genericMCPConfig)
+                    snippet(L(.setAgentsCodex), AgentAccess.codexCommand)
+                    snippet(L(.setAgentsClaudeCode), AgentAccess.claudeCodeCommand)
                 }
             }
         }

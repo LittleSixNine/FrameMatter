@@ -1,5 +1,13 @@
 # PARITY — the macOS app (`modern_UI/Spektrafilm`) → `desktop/`
 
+FrameMatter branding update (2026-11-08): visible product labels now use
+FrameMatter in the shared frontend. Windows-only implementation and packaging
+are retained privately with the upstream names. The coverage below records
+the upstream port's scope; it does
+not certify parity with later FrameMatter grain, edge, leak or aging features.
+Engine commands, application identifiers and existing data paths retain their
+compatibility names.
+
 What of the SwiftUI/Metal app this TypeScript (Tauri 2) port carries, area by
 area. **ported** = the behaviour is here; **partial** = present with a stated
 gap; **stub** = the controls are drawn and disabled with the reason;
@@ -53,3 +61,7 @@ wiring job. `params.wire()` omits their rows while the host cannot do them
 | `Model/HalfFramePair.swift`, `PairSection`, `PairComposer` | — | skipped | Engine refuses pairs in this version (owner's scope). |
 | `Model/Mask.swift`, `MasksSection` | — | skipped | Withdrawn on the Mac as well. |
 | `Canvas/ColourManagement.swift`, soft proof | host `display: "srgb"` | partial | The host performs the output transform to sRGB for the canvas. No display-profile awareness (wide-gamut monitors see sRGB). |
+
+## Local development history
+
+The working log and protocol request history are archived locally at `pravite/开发记录/desktop/NOTES.md` and `pravite/开发记录/desktop/PROTOCOL-REQUESTS.md`. They are not distributed with the source. `HOST-PROTOCOL.md` remains the public interface contract; use the local `pravite/开发记录/README.md` for old-to-new path mappings.

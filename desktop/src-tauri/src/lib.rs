@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
 
-//! SpektraLab's Tauri core: the window, the engine host process, and the
+//! FrameMatter's Tauri core: the window, the engine host process, and the
 //! narrow file commands the webview needs. Everything else — the interface,
 //! the session, the menus — is the TypeScript app in `desktop/src`.
 
@@ -232,7 +232,7 @@ pub fn run() {
                 sidecars: files::SidecarStore { dir: sidecar_dir },
                 launch_paths: Mutex::new(file_args(&argv)),
             });
-            log::info!("SpektraLab {} starting on {}", app.package_info().version, std::env::consts::OS);
+            log::info!("FrameMatter {} starting on {}", app.package_info().version, std::env::consts::OS);
             tauri::async_runtime::spawn(async move { host.start().await });
             Ok(())
         })
@@ -264,5 +264,5 @@ pub fn run() {
             app_paths,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running SpektraLab");
+        .expect("error while running FrameMatter");
 }

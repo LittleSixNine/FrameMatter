@@ -44,7 +44,7 @@ if [ -n "$missing" ]; then
 fi
 
 licences=""
-for f in README.txt FrameMatter-COPYRIGHT.txt DSEG-OFL-1.1.txt FrameMatter-GPL-3.0.txt Profiles-and-LUTs-CC-BY-SA-4.0.txt \
+for f in README.txt PhotoTrail-Metadata-NOTICE.txt FrameMatter-COPYRIGHT.txt DSEG-OFL-1.1.txt FrameMatter-GPL-3.0.txt Profiles-and-LUTs-CC-BY-SA-4.0.txt \
          Profiles-and-LUTs-CHANGELOG.txt metal-cpp-Apache-2.0.txt \
          FilmDamageSimulator-Data-CC-BY-4.0.txt FilmDamageSimulator-Dust-Attribution.txt; do
   [ -f "$res/Licenses/$f" ] || licences="$licences $f"

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
 
+// PhotoTrail metadata code provenance: license/PhotoTrail-Metadata-NOTICE.txt.
+
 import Foundation
 import ImageIO
 

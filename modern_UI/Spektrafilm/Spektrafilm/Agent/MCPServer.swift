@@ -116,6 +116,16 @@ final class MCPServer {
 
     // MARK: guidance for the model
 
+    static let appearanceGuidance = """
+    For grain, film edges, date imprints, dust, perforation or wide light leaks, \
+    and aging textures, read get_schema and edit the existing fields. Treat \
+    these appearance controls independently from film and paper profiles. \
+    Wide light leaks use 0–0.7 for the natural range and 0.7–1 for the wash-to-white \
+    tail; this is not the aging-texture strength curve. Keep saved pattern seeds \
+    unless another variation is requested. Local texture choices require their \
+    assets in the running app; report missing assets instead of claiming success.
+    """
+
     static let instructions = """
     FrameMatter simulates analogue film: a photograph is exposed onto a film stock, developed, and printed \
     onto a paper through an enlarger, then graded like a scan of the print. Every edit here is the same \
@@ -126,6 +136,8 @@ final class MCPServer {
     then refine with small edit_image patches, looking at each returned preview before the next. Prefer \
     the physical controls — film, paper, Film Exposure, enlarger exposure and Y/M filters, Scene Placement \
     (measure_latitude, place_scene) — over the grade (adjustments), which is the scan's. \
+
+    \(appearanceGuidance)
     Export only when asked.
     """
 
@@ -147,6 +159,9 @@ final class MCPServer {
         and the scene's placement right, and only then grade. Start with describe_image, get_schema and \
         process_image. Change a few fields per edit_image call and look at the preview each time. Stop \
         when the preview matches the instruction, and say which film, paper and settings you chose and why.
+
+        \(appearanceGuidance)
+        Export only when asked.
         """
         return ["description": "Edit a photo from one sentence",
                 "messages": [["role": "user", "content": ["type": "text", "text": .string(text)]]]]

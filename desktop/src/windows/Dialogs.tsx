@@ -210,7 +210,7 @@ export function AboutDialog() {
     if (!open) return;
     void platform().appPaths().then(setPaths);
     void Promise.all(
-      ['SpektraLab-GPL-3.0.txt', 'Profiles-and-LUTs-CC-BY-SA-4.0.txt', 'README.txt'].map(async (name) => {
+      ['FrameMatter-GPL-3.0.txt', 'Profiles-and-LUTs-CC-BY-SA-4.0.txt', 'README.txt'].map(async (name) => {
         try {
           const r = await fetch('assets/licenses/' + name);
           return { name, body: r.ok ? await r.text() : '' };
@@ -221,15 +221,21 @@ export function AboutDialog() {
     ).then(setTexts);
   }, [open]);
   return (
-    <Frame open={open} onClose={() => setPages({ aboutOpen: false })} title="SpektraLab" testId="about">
+    <Frame open={open} onClose={() => setPages({ aboutOpen: false })} title="FrameMatter" testId="about">
       <div className="dialog-body">
         <p>
           {tz('Version', '版本')} {paths?.version ?? '1.3.1'} — {tz('film and print emulation built on the spektrafilm engine.', '基于 spektrafilm 引擎的胶片与相纸模拟。')}
         </p>
         <p className="caption">
           {tz(
-            'SpektraLab is free software under the GNU GPL, version 3 or later. The film and paper profiles are licensed CC BY-SA 4.0; their attribution follows.',
-            'SpektraLab 是依据 GNU GPL 第 3 版或更新版本发布的自由软件。胶片与相纸的特性数据依据 CC BY-SA 4.0 授权，署名如下。',
+            'Based on SpektraLab by Hanze Qiu, using the spektrafilm model and profiles by Andrea Volpato.',
+            '基于 Hanze Qiu 的 SpektraLab，使用 Andrea Volpato 的 spektrafilm 模型与配置。',
+          )}
+        </p>
+        <p className="caption">
+          {tz(
+            'FrameMatter is free software under the GNU GPL, version 3 or later. The film and paper profiles are licensed CC BY-SA 4.0; their attribution follows.',
+            'FrameMatter 是依据 GNU GPL 第 3 版或更新版本发布的自由软件。胶片与相纸的特性数据依据 CC BY-SA 4.0 授权，署名如下。',
           )}
         </p>
         {texts.map((x) => (
@@ -281,8 +287,8 @@ export function HostFailure() {
             {vulkan && (
               <p className="caption">
                 {tz(
-                  'SpektraLab renders on the GPU through Vulkan. Make sure a Vulkan driver is installed for your graphics card (on Linux: mesa-vulkan-drivers or your vendor’s driver; on Windows: the latest driver from your GPU vendor), then restart the engine.',
-                  'SpektraLab 通过 Vulkan 在 GPU 上渲染。请确认已为显卡安装 Vulkan 驱动（Linux：mesa-vulkan-drivers 或厂商驱动；Windows：显卡厂商的最新驱动），然后重启引擎。',
+                  'FrameMatter renders on the GPU through Vulkan. Make sure a Vulkan driver is installed for your graphics card (on Linux: mesa-vulkan-drivers or your vendor’s driver; on Windows: the latest driver from your GPU vendor), then restart the engine.',
+                  'FrameMatter 通过 Vulkan 在 GPU 上渲染。请确认已为显卡安装 Vulkan 驱动（Linux：mesa-vulkan-drivers 或厂商驱动；Windows：显卡厂商的最新驱动），然后重启引擎。',
                 )}
               </p>
             )}

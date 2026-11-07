@@ -2,29 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Applies only to FrameMatter contributions; upstream notices are retained. See COPYRIGHT.txt.
 
-// package.mjs — build the installers.
-//
-//   node scripts/package.mjs linux   → release/linux/*.deb, *.AppImage
-//   node scripts/package.mjs win     → release/windows/*-setup.exe (NSIS, cross-built)
-//
-// Both stage the engine host the backend built (`build/host-<os>-x64/`):
-//   spektralab-host[.exe] → src-tauri/binaries/spektralab-host-<triple>[.exe]
-//                            (Tauri `bundle.externalBin`: installed beside the app)
-//   engine/, licenses/    → src-tauri/host-staging/ → `<resources>/host/…`
-// and pass that as an extra config (`tauri.bundle.json`), so the base config
-// builds and `cargo check`s without a staged host.
-//
-// The Windows build **refuses** to run without build/host-win-x64/spektralab-host.exe:
-// an installer without its engine would install an app that cannot develop
-// anything.
-//
-// On a Windows machine (CI) `win` builds natively with MSVC
-// (x86_64-pc-windows-msvc, no cross runner, the system PATH untouched).
-// On Linux, Windows is cross-built with the x86_64-pc-windows-gnu target and mingw-w64
-// (Tauri's documented cargo-xwin/MSVC path is behind SPEKTRALAB_WIN_TOOLCHAIN=msvc;
-// its CRT download was refused here), NSIS from the system (`makensis`).
-// Env: SPEKTRALAB_HOST_BUILD overrides the repo's build/ directory.
-
+// Linux packages only. Original Windows packaging is retained in private local research.
 import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -46,37 +24,7 @@ const TARGETS = {
     out: 'linux',
     extra: [],
   },
-  // MinGW by default: cargo-xwin's MSVC CRT download (aka.ms) is refused by
-  // this build machine's egress policy. SPEKTRALAB_WIN_TOOLCHAIN=msvc uses
-  // Tauri's documented cargo-xwin path where that download is allowed.
-  win:
-    // Native on Windows (CI's windows-latest): MSVC, no cross runner.
-    process.platform === 'win32'
-      ? {
-          hostDir: join(buildDir, 'host-win-x64'),
-          exe: 'spektralab-host.exe',
-          triple: 'x86_64-pc-windows-msvc',
-          bundles: 'nsis',
-          out: 'windows',
-          extra: ['--target', 'x86_64-pc-windows-msvc'],
-        }
-      : process.env.SPEKTRALAB_WIN_TOOLCHAIN === 'msvc'
-      ? {
-          hostDir: join(buildDir, 'host-win-x64'),
-          exe: 'spektralab-host.exe',
-          triple: 'x86_64-pc-windows-msvc',
-          bundles: 'nsis',
-          out: 'windows',
-          extra: ['--runner', 'cargo-xwin', '--target', 'x86_64-pc-windows-msvc'],
-        }
-      : {
-          hostDir: join(buildDir, 'host-win-x64'),
-          exe: 'spektralab-host.exe',
-          triple: 'x86_64-pc-windows-gnu',
-          bundles: 'nsis',
-          out: 'windows',
-          extra: ['--target', 'x86_64-pc-windows-gnu'],
-        },
+
 };
 
 function die(msg) {
@@ -86,7 +34,7 @@ function die(msg) {
 
 function stage(t) {
   const exe = join(t.hostDir, t.exe);
-  if (!existsSync(exe)) die(`no engine host at ${exe}. Build it first (engine/host, see engine/WINDOWS.md / the backend's notes); refusing to package an app without its engine.`);
+  if (!existsSync(exe)) die(`no engine host at ${exe}. Build it first (engine/host, see engine/docs/platforms/LINUX_WINDOWS.md); refusing to package an app without its engine.`);
   if (!existsSync(join(t.hostDir, 'engine'))) die(`no engine resources at ${join(t.hostDir, 'engine')}`);
   const bin = join(tauriDir, 'binaries');
   const staging = join(tauriDir, 'host-staging');
@@ -113,14 +61,14 @@ function collect(t) {
   rmSync(release, { recursive: true, force: true });
   mkdirSync(release, { recursive: true });
   // A cross build lands under target/<triple>/; a native one under target/release/.
-  const roots = which === 'linux' ? [join(tauriDir, 'target', 'release', 'bundle')] : [join(tauriDir, 'target', t.triple, 'release', 'bundle')];
+  const roots = [join(tauriDir, 'target', 'release', 'bundle')];
   const found = [];
   for (const root of roots) {
     if (!existsSync(root)) continue;
     for (const kind of readdirSync(root)) {
       for (const f of readdirSync(join(root, kind))) {
         const p = join(root, kind, f);
-        if (statSync(p).isFile() && /\.(deb|AppImage|exe|rpm)$/.test(f)) {
+        if (statSync(p).isFile() && /\.(deb|AppImage|rpm)$/.test(f)) {
           cpSync(p, join(release, f));
           found.push(`${join('release', t.out, f)} (${(statSync(p).size / 1e6).toFixed(1)} MB)`);
         }
@@ -131,17 +79,9 @@ function collect(t) {
 }
 
 const t = TARGETS[which];
-if (!t) die('usage: node scripts/package.mjs linux|win');
+if (!t) die('usage: node scripts/package.mjs linux');
 const conf = stage(t);
 const env = { ...process.env };
-const onWindows = process.platform === 'win32';
-if (which === 'win' && !onWindows) {
-  // Cross build: cargo-xwin's clang-cl/lld-link, and llvm-rc for the resource script.
-  env.PATH = `${process.env.HOME}/.cargo/bin:/usr/lib/llvm-18/bin:${env.PATH}`;
-}
-if (which === 'linux') env.NO_STRIP = env.NO_STRIP ?? 'true'; // linuxdeploy's strip cannot read newer ELF notes
-// On Windows `npx` is npx.cmd, which needs a shell; the shell then needs a
-// quoted path if the checkout's path has a space in it.
-const arg = (a) => (onWindows && /\s/.test(a) ? `"${a}"` : a);
-execFileSync('npx', ['tauri', 'build', '--config', conf, '--bundles', t.bundles, ...t.extra].map(arg), { cwd: desktop, stdio: 'inherit', env, shell: onWindows });
+env.NO_STRIP = env.NO_STRIP ?? 'true'; // linuxdeploy's strip cannot read newer ELF notes
+execFileSync('npx', ['tauri', 'build', '--config', conf, '--bundles', t.bundles, ...t.extra], { cwd: desktop, stdio: 'inherit', env });
 collect(t);

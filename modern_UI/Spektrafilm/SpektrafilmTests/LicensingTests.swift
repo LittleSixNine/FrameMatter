@@ -19,6 +19,19 @@ import XCTest
 
 final class LicensingTests: XCTestCase {
 
+    func testPhotoTrailMetadataGrantIsReadableAndScopedToThisCopy() throws {
+        let notice = try XCTUnwrap(AboutWindow.licences.first {
+            $0.id == "PhotoTrail-Metadata-NOTICE.txt"
+        })
+        XCTAssertTrue(notice.body.contains("https://github.com/LittleSixNine/PhotoTrail"))
+        XCTAssertTrue(notice.body.contains("Copyright (C) 2026 LittleSixNine"))
+        XCTAssertTrue(notice.body.contains("GPL-3.0-or-later"))
+        XCTAssertTrue(notice.body.contains("does not change the licence of the PhotoTrail project"))
+        let readme = try String(contentsOf: XCTUnwrap(AboutWindow.licenceDirectory)
+            .appending(path: "README.txt"), encoding: .utf8)
+        XCTAssertTrue(readme.contains(notice.id))
+    }
+
     func testTheLicenceTextsAreInTheBundleAndReadable() throws {
         let dir = try XCTUnwrap(AboutWindow.licenceDirectory,
                                 "no Licenses/ in the bundle; run Tools/bundle-licenses.sh")

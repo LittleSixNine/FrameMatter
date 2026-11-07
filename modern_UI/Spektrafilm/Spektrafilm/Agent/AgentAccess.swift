@@ -82,11 +82,15 @@ enum AgentAccess {
     }
 
     /// The configuration lines Settings shows with a Copy button.
-    static var claudeCodeCommand: String {
-        "claude mcp add framematter -- '\(executable)' mcp"
+    static var codexCommand: String {
+        "codex mcp add framematter -- '\(executable.replacingOccurrences(of: "'", with: "'\\''"))' mcp"
     }
 
-    static var desktopConfig: String {
+    static var claudeCodeCommand: String {
+        "claude mcp add framematter -- '\(executable.replacingOccurrences(of: "'", with: "'\\''"))' mcp"
+    }
+
+    static var genericMCPConfig: String {
         let v: JSONValue = ["mcpServers": ["framematter": ["command": .string(executable), "args": ["mcp"]]]]
         return v.text(pretty: true)
     }

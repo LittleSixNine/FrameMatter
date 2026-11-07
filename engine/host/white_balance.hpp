@@ -1,4 +1,4 @@
-// white_balance.hpp -- Temperature/Tint for RAW decode (PROTOCOL-REQUESTS R2).
+// white_balance.hpp -- Temperature/Tint for RAW decode (local-only pravite/开发记录/desktop/PROTOCOL-REQUESTS.md §R2).
 //
 // Kelvin and tint use the Adobe DNG SDK's definition (dng_temperature):
 // Robertson's isotemperature lines in CIE 1960 uv, tint = -3000 x the signed

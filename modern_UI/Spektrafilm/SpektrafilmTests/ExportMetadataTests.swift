@@ -29,7 +29,7 @@ final class ExportMetadataTests: XCTestCase {
             kCGImageDestinationMergeMetadata: true,
             kCGImagePropertyTIFFDictionary: [kCGImagePropertyTIFFMake: "SONY", kCGImagePropertyTIFFModel: "Camera Test",
                                            kCGImagePropertyTIFFArtist: "作者", kCGImagePropertyTIFFCopyright: "测试版权"],
-            kCGImagePropertyExifDictionary: [kCGImagePropertyExifDateTimeOriginal: "2025:10:05 16:31:27",
+            kCGImagePropertyExifDictionary: [kCGImagePropertyExifDateTimeOriginal: "2019:06:15 12:34:56",
                 "OffsetTimeOriginal": "+09:00", kCGImagePropertyExifISOSpeedRatings: [100],
                 kCGImagePropertyExifExposureTime: 1.0/2500, kCGImagePropertyExifLensModel: "Test Lens"],
             kCGImagePropertyGPSDictionary: [kCGImagePropertyGPSLatitude: 31.25, kCGImagePropertyGPSLatitudeRef: "N",
@@ -58,7 +58,7 @@ final class ExportMetadataTests: XCTestCase {
             XCTAssertEqual(gps["Longitude"] as? Double, 121.5)
             let exif = try XCTUnwrap(p[kCGImagePropertyExifDictionary] as? [String: Any])
             XCTAssertEqual(exif["OffsetTimeOriginal"] as? String, "+09:00")
-            XCTAssertEqual(exif["DateTimeOriginal"] as? String, "2025:10:05 16:31:27")
+            XCTAssertEqual(exif["DateTimeOriginal"] as? String, "2019:06:15 12:34:56")
             XCTAssertEqual(exif["PixelXDimension"] as? Int, 32)
             XCTAssertEqual(exif["PixelYDimension"] as? Int, 24)
             XCTAssertEqual(p[kCGImagePropertyOrientation] as? Int, 1)

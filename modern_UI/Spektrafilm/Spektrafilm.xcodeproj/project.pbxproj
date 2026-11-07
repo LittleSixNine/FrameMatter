@@ -370,6 +370,7 @@
 		17D94C017FB2B12A61B1153C /* AgingTextureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AgingTextureTests.swift"; sourceTree = "<group>"; };
 		52AA7B49AA76968939624751 /* CachePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CachePolicyTests.swift"; sourceTree = "<group>"; };
 		5F3A463963EF5A09D20AC677 /* CanvasViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CanvasViewTests.swift"; sourceTree = "<group>"; };
+		D47A67B21FB9758D306EF924 /* ChromeLocalizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChromeLocalizationTests.swift"; sourceTree = "<group>"; };
 		B11659A441BF567B3A2F9D9B /* CineStillTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CineStillTests.swift"; sourceTree = "<group>"; };
 		5D0BCE2DDC98DEFB449D8048 /* ColorBalanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ColorBalanceTests.swift"; sourceTree = "<group>"; };
 		D901731411E2FDCCD5650EF5 /* ColourManagementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ColourManagementTests.swift"; sourceTree = "<group>"; };
@@ -443,6 +444,7 @@
 				17D94C017FB2B12A61B1153C /* AgingTextureTests.swift */,
 				52AA7B49AA76968939624751 /* CachePolicyTests.swift */,
 				5F3A463963EF5A09D20AC677 /* CanvasViewTests.swift */,
+				D47A67B21FB9758D306EF924 /* ChromeLocalizationTests.swift */,
 				B11659A441BF567B3A2F9D9B /* CineStillTests.swift */,
 				5D0BCE2DDC98DEFB449D8048 /* ColorBalanceTests.swift */,
 				D901731411E2FDCCD5650EF5 /* ColourManagementTests.swift */,
@@ -953,6 +955,7 @@
 		04098B57AA2E0B4E4739D37B /* AgingTextureTests.swift */ = {isa = PBXBuildFile; fileRef = 17D94C017FB2B12A61B1153C; };
 		0475C190194643CFAEE4F9BD /* CachePolicyTests.swift */ = {isa = PBXBuildFile; fileRef = 52AA7B49AA76968939624751; };
 		5E11C56528BFC0565D351F2E /* CanvasViewTests.swift */ = {isa = PBXBuildFile; fileRef = 5F3A463963EF5A09D20AC677; };
+		C231D2FB44D4D52FE670C389 /* ChromeLocalizationTests.swift */ = {isa = PBXBuildFile; fileRef = D47A67B21FB9758D306EF924; };
 		3919899DAC290526AD9B9EB1 /* CineStillTests.swift */ = {isa = PBXBuildFile; fileRef = B11659A441BF567B3A2F9D9B; };
 		D0EC5471A9EE06B8B044D2AD /* ColorBalanceTests.swift */ = {isa = PBXBuildFile; fileRef = 5D0BCE2DDC98DEFB449D8048; };
 		3DC9079A0290F084C5691871 /* ColourManagementTests.swift */ = {isa = PBXBuildFile; fileRef = D901731411E2FDCCD5650EF5; };
@@ -1165,6 +1168,7 @@
 				04098B57AA2E0B4E4739D37B /* AgingTextureTests.swift */,
 				0475C190194643CFAEE4F9BD /* CachePolicyTests.swift */,
 				5E11C56528BFC0565D351F2E /* CanvasViewTests.swift */,
+				C231D2FB44D4D52FE670C389 /* ChromeLocalizationTests.swift */,
 				3919899DAC290526AD9B9EB1 /* CineStillTests.swift */,
 				D0EC5471A9EE06B8B044D2AD /* ColorBalanceTests.swift */,
 				3DC9079A0290F084C5691871 /* ColourManagementTests.swift */,
@@ -1431,7 +1435,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.3;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1480,7 +1484,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.3;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1553,7 +1557,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.3;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1599,7 +1603,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.3;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1719,6 +1723,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				"zh-Hans",
 				Base
 			);
 			mainGroup = ADCF10F76EBF2A74473E9DC4;

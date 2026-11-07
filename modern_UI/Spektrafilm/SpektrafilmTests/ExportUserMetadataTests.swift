@@ -8,6 +8,15 @@ import CryptoKit
 
 @MainActor
 final class ExportUserMetadataTests: XCTestCase {
+    private struct Sample: Decodable {
+        let file: String
+        let make: String
+        let model: String
+        let offset: String
+        let dateTime: String
+        let iso: Int
+        let hasGPS: Bool
+    }
     private func wait(_ condition: () -> Bool) async throws {
         let deadline = Date().addingTimeInterval(180)
         while !condition() {
@@ -17,18 +26,19 @@ final class ExportUserMetadataTests: XCTestCase {
     }
     func testBothUserSamplesThroughActualExporter() async throws {
         let env = ProcessInfo.processInfo.environment
-        guard let folder = env["SPK_METADATA_SAMPLES"], let out = env["SPK_EXPORT_CHECKS"] else {
-            throw XCTSkip("Opt in with local sample/output folders; no personal files required in CI")
+        guard let folder = env["SPK_METADATA_SAMPLES"], let out = env["SPK_EXPORT_CHECKS"],
+              let cases = env["SPK_METADATA_CASES"] else {
+            throw XCTSkip("Opt in with local samples, a private case manifest and output folder")
         }
         let output = URL(fileURLWithPath: out)
         let inputs = output.appendingPathComponent("inputs-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: inputs, withIntermediateDirectories: true)
-        let samples = [("2025.10.05.163127.ILCE-7CM2.ARW", "SONY", "ILCE-7CM2", "+09:00"),
-                       ("2026.09.12.171549.OPPO Find X9 Ultra.jpg", "OPPO", "OPPO Find X9 Ultra", "+08:00")]
+        let samples = try JSONDecoder().decode([Sample].self, from: Data(contentsOf: URL(fileURLWithPath: cases)))
+        XCTAssertFalse(samples.isEmpty, "The private manifest must exercise at least one source")
         for (index, sample) in samples.enumerated() {
-            let original = URL(fileURLWithPath: folder).appendingPathComponent(sample.0)
+            let original = URL(fileURLWithPath: folder).appendingPathComponent(sample.file)
             let hash = SHA256.hash(data: try Data(contentsOf: original))
-            let input = inputs.appendingPathComponent(sample.0)
+            let input = inputs.appendingPathComponent(sample.file)
             try FileManager.default.copyItem(at: original, to: input)
             let session = Session()
             session.open(urls: [input])
@@ -50,16 +60,16 @@ final class ExportUserMetadataTests: XCTestCase {
                 let source = try XCTUnwrap(CGImageSourceCreateWithURL(file as CFURL, nil))
                 let props = try XCTUnwrap(CGImageSourceCopyPropertiesAtIndex(source,0,nil) as? [CFString:Any])
                 let tiff = props[kCGImagePropertyTIFFDictionary] as? [String:Any]
-                XCTAssertEqual(tiff?["Make"] as? String, sample.1)
-                XCTAssertEqual(tiff?["Model"] as? String, sample.2)
+                XCTAssertEqual(tiff?["Make"] as? String, sample.make)
+                XCTAssertEqual(tiff?["Model"] as? String, sample.model)
                 let exif = try XCTUnwrap(props[kCGImagePropertyExifDictionary] as? [String:Any])
-                XCTAssertEqual(exif["OffsetTimeOriginal"] as? String, sample.3)
-                XCTAssertEqual(exif["DateTimeOriginal"] as? String, index == 0 ? "2025:10:05 16:31:27" : "2026:09:12 17:15:49")
-                XCTAssertEqual(exif["ISOSpeedRatings"] as? [Int], [index == 0 ? 100 : 400])
+                XCTAssertEqual(exif["OffsetTimeOriginal"] as? String, sample.offset)
+                XCTAssertEqual(exif["DateTimeOriginal"] as? String, sample.dateTime)
+                XCTAssertEqual(exif["ISOSpeedRatings"] as? [Int], [sample.iso])
                 XCTAssertEqual(props[kCGImagePropertyPixelWidth] as? Int, 1600)
                 XCTAssertEqual(props[kCGImagePropertyOrientation] as? Int, 1)
                 XCTAssertEqual(props[kCGImagePropertyProfileName] as? String, "Display P3")
-                if index == 1 {
+                if sample.hasGPS {
                     let gps = try XCTUnwrap(props[kCGImagePropertyGPSDictionary] as? [String:Any])
                     let inputMeta = try XCTUnwrap(CGImageSourceCreateWithURL(original as CFURL, nil))
                     let old = CGImageSourceCopyPropertiesAtIndex(inputMeta,0,nil) as! [CFString:Any]
@@ -71,7 +81,7 @@ final class ExportUserMetadataTests: XCTestCase {
                     let metadata = try XCTUnwrap(CGImageSourceCopyMetadataAtIndex(source,0,nil))
                     XCTAssertEqual(CGImageMetadataCopyStringValueWithPath(metadata,nil,"fm:GPSProcessingMethod" as CFString) as String?, method?.trimmingCharacters(in: .controlCharacters))
                 }
-                print("METADATA VERIFIED \(sample.1) \(format) \(file.path)")
+                print("METADATA VERIFIED \(sample.make) \(format) \(file.path)")
             }
             XCTAssertEqual(hash, SHA256.hash(data: try Data(contentsOf: original)), "Original file changed")
         }

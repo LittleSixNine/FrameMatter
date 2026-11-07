@@ -9,15 +9,21 @@ nothing here. Off Apple the engine is the same C++ (`src/core`,
 
 Related documents:
 
-- `engine/PORT_COVERAGE.md` -- what of the API spec runs on Vulkan, what is
+- `engine/docs/platforms/PORT_COVERAGE.md` -- what of the API spec runs on Vulkan, what is
   refused, what was verified and how.
-- `engine/PORT_PLAN.md` -- the handoff for the five refused features.
-- `engine/PORT_NOTES.md` -- the running log of this port.
-- `engine/WINDOWS.md`, `WINDOWS_DESKTOP.md`, `WINDOWS_NATIVE_RAW.md`,
+- `pravite/开发记录/engine/docs/platforms/PORT_PLAN.md` -- local-only handoff for the five refused features (not shipped).
+- `pravite/开发记录/engine/docs/platforms/PORT_NOTES.md` -- local-only running log of this port (not shipped).
+- `engine/docs/platforms/WINDOWS.md`, `WINDOWS_DESKTOP.md`, `WINDOWS_NATIVE_RAW.md`,
   `WINDOWS_FEATURE_COVERAGE.md` -- the original Windows port (native MSVC/MinGW
   builds with `build-windows.ps1`, the Win32 viewer, its acceptance on an RTX
   5070 Ti). Still valid for a native Windows build; the cross-build below is
   the path the desktop app packages.
+
+**FrameMatter distribution scope (2026-11-08):** Windows-only sources and
+packaging scripts are retained privately with their original SpektraLab
+identifiers. Windows commands below document upstream history and are not
+supported build instructions for a public clone. Shared Linux/Vulkan code
+and its compatibility names remain in this repository.
 
 ## 1. Dependencies
 
@@ -132,7 +138,7 @@ A minimal client is `engine/tests/host_smoke.py` (`class Host`): write
 ## 6. What is not there
 
 - The five refused features (contrast mask, scene latitude mapping, Cineon
-  DI, overscan/film edge, date back): `PORT_PLAN.md`.
+  DI, overscan/film edge, date back): `pravite/开发记录/engine/docs/platforms/PORT_PLAN.md` (local-only).
 - Lens correction at decode (LibRaw has no lens profiles).
 - Verified real-GPU runs on Linux, and runs on real Windows: only lavapipe
   and wine here. The original Windows port's RTX acceptance predates main's

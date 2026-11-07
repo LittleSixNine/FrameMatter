@@ -84,7 +84,7 @@ MACOS = "15.0"
 # They are build settings now and the plist references them, so a release
 # bumps one line here (HANDOFF-DISTRIBUTION §2.6).
 MARKETING_VERSION = "1.0.0"
-BUILD_NUMBER = "1.3"
+BUILD_NUMBER = "2"
 
 # Signing, from the environment, because a Developer ID certificate is not in
 # this repository and must not be.
@@ -363,7 +363,7 @@ def build() -> str:
                                     "SDKROOT": "macosx", "ALWAYS_SEARCH_USER_PATHS": "NO",
                                     "CLANG_ENABLE_OBJC_ARC": "YES", "ENABLE_STRICT_OBJC_MSGSEND": "YES",
                                     "GCC_NO_COMMON_BLOCKS": "YES", "ENABLE_USER_SCRIPT_SANDBOXING": "NO"})
-    p.add(project, f"{{\n\t\t\tisa = PBXProject;\n\t\t\tattributes = {{\n\t\t\t\tBuildIndependentTargetsInParallel = 1;\n\t\t\t\tLastSwiftUpdateCheck = 1600;\n\t\t\t\tLastUpgradeCheck = 1600;\n\t\t\t\tTargetAttributes = {{\n\t\t\t\t\t{test_target} = {{\n\t\t\t\t\t\tTestTargetID = {app_target};\n\t\t\t\t\t}};\n\t\t\t\t}};\n\t\t\t}};\n\t\t\tbuildConfigurationList = {proj_cfg};\n\t\t\tcompatibilityVersion = \"Xcode 14.0\";\n\t\t\tdevelopmentRegion = en;\n\t\t\thasScannedForEncodings = 0;\n\t\t\tknownRegions = (\n\t\t\t\ten,\n\t\t\t\tBase\n\t\t\t);\n\t\t\tmainGroup = {main_group};\n\t\t\tproductRefGroup = {products};\n\t\t\tprojectDirPath = \"\";\n\t\t\tprojectRoot = \"\";\n\t\t\ttargets = (\n\t\t\t\t{app_target},\n\t\t\t\t{test_target}\n\t\t\t);\n\t\t}}", "Project object")
+    p.add(project, f"{{\n\t\t\tisa = PBXProject;\n\t\t\tattributes = {{\n\t\t\t\tBuildIndependentTargetsInParallel = 1;\n\t\t\t\tLastSwiftUpdateCheck = 1600;\n\t\t\t\tLastUpgradeCheck = 1600;\n\t\t\t\tTargetAttributes = {{\n\t\t\t\t\t{test_target} = {{\n\t\t\t\t\t\tTestTargetID = {app_target};\n\t\t\t\t\t}};\n\t\t\t\t}};\n\t\t\t}};\n\t\t\tbuildConfigurationList = {proj_cfg};\n\t\t\tcompatibilityVersion = \"Xcode 14.0\";\n\t\t\tdevelopmentRegion = en;\n\t\t\thasScannedForEncodings = 0;\n\t\t\tknownRegions = (\n\t\t\t\ten,\n\t\t\t\t\"zh-Hans\",\n\t\t\t\tBase\n\t\t\t);\n\t\t\tmainGroup = {main_group};\n\t\t\tproductRefGroup = {products};\n\t\t\tprojectDirPath = \"\";\n\t\t\tprojectRoot = \"\";\n\t\t\ttargets = (\n\t\t\t\t{app_target},\n\t\t\t\t{test_target}\n\t\t\t);\n\t\t}}", "Project object")
 
     body = "\n".join(p.objects)
     return f"// !$*UTF8*$!\n{{\n\tarchiveVersion = 1;\n\tclasses = {{\n\t}};\n\tobjectVersion = 56;\n\tobjects = {{\n{body}\n\t}};\n\trootObject = {project} /* Project object */;\n}}\n"

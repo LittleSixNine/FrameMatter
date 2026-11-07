@@ -13,6 +13,12 @@ FrameMatter is free software. This directory carries the full text of every
 licence the application is distributed under, because a binary that ships
 without them is not licensed to be shipped.
 
+  PhotoTrail-Metadata-NOTICE.txt
+      Selected original metadata-handling code adapted from PhotoTrail by
+      LittleSixNine, separately licensed GPL-3.0-or-later for FrameMatter.
+      PhotoTrail itself retains its independent licence.
+      https://github.com/LittleSixNine/PhotoTrail
+
   FrameMatter-GPL-3.0.txt
       The application and the C++ render engine, GPL-3.0-or-later. You have
       the right to the corresponding source code of this application:

@@ -27,6 +27,8 @@ struct AboutWindow: View {
     struct Licence: Identifiable, Hashable {
         let id: String       // the file name
         let title: String
+        var chineseTitle = ""
+        @MainActor var localizedTitle: String { L(title, zh: chineseTitle) }
         var url: URL? { AboutWindow.licenceDirectory?.appending(path: id) }
         var body: String {
             (url.flatMap { try? String(contentsOf: $0, encoding: .utf8) })
@@ -59,19 +61,21 @@ struct AboutWindow: View {
     /// The upstream project: the profiles, the print model and the engine's
     /// science. A different work under a different licence, and the reason
     /// two source links appear on this panel rather than one.
+    static let photoTrailURL = "https://github.com/LittleSixNine/PhotoTrail"
     static let originalAppURL = "https://github.com/JamesQiu2005/SpektraLab"
     static let upstreamURL = "https://github.com/andreavolpato/spektrafilm"
 
     static let licences = [
-        Licence(id: "FrameMatter-COPYRIGHT.txt", title: "FrameMatter contributions — LittleSixNine"),
-        Licence(id: "DSEG-OFL-1.1.txt", title: "SIL OFL 1.1 — DSEG fonts by Keshikan"),
-        Licence(id: "FrameMatter-GPL-3.0.txt", title: "GNU GPL v3 — the application and the engine"),
-        Licence(id: "Profiles-and-LUTs-CC-BY-SA-4.0.txt", title: "CC BY-SA 4.0 — the profiles and the print LUTs"),
-        Licence(id: "Profiles-and-LUTs-CHANGELOG.txt", title: "What this build changed about the profiles and LUTs"),
-        Licence(id: "FilmDamageSimulator-Data-CC-BY-4.0.txt", title: "CC BY 4.0 — FilmDamageSimulator dust and fiber scans"),
-        Licence(id: "FilmDamageSimulator-Dust-Attribution.txt", title: "Dust and fiber masks — attribution and changes"),
-        Licence(id: "FilmDamageSimulator-MIT.txt", title: "MIT — FilmDamageSimulator scratch-mask reference"),
-        Licence(id: "metal-cpp-Apache-2.0.txt", title: "Apache 2.0 — metal-cpp"),
+        Licence(id: "PhotoTrail-Metadata-NOTICE.txt", title: "PhotoTrail — metadata code provenance and licence", chineseTitle: "PhotoTrail — 元数据代码来源与授权"),
+        Licence(id: "FrameMatter-COPYRIGHT.txt", title: "FrameMatter contributions — LittleSixNine", chineseTitle: "FrameMatter 新增与修改贡献 — LittleSixNine"),
+        Licence(id: "DSEG-OFL-1.1.txt", title: "SIL OFL 1.1 — DSEG fonts by Keshikan", chineseTitle: "SIL OFL 1.1 — Keshikan 的 DSEG 字体"),
+        Licence(id: "FrameMatter-GPL-3.0.txt", title: "GNU GPL v3 — the application and the engine", chineseTitle: "GNU GPL v3 — 应用与引擎"),
+        Licence(id: "Profiles-and-LUTs-CC-BY-SA-4.0.txt", title: "CC BY-SA 4.0 — the profiles and the print LUTs", chineseTitle: "CC BY-SA 4.0 — 配置数据与印相 LUT"),
+        Licence(id: "Profiles-and-LUTs-CHANGELOG.txt", title: "What this build changed about the profiles and LUTs", chineseTitle: "此构建对配置数据及 LUT 的修改"),
+        Licence(id: "FilmDamageSimulator-Data-CC-BY-4.0.txt", title: "CC BY 4.0 — FilmDamageSimulator dust and fiber scans", chineseTitle: "CC BY 4.0 — FilmDamageSimulator 灰尘与纤维扫描素材"),
+        Licence(id: "FilmDamageSimulator-Dust-Attribution.txt", title: "Dust and fiber masks — attribution and changes", chineseTitle: "灰尘与纤维遮罩 — 署名与修改记录"),
+        Licence(id: "FilmDamageSimulator-MIT.txt", title: "MIT — FilmDamageSimulator scratch-mask reference", chineseTitle: "MIT — FilmDamageSimulator 划痕算法参考"),
+        Licence(id: "metal-cpp-Apache-2.0.txt", title: "Apache 2.0 — metal-cpp", chineseTitle: "Apache 2.0 — metal-cpp"),
     ]
 
     /// `Bundle(for:)`, not `Bundle.main`, for `EngineClient`'s reason: the
@@ -83,10 +87,10 @@ struct AboutWindow: View {
     }
     private final class BundleToken {}
 
-    private static var version: String {
+    @MainActor private static var version: String {
         let info = Bundle(for: BundleToken.self).infoDictionary
         let build = info?["CFBundleVersion"] as? String ?? "?"
-        return "Build \(build)"
+        return L("Build \(build)", zh: "构建版本 \(build)")
     }
 
     var body: some View {
@@ -111,8 +115,9 @@ struct AboutWindow: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text("FrameMatter").font(.system(size: 20, weight: .semibold))
                 Text(AboutWindow.version).font(Theme.Font.sublabel).foregroundStyle(.secondary)
-                Text("A spectral film and print simulation for macOS.")
+                Text(L("A spectral film and print simulation for macOS.", zh: "适用于 macOS 的光谱胶片与印相模拟。"))
                     .font(Theme.Font.sublabel).foregroundStyle(.secondary)
+                link(AboutWindow.sourceLabel, AboutWindow.sourceURL)
             }
             Spacer(minLength: 0)
         }
@@ -121,7 +126,7 @@ struct AboutWindow: View {
 
     private var credits: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("FrameMatter additions and modifications © 2026 LittleSixNine. GPL v3 or later; upstream copyrights retained.")
+            Text(L("FrameMatter additions and modifications © 2026 LittleSixNine. GPL v3 or later; upstream copyrights retained.", zh: "FrameMatter 新增与修改贡献 © 2026 LittleSixNine，依 GPL v3 或后续版本授权；保留上游版权。"))
                 .font(Theme.Font.sublabel).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             // The one line that says which name belongs to which thing. This
@@ -131,39 +136,47 @@ struct AboutWindow: View {
             // which it welcomes. Saying so on the About panel is where that
             // distinction is legible.
             VStack(alignment: .leading, spacing: 2) {
-                Text("Based on SpektraLab by Hanze Qiu")
+                Text(L("Based on SpektraLab by Hanze Qiu", zh: "基于 Hanze Qiu 开发的 SpektraLab"))
                     .font(Theme.Font.groupHeader).foregroundStyle(Theme.text)
-                Text("Independent development by LittleSixNine. The original application, native engine port and black-and-white profiles are credited to Hanze Qiu.")
+                Text(L("The original application, native engine port and black-and-white profiles are credited to Hanze Qiu.", zh: "原始应用、原生引擎移植和黑白胶片配置由 Hanze Qiu 完成。"))
                     .font(Theme.Font.sublabel).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 link("github.com/JamesQiu2005/SpektraLab", AboutWindow.originalAppURL)
             }
-            Text("FrameMatter uses the spektrafilm engine, film and paper profiles, and the print-preview LUTs baked from them.")
+            Text(L("FrameMatter uses the spektrafilm engine, film and paper profiles, and the print-preview LUTs baked from them.", zh: "FrameMatter 使用 spektrafilm 引擎、胶片与相纸配置，以及由这些配置生成的印相预览 LUT。"))
                 .font(Theme.Font.sublabel).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             // The attribution the CC BY-SA licence requires, in the form it
             // suggests: author, canonical source, licence.
             VStack(alignment: .leading, spacing: 2) {
-                Text("Film simulation, measured profiles and print model")
+                Text(L("Film simulation, measured profiles and print model", zh: "胶片模拟、实测配置与印相模型"))
                     .font(Theme.Font.groupHeader).foregroundStyle(Theme.text)
-                Text("Andrea Volpato — licensed CC BY-SA 4.0")
+                Text(L("Andrea Volpato — licensed CC BY-SA 4.0", zh: "Andrea Volpato — 依 CC BY-SA 4.0 授权"))
                     .font(Theme.Font.sublabel).foregroundStyle(.secondary)
                 link(AboutWindow.upstreamURL.replacingOccurrences(of: "https://", with: ""),
                      AboutWindow.upstreamURL)
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text("FrameMatter and its render engine")
+                Text(L("FrameMatter and its render engine", zh: "FrameMatter 及其渲染引擎"))
                     .font(Theme.Font.groupHeader).foregroundStyle(Theme.text)
                 // The GPL's written offer, and the only form of it that is
                 // any use: a place to get the code. It points at this
                 // application's own repository, which is the work the GPL
                 // covers — the upstream link above covers the profiles.
-                Text("Free software under the GNU GPL v3 or later. You have the right to the corresponding source.")
+                Text(L("Free software under the GNU GPL v3 or later. You have the right to the corresponding source.", zh: "依 GNU GPL v3 或后续版本授权的自由软件。你有权获取相应源代码。"))
                     .font(Theme.Font.sublabel).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 link(AboutWindow.sourceLabel, AboutWindow.sourceURL)
             }
-            Text("The 8 baked print-preview LUTs are derivatives of the profiles and carry the same CC BY-SA 4.0 licence. What was changed, and what was not, is in the changelog below.")
+            VStack(alignment: .leading, spacing: 2) {
+                Text(L("Metadata handling adapted from PhotoTrail", zh: "部分元数据处理代码改编自 PhotoTrail"))
+                    .font(Theme.Font.groupHeader).foregroundStyle(Theme.text)
+                Text(L("LittleSixNine — the reused original code is separately licensed GPL v3 or later for FrameMatter.", zh: "LittleSixNine — 本项目复用的相关原创代码另行按 GPL v3 或后续版本授权。"))
+                    .font(Theme.Font.sublabel).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                link("github.com/LittleSixNine/PhotoTrail", AboutWindow.photoTrailURL)
+            }
+            Text(L("The 8 baked print-preview LUTs are derivatives of the profiles and carry the same CC BY-SA 4.0 licence. What was changed, and what was not, is in the changelog below.", zh: "8 份预生成的印相预览 LUT 由配置数据衍生，沿用 CC BY-SA 4.0 许可。具体修改与保留内容见下方变更记录。"))
                 .font(Theme.Font.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -172,11 +185,11 @@ struct AboutWindow: View {
 
     private var licenceList: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Licences").font(Theme.Font.groupHeader).foregroundStyle(Theme.text)
+            Text(L("Licences", zh: "许可协议")).font(Theme.Font.groupHeader).foregroundStyle(Theme.text)
             ForEach(AboutWindow.licences) { licence in
                 Button { showing = licence } label: {
                     HStack(spacing: 6) {
-                        Text(licence.title).font(Theme.Font.listItem).foregroundStyle(Theme.text)
+                        Text(licence.localizedTitle).font(Theme.Font.listItem).foregroundStyle(Theme.text)
                             .lineLimit(1).truncationMode(.tail)
                         Spacer(minLength: 0)
                         Image(systemName: "chevron.right").font(.system(size: 9))
@@ -187,14 +200,14 @@ struct AboutWindow: View {
                 .buttonStyle(.plain)
             }
             if let dir = AboutWindow.licenceDirectory {
-                Button("Show the licence files in Finder") {
+                Button(L("Show the licence files in Finder", zh: "在访达中显示许可文件")) {
                     NSWorkspace.shared.activateFileViewerSelecting([dir])
                 }
                 .buttonStyle(.link).font(Theme.Font.caption)
             } else {
                 // Said rather than hidden: a build with no licence texts is a
                 // build that should not have been made.
-                Text("This build carries no licence texts. Run Tools/bundle-licenses.sh and rebuild.")
+                Text(L("This build carries no licence texts. Run Tools/bundle-licenses.sh and rebuild.", zh: "此构建缺少许可正文。请运行 Tools/bundle-licenses.sh 后重新构建。"))
                     .font(Theme.Font.caption).foregroundStyle(Theme.accent)
             }
         }
@@ -220,7 +233,7 @@ private struct LicenceSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(licence.title).font(.system(size: 13, weight: .semibold))
+            Text(licence.localizedTitle).font(.system(size: 13, weight: .semibold))
             ScrollView {
                 Text(text)
                     .font(.system(size: 10.5, design: .monospaced))
@@ -231,13 +244,13 @@ private struct LicenceSheet: View {
             .background(Theme.well, in: RoundedRectangle(cornerRadius: 4))
             HStack {
                 if let url = licence.url {
-                    Button("Show in Finder") {
+                    Button(L("Show in Finder", zh: "在访达中显示")) {
                         NSWorkspace.shared.activateFileViewerSelecting([url])
                     }
                     .buttonStyle(.link).font(Theme.Font.caption)
                 }
                 Spacer()
-                Button("Done", action: dismiss).keyboardShortcut(.defaultAction)
+                Button(L("Done", zh: "完成"), action: dismiss).keyboardShortcut(.defaultAction)
             }
         }
         .padding(16)

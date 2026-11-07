@@ -3,7 +3,7 @@
 The owner's question: *does the engine cover everything in the API spec over
 C++ and Vulkan on the Windows branch?* This table answers it entry point by
 entry point, field group by field group, kernel by kernel. It is kept current
-by whoever changes a row (`engine/PORT_NOTES.md` is the running log).
+by whoever changes a row (`pravite/开发记录/engine/docs/platforms/PORT_NOTES.md` is the local-only running log, not shipped).
 
 Two columns of status:
 
@@ -112,7 +112,7 @@ between the two lines is verified only by the CTests named above.
 ## 5. Current state (2026-10-06)
 
 **The five refused features stay refused, by the owner's decision**
-(2026-10-06); `engine/PORT_PLAN.md` is the handoff for porting them.
+(2026-10-06); `pravite/开发记录/engine/docs/platforms/PORT_PLAN.md` is the handoff for porting them.
 Everything else in the API spec runs on Vulkan.
 
 Verified on lavapipe (Mesa 25.2, llvmpipe LLVM 20, a CPU device):
@@ -138,6 +138,6 @@ a GPU that already worked):
 | resources and SPIR-V opened through UTF-8 wide paths on Windows | an install folder under a non-ASCII user name would not start | `src/core/file_path.hpp`, four `ifstream` sites |
 
 Not verified: any real GPU on Linux, real Windows (only wine), Intel/AMD
-drivers, whole-image parity against Metal (needs a Mac; see PORT_PLAN §0),
+drivers, whole-image parity against Metal (needs a Mac; see the local-only plan at `pravite/开发记录/engine/docs/platforms/PORT_PLAN.md` §0),
 cameras beyond one NEF and one CR2 (raw.pixls.us is blocked by this
 environment's proxy).

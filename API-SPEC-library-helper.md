@@ -6,10 +6,10 @@
 | **Binary** | `vendor/spklib/macos/spklib-host`, `spklib 0.1.0+f4de46cf119a (abi 1, schema 1)`. Its SHA-256 is in `spklib-host.sha256` beside it. |
 | **Platform** | Universal (arm64 + x86_64), macOS 13.0 or later (the app needs 15.0). Stripped, ad-hoc signed. |
 | **Source** | [JamesQiu2005/SpektraLab_library](https://github.com/JamesQiu2005/SpektraLab_library). Built there by `./build.sh release`, at the commit named in its version. |
-| **Licence** | MIT (the SDK repository's `LICENSE`). It is a separate program that SpektraLab starts and talks to over pipes; this repository carries the built binary, not its source. |
+| **Licence** | MIT (the SDK repository's `LICENSE`). It is a separate program that FrameMatter starts and talks to over pipes; this repository carries the built binary, not its source. |
 | **Date** | 2026-10-18 |
 
-SpektraLab 2.0 manages libraries the way Capture One does: catalogs, sessions, albums, folders,
+The library helper inherited from SpektraLab 2.0 manages libraries the way Capture One does: catalogs, sessions, albums, folders,
 variants, ratings and colour tags. It can also open an existing Capture One catalog. All of that lives
 in one helper program. The app starts it, sends it one JSON request per line, and gets one JSON reply
 per line. The helper tells the app **where the images are** and keeps **the data around them**. The
@@ -19,21 +19,21 @@ app still decodes, renders, caches and exports exactly as it does in 1.x.
 
 | The helper | The app |
 |---|---|
-| Libraries: SpektraLab catalogs (`<Name>.spkcatalog`) and sessions (`<Name>/<Name>.spksession`) | Decoding, the engine, previews, thumbnails, the display cache, export |
+| Libraries: FrameMatter catalogs (`<Name>.spkcatalog`) and sessions (`<Name>/<Name>.spksession`) | Decoding, the engine, previews, thumbnails, the display cache, export |
 | Images, variants, albums, folders, smart albums, ratings, colour tags, trash flags | Reading EXIF from files; it passes what `ImageDecoder` read to `images.add` |
-| SpektraLab's edits: the `Sidecar` JSON, stored per variant, verbatim, with a revision | What the JSON means (`Sidecar.swift` stays the schema's owner) |
+| FrameMatter's edits: the `Sidecar` JSON, stored per variant, verbatim, with a revision | What the JSON means (`Sidecar.swift` stays the schema's owner) |
 | Reading a Capture One catalog, one way, through a snapshot | Anything Capture One renders: its previews, adjustments, styles |
-| Moving files between a SpektraLab session's folders, never overwriting | Deleting files: it moves them to the macOS Trash itself |
+| Moving files between a FrameMatter session's folders, never overwriting | Deleting files: it moves them to the macOS Trash itself |
 
 **Capture One is read-only, always.** The helper never opens a Capture One database. It copies the
 file to a temporary place, checks that the copy is a complete database, and reads only the copy. It
 refuses while Capture One is mid-write. Nothing is written or created inside a `.cocatalog`. There is
-no write-back in 2.0. A rating or album the user changes in SpektraLab is SpektraLab's, kept beside
+no write-back in 2.0. A rating or album the user changes in FrameMatter is FrameMatter's, kept beside
 Capture One's value. The worst outcome is "this catalog cannot be read".
 
 ## 2. Bundling and launching
 
-**In the bundle.** Copy the binary to `SpektraLab.app/Contents/Helpers/spklib-host` with a Copy Files
+**In the bundle.** Copy the binary to `FrameMatter.app/Contents/Helpers/spklib-host` with a Copy Files
 build phase:
 
 - Destination: Wrapper, subpath `Contents/Helpers`.
@@ -88,12 +88,12 @@ Contents/Helpers/spklib-host --store ~/Library/Application\ Support/SpektraLab/L
 |---|---|
 | `not_found` | Missing image, variant, collection, library or folder |
 | `invalid_params` | The request is wrong; a bug in the app |
-| `read_only` | The target is Capture One's; offer to do it in a SpektraLab album instead |
+| `read_only` | The target is Capture One's; offer to do it in a FrameMatter album instead |
 | `conflict` | `edit.put` was based on an old revision (`data.revision` is the current one), or a different catalog now sits at the linked path |
 | `source_busy` | Capture One is writing; try again shortly |
 | `unsupported` | A catalog schema the helper cannot read (the message lists what is missing), a Capture One session (probe only in 2.0), or Capture One smart-album criteria |
 | `exists` | A library is already at that path |
-| `in_use` | Another SpektraLab has this session open |
+| `in_use` | Another FrameMatter has this session open |
 | `ambiguous` | More than one `.spksession` in a folder |
 | `cross_volume` | A session move across disks |
 | `io` | SQLite or file-system failure (`data.sqlite`) |
@@ -117,7 +117,7 @@ stale. `sdk.methods` lists the table from the binary itself. *L* means the metho
 | `library.sync` | L | `force`?, `source`? | `{added, updated, unchanged, removed}` per table, or `{skipped: true}` when Capture One has not changed |
 | `collections.list` | L | — | `collections[]`: `uuid`, `parent`, `kind`, `name`, `position`, `origin`, `editable`, `image_count`, `folder`. Kinds: `root`, `all_images`, `recent_imports`, `recent_captures`, `trash`, `in_library`, `project`, `group`, `album`, `smart_album`, `folder` |
 | `images.list` | L | `collection`?, `recursive`?, `filter`?, `sort` (`captured`, `imported`, `name`, `rating`, `added`), `descending`?, `offset`, `limit`, `check_files`?, `full`?, `include_trashed`? | `total`, `images[]`: `uuid`, `path`, `file_name`, `kind`, `rating`, `color_tag`, `trashed`, `captured_local`, `variants[] {uuid, position, rating, color_tag, edit_revision}`, `exists` |
-| `image.get` | L | `image` | the full image, with each variant's SpektraLab and Capture One values (`capture_one.metadata`, `capture_one.geometry` raw), and `albums[]` |
+| `image.get` | L | `image` | the full image, with each variant's FrameMatter and Capture One values (`capture_one.metadata`, `capture_one.geometry` raw), and `albums[]` |
 | `images.lookup` | L | `paths[]` | for each path, `{found, match {image, variant}}`, compared in either Unicode normalisation |
 | `locations.list` / `location.relink` | L | — / `location`, `path` or `null` | folders with `online` / "locate this folder". The moved prefix is applied to every folder under it |
 | `edit.get` | L | `variant` | `revision` (0 = none), `edit` |
@@ -127,7 +127,7 @@ stale. `sdk.methods` lists the table from the binary itself. *L* means the metho
 | `images.trash` | L | `images[]`, `trashed` true, false or null | `updated`. A flag only; no file moves |
 | `variant.create` | L | `image`, `from_variant`? | `variant`, `position`, `edit_copied`: a second print from one negative |
 | `images.add` | L | `items[]` (a path, or `{path, metadata}`), `mode` (`reference` or `copy`), `collection`? | `results[] {image, variant, existing, stored_at?, error?}`. Never overwrites |
-| `collection.create` / `update` / `delete` / `add` / `remove` | L | `kind`, `name`, `parent`, `criteria` (smart albums use the `images.list` filter), `images[]` | SpektraLab collections only. Capture One's answer `read_only` |
+| `collection.create` / `update` / `delete` / `add` / `remove` | L | `kind`, `name`, `parent`, `criteria` (smart albums use the `images.list` filter), `images[]` | FrameMatter collections only. Capture One's answer `read_only` |
 | `session.folders` | L | — | `folders[] {path, relative_path, role, outside_session, exists, image_count}` |
 | `session.scan` | L | — | `{seen, added, missing}`: files that appeared in the session folder |
 | `session.move` / `session.restore` | L | `images[]`, `to` (`capture`, `selects`, `output`, `trash` or a relative folder), `on_conflict` (`fail` or `suffix`) | `moved[] {image, from, to}`, `conflicts[]`. Crash-safe, never overwrites |
@@ -154,7 +154,7 @@ Everything below is the 2.0 Library.
 
 **The library sidebar.** `collections.list` builds the tree. The roles come from `kind`, never from
 names (Capture One's are in the UI language: "全部图像", "最近导入"). `editable: false` marks Capture
-One's: no rename, no drop target. "New Album" creates a SpektraLab album, which can hold Capture One's
+One's: no rename, no drop target. "New Album" creates a FrameMatter album, which can hold Capture One's
 images.
 
 **The browser.**
@@ -198,7 +198,7 @@ one negative. Each variant has its own edit, rating and tag.
 - *Empty Trash.* `session.trash.plan`, then `FileManager.trashItem` for each path, then
   `session.trash.commit` with the paths that actually moved.
 - *Exports* go to `Output/` by default.
-- *One writer.* A session open in another SpektraLab answers `in_use`. Say who has it; do not retry
+- *One writer.* A session open in another FrameMatter answers `in_use`. Say who has it; do not retry
   in a loop.
 
 **Exporting** is unchanged: the export page reads the edit as today. A library only supplies the
@@ -211,7 +211,7 @@ frames and their edits.
 - **Deleting.** Never delete an image file except through the Trash hand-off in §5.
 - **Edit JSON.** Never put anything into `edit` but the `Sidecar` JSON. The helper stores it blindly,
   so a second schema in the same column would be undetectable.
-- **Capture One's adjustments.** Never treat `capture_one.geometry` as a SpektraLab crop. Its format
+- **Capture One's adjustments.** Never treat `capture_one.geometry` as a FrameMatter crop. Its format
   is unverified, and mapping it is a separate feature.
 
 ## 7. Updating the binary

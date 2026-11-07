@@ -26,24 +26,24 @@ FrameMatter 是基于 **Hanze Qiu** 的 [SpektraLab](https://github.com/JamesQiu
 
 135 全宽曝光（示例图片除了全宽效果，还添加了齿孔漏光和灰尘）：
 
-![照片内容延伸到齿孔周围的 135 全宽曝光效果](docs/assets/readme/full-width-135.jpg)
+![照片内容延伸到齿孔周围的 135 全宽曝光效果](screenshots/full-width-135.jpg)
 
 
 日期后背：新增几种 DSEG7 字体，同时针对“日-时-分”格式的后背，支持模拟尼康 MF-16后背的时分下划线，以及 MF-28 后背的“时分秒”“年月日时分秒（片间）”等格式。
 
-![三种日期打印样式的右下角局部横向拼接](docs/assets/readme/date-back-closeup.jpg)
+![三种日期打印样式的右下角局部横向拼接](screenshots/date-back-closeup.jpg)
 
 齿孔划痕与磨损（过片时内导轨造成的微小摩擦效果）
 
-![齿孔摩擦划痕与边缘磨损局部](docs/assets/readme/sprocket-scratches.jpg)
+![齿孔摩擦划痕与边缘磨损局部](screenshots/sprocket-scratches.jpg)
 
 灰尘与纤维
 
-![负片扫描风格的灰尘与纤维](docs/assets/readme/dust.jpg)
+![负片扫描风格的灰尘与纤维](screenshots/dust.jpg)
 
 | 齿孔漏光 | 全片漏光 |
 |---|---|
-| ![沿齿孔边缘形成的漏光](docs/assets/readme/perforation-light-leak.jpg) | ![向画面内部延伸的大范围漏光](docs/assets/readme/wide-light-leak.jpg) |
+| ![沿齿孔边缘形成的漏光](screenshots/perforation-light-leak.jpg) | ![向画面内部延伸的大范围漏光](screenshots/wide-light-leak.jpg) |
 
 
 

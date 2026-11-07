@@ -2,7 +2,7 @@
 //
 // The host owns the contract; this file is the frontend's reading of it. Every
 // optional field here is optional because the protocol says so or because a
-// request in `desktop/PROTOCOL-REQUESTS.md` has not landed yet — read the
+// request in the local-only `pravite/开发记录/desktop/PROTOCOL-REQUESTS.md` has not landed yet — read the
 // comment before making one required.
 
 export type HostErrorCode =

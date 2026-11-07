@@ -78,6 +78,7 @@ struct SettingsWindow: View {
                         languageSection
                         appearanceSection
                         machineSection
+                        relatedToolsSection
                     case .rendering:
                         renderingSection
                     case .memory:
@@ -136,6 +137,31 @@ struct SettingsWindow: View {
                              selection: Binding(get: { Localization.shared.language },
                                                 set: { Localization.shared.language = $0 }))
                     caption(L(.setLanguageCaption))
+                }
+            }
+        }
+    }
+
+    private var relatedToolsSection: some View {
+        SettingsGroup(L("Other photography tools", zh: "其他摄影工具")) {
+            SettingsRows {
+                HStack(alignment: .top, spacing: 10) {
+                    Image("PhotoTrail").resizable().scaledToFit()
+                        .frame(width: 32, height: 32).accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(L("PhotoTrail", zh: "PhotoTrail · 相迹"))
+                            .font(Theme.Font.label).foregroundStyle(Theme.text)
+                        Text(L("Photo geotagging, metadata editing and batch renaming.", zh: "用于照片定位、元数据编辑与批量重命名。"))
+                            .font(Theme.Font.caption).foregroundStyle(Theme.dim)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Button(L("View GitHub project ↗", zh: "查看 GitHub 项目 ↗")) {
+                            if let url = URL(string: AboutWindow.photoTrailURL) {
+                                NSWorkspace.shared.open(url)
+                            }
+                        }
+                        .buttonStyle(.link).font(Theme.Font.caption)
+                    }
+                    Spacer(minLength: 0)
                 }
             }
         }

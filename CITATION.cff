@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: |
-  FrameMatter is an independently developed derivative of SpektraLab by
-  Hanze Qiu, built on Andrea Volpato's spektrafilm model. Cite spektrafilm
+  FrameMatter extends SpektraLab, originally developed by Hanze Qiu,
+  and builds on Andrea Volpato's spektrafilm model. Cite spektrafilm
   for the film science and measured profiles; credit SpektraLab for the
   original application and native engine port. This repository adds grain,
   date-back, film-border, grayscale dust/fiber controls and full-width 135.

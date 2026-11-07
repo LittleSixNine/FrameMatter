@@ -317,17 +317,17 @@ modern_UI/Spektrafilm/Spektrafilm/Resources/engine/
 # `handoff/` is the session-to-session record (HANDOFF-*.md and the design
 # references), and `CLAUDE.md` is the agent's entry point. Both stay on the
 # machine that works on the product and are not part of the public repository;
-# code comments that cite "HANDOFF-… §n" refer to them. `AGENTS.md` and
-# ARCHITECTURE.md stay tracked.
+# code comments that cite "HANDOFF-… §n" refer to them. ARCHITECTURE.md stays tracked.
 /handoff/
 /CLAUDE.md
+/AGENTS.md
 
 # The same goes for the design records, the product notes, the research
 # notebooks and the drawings (2026-10-13). The repository carries what the
 # README, a build on another machine and the tests need; comments that cite
 # "RFC-nnn §n", `PRD/…` or a drawing refer to these local files.
 /rfc/
-/PRD/
+/PRD
 /research/
 /reference_film/
 /usage-guide/
@@ -379,3 +379,29 @@ You_Still_Fucked_Film_Simulation/
 # User-supplied wide-leak textures: local development, redistribution unverified.
 /engine/resources/local_light_leaks/
 /engine/resources/local_aging_textures/
+
+# Windows-specific upstream implementation: local private archive only.
+/windows_UI/
+/engine/build-windows-cross.sh
+/engine/build-windows.ps1
+/engine/setup-libraw.ps1
+/engine/cmake/toolchain-mingw-w64.cmake
+/engine/windows_exports.def
+/engine/tools/windows_preview.cpp
+/engine/tools/windows_preview_smoke.py
+/engine/tools/raw_render.cpp
+/engine/src/desktop/preview_host.cpp
+/engine/src/desktop/preview_host.hpp
+/engine/src/desktop/viewport.hpp
+/engine/src/io/image_writer.cpp
+/engine/src/io/image_writer.hpp
+/engine/tests/desktop_preview.cpp
+/engine/tests/image_writer_test.cpp
+/engine/WINDOWS.md
+/engine/WINDOWS_DESKTOP.md
+/engine/WINDOWS_FEATURE_COVERAGE.md
+/engine/WINDOWS_NATIVE_RAW.md
+/engine/docs/platforms/WINDOWS.md
+/engine/docs/platforms/WINDOWS_DESKTOP.md
+/engine/docs/platforms/WINDOWS_FEATURE_COVERAGE.md
+/engine/docs/platforms/WINDOWS_NATIVE_RAW.md

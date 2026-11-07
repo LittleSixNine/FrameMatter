@@ -44,6 +44,7 @@ source_url="https://github.com/LittleSixNine/FrameMatter"
 # A different work under a different licence; not a substitute for the above.
 upstream_url="https://github.com/andreavolpato/spektrafilm"
 
+cp "$root/license/PhotoTrail-Metadata-NOTICE.txt" "$out/PhotoTrail-Metadata-NOTICE.txt"
 cp "$root/COPYRIGHT.txt" "$out/FrameMatter-COPYRIGHT.txt"
 cp "$root/license/LICENSE" "$out/FrameMatter-GPL-3.0.txt"
 cp "$root/engine/resources/fonts/DSEG-LICENSE.txt" "$out/DSEG-OFL-1.1.txt"
@@ -132,6 +133,12 @@ native engine port and four black-and-white profiles retain their attribution.
 FrameMatter is free software. This directory carries the full text of every
 licence the application is distributed under, because a binary that ships
 without them is not licensed to be shipped.
+
+  PhotoTrail-Metadata-NOTICE.txt
+      Selected original metadata-handling code adapted from PhotoTrail by
+      LittleSixNine, separately licensed GPL-3.0-or-later for FrameMatter.
+      PhotoTrail itself retains its independent licence.
+      https://github.com/LittleSixNine/PhotoTrail
 
   FrameMatter-GPL-3.0.txt
       The application and the C++ render engine, GPL-3.0-or-later. You have
