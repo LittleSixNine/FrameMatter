@@ -47,6 +47,12 @@ FrameMatter 是基于 **Hanze Qiu** 的 [SpektraLab](https://github.com/JamesQiu
 
 
 
+## 下载与安装
+
+从[发布页面](https://github.com/LittleSixNine/FrameMatter/releases/latest)下载 DMG，打开后将 FrameMatter 拖入“应用程序”。安装包适用于 Apple silicon Mac，需 macOS 15 或以上。
+
+当前发布包采用本地 ad-hoc 签名，未进行 Apple 公证，macOS 可能拦截首次打开。仅在确认下载来源与文件可信后，按系统“隐私与安全性”中的提示处理。
+
 ## 构建与测试
 
 环境：Apple silicon、macOS 15 及以上、Xcode 26.6，并安装 Metal 工具链。在仓库根目录执行：

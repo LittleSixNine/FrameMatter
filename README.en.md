@@ -43,6 +43,12 @@ Dust and fibers
 |---|---|
 | ![Light leaking around the perforations](screenshots/perforation-light-leak.jpg) | ![A wide light leak extending into the image](screenshots/wide-light-leak.jpg) |
 
+## Download and install
+
+Download the DMG from the [releases page](https://github.com/LittleSixNine/FrameMatter/releases/latest), open it, and drag FrameMatter into Applications. The installer requires an Apple silicon Mac running macOS 15 or later.
+
+Current releases use ad-hoc signing and are not notarized by Apple. macOS may block the first launch; only proceed through the system's Privacy & Security prompts after verifying that you trust the download and its source.
+
 ## Build and test
 
 Apple silicon, macOS 15+, Xcode 26.6 with the Metal toolchain. From the repository root:
