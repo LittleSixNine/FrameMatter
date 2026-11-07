@@ -473,6 +473,15 @@ inside a field. `TypingKeyGuard` is a local key monitor that sends typing keys
 - **The print stamp carries the framing** (`Session.printStamp`), because the
   same parameters with another framing is another picture.
 
+The left rail's **Light Leaks** card (2026-11-07, between Film Edge and
+Scratches & Dust) owns `FilmParams.lightLeaks`: independent activation, two
+approved appearances (`rim`/`halo`), and separate saved values/seeds per style.
+`LightLeaks.swift` migrates the older approved settings from `scratches` on
+legacy decode. `LightLeakSection` only changes that state; wear and dust keep
+their own card, switch and seed. The native `scratch_leak_enabled`/`seed`
+fields preserve old-client defaults while giving the app independent gating
+and a dedicated GPU light seed. API-SPEC §18.1 records migration and the wire.
+
 ### 7.12 The half-frame pair
 
 - **A pair is a file**, `.spektrapair` JSON under `Sidecars/Pairs`, and its URL

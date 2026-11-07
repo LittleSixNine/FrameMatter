@@ -65,6 +65,7 @@ OVERRIDES: dict[str, object] = {
     "overscan_edge_text": "KODA 400",
     "overscan_gate": "square",
     "overscan_holes": "black",
+    "scratch_leak_style": "halo",
     "date_imprint_text": "'26 10 2",
     "date_imprint_placement": "rebate",
     "date_imprint_style": "dots",

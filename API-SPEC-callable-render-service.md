@@ -1264,57 +1264,153 @@ transmission rather than adding glow; it does not invent cyan/yellow wear.
 
 ### 18.1 Perforation light leaks
 
-A separate subsection in Scratches has Strength (0–100%, default 0/off) and
+**Independent Light Leaks card (2026-11-07).** The left rail now has a dedicated
+Light Leaks / 漏光 section, separate from Scratches & Dust. It exposes only
+`rim` and `halo`. `FilmParams.lightLeaks` saves an independent `active` switch,
+`style`, `rimStrength`, `rimCoverage`, `rimSoftness`, `rimSpread`, `rimSeed`,
+`haloStrength`, `haloSpread`, `haloSeed`. Switching styles retains both sets;
+Another changes only the selected style's saved seed. Wear/dust have their own
+switch and seed. Clipboard policy keeps light leaks photograph-specific like
+Film Edge. Format availability remains 135/full, half and full-width only.
+
+For legacy edit documents without `lightLeaks`, the selected old rim/halo
+values under `scratches` migrate into the corresponding new settings, including
+the seed. Active legacy light (old scratch active and nonzero light strength)
+becomes independently active. An existing new `lightLeaks` object takes
+precedence, including its off state. Old scratch leak fields remain encoded
+as read-only migration data; the app no longer sends them from ScratchSettings.
+The four postponed experimental appearances are not offered in the new card.
+Their legacy data and native algorithms remain, but are not migrated into an
+active approved style.
+
+The native wire retains the existing `scratch_leak_*` values, with two added
+shoot-layer, non-live integer fields:
+
+| field | default / range | meaning |
+|---|---|---|
+| `scratch_leak_enabled` | -1 / -1,0,1 | -1 uses the old `scratch_active` gate for older clients; 0 forces light off; 1 enables it independently of wear |
+| `scratch_leak_seed` | 0 / 0–2³¹−1 | 0 reuses the old scratch seed for older clients; positive values seed only perforation light |
+
+The app always sends enabled=0 or 1; when on it sends the selected style's
+values and seed. Independent light can render with scratch_active=false.
+A dedicated GPU seed slot leaves friction, hole wear and dust unchanged when
+only the light seed changes. Existing native clients that omit the new fields
+keep their prior gating and pattern. Invalid fractional values are refused.
+
+
+**Appearance selector (2026-11-07).** `scratch_leak_style` is a shoot-layer,
+non-live string: `rim` (default), `halo`, `shadow`, `band`, `streak`, `burn`.
+Other strings/types are refused. Swift saves `leakStyle`; old edits without it
+retain `rim`. The selector, strength and spread are available through the UI,
+CLI/MCP state and native wire. All six share the saved scratch seed, existing
+135 availability, actual hole mask, preview and reprint paths. Zero strength
+bypasses every style exactly. No photograph or overlay texture is bundled.
+
+The five additional styles deliberately have stronger maxima than the accepted
+fine rim; they are visual appearances, not calibrated camera/film damage:
+
+| style | construction | strength / spread |
+|---|---|---|
+| `halo` | independent soft light from the existing three-neighbour hole-event field; no narrow rim | 20×Strength raw exposure; sigma (.06+.54×Spread²)×size mm with a 3× tail |
+| `shadow` | a seeded local field attenuates scene exposure, without negative light or altered material profiles | up to 18×Strength×field EV attenuation; 2.2×(.06+.54×Spread²) mm |
+| `band` | continuous Gaussian band centred around each perforation row, with slowly wandering centre, width and amplitude | 18×Strength exposure, sigma (.18+1.5×Spread²)×(.65+.7×noise) mm, 20% 3× tail |
+| `streak` | one or two saved transverse light lines crossing the scene, with smooth drift and longitudinal amplitude variation | 24×Strength exposure; sigma .025+.45×Spread² mm, .31-pixel broadening, 12% 4× tail |
+| `burn` | asymmetrical edge exposure with a wandering front and slanted tongues built from edge-fog noise, merging beyond individual holes | 48×Strength×(.35+.65×Strength) exposure; Spread controls front depth and falloff, secondary edge gets 30% |
+
+Light styles use the existing warm film-sensitivity exposure vector, so colour
+comes from the selected stock and development. Dark transitions are neutral
+attenuation of the scene at this stage; they are most apparent on full-width
+exposures and may be imperceptible on an already-black unexposed border. The
+reference's purple/green hues are not universal leak colours. Burn may wash
+out picture detail intentionally at high strength. Reference categories are
+based on visible shape; only an attributed accident report establishes a
+specific cause. `rim` below preserves the accepted fine-edge intensity.
+
+
+The independent card has Strength (0–100%, default 0/off) and
 Spread (0–100%, default 50%). They persist as `leakStrength` / `leakSpread`,
 with optional decoding for old edits, and use native `scratch_leak_strength`
 / `scratch_leak_spread` (float 0–1, shoot, non-live; defaults 0 / .5).
-They share the existing scratch seed and full/half/full-width-135 availability. The
+Legacy controls shared the scratch seed; the new card uses its own per-style
+seed and the same full/half/full-width-135 availability. The
 existing friction and edge-mark strength sliders do not affect this exposure.
 
-The raw overscan-canvas exposure stage combines narrow lit arcs and a softer
-halo (2026-11-06, local-light revision). It reuses the spool-leak event model,
-the scratch envelope's smooth threshold and the scan-wall directional weight.
-Each hole gets one to three seeded light events in a wrapped angular coordinate
-around its nominal rounded outline. Event centres, widths (.035–.125 turns)
-and exposure amplitudes (2^(-.7–.7)) vary. A smoothstep(.15,.85) envelope fades
-arcs to unlit stretches rather than imposing a positive brightness floor.
-Both rows share one strip-level direction from the saved scratch seed, with
-only ±.06 radians of local variation (2026-11-07). The outward
-normal weights the lit side by .15+.85×max(dot(normal,direction),0). Per-hole
-strength is .35–1, modulated by a .4–1 slow trend over three hole pitches;
-25% of holes receive only 5% of that contribution. All draws use the saved
-scratch seed, never a fresh render seed.
+**Fine-rim softness (2026-11-07).** `scratch_leak_softness` is a shoot-layer,
+non-live float 0–1, default 0, saved as `leakSoftness` with optional legacy
+decoding. The UI exposes **Softness / 柔化** only for `rim`; other styles
+ignore it. At 0 the accepted sharp rim is unchanged. Increasing it retains a
+bright narrow core and grows a soft radial profile around the same lit arcs,
+sharing their direction, coverage and per-hole variation. It is independent
+of the outer-halo Spread and works with Spread=0.
 
-The narrow rim follows the actual perforation SDF, including local wear.
-Its thickness varies per light event (2026-11-06 thickness/visibility revision):
-event sigma is .007+.058×hash² mm, tapered along its arc by a smooth, randomly
-shifted Gaussian factor (.55–1). Overlapping events blend their sigma by their
-local exposure weights, keeping thickness continuous through overlaps. A
-(.45+.55×direction) thickness factor makes the side facing the shared light
-thicker and the opposite side thinner. Reuse the same scratch seed across
-frames to retain this style; there is no new roll object. The
-profile peaks half that local sigma onto the film, and its pixel footprint
-adds the existing .31-pixel sigma in quadrature. The maximum search reach
-includes the full .065 mm sigma, so thicker patches are not clipped.
+Let s be Softness, sigma the local physical rim sigma and r its pixel-broadened
+sigma. Added soft sigma is .32×s²×(sigma/.035) mm; the broad profile's sigma is
+sqrt(r²+soft_sigma²). Exposure is (1-.55s) times the existing narrow profile
+plus .85s times a broad Gaussian at the same peak location and exposure scale.
+At maximum, 45% of the original narrow component remains; the broader
+component adds light instead of energy-normalising the rim into invisibility
+through nonlinear development. This is a visual softness model, not a
+calibrated optical convolution or energy-conserving scattering simulation.
+Search reach includes the largest .384 mm added sigma. The real hole/film
+mask still clears interiors and outside-film areas; zero Strength bypasses
+all softness values. Invalid types and values outside 0–1 are rejected.
+CLI/MCP and export use the same saved setting and render path.
 
-Peak raw exposure is 6×Strength times the event, direction and hole weights,
-with an additional (1+.75×envelope) gain. Fully lit centres gain 75%; unlit
-stretches remain unlit. The halo's strength and light-event locations are
-unchanged. Pixel broadening keeps the exposure peak: normalising its integral
-before nonlinear development made small previews visibly dimmer. This is a
-visual approximation, not exact sampling of subpixel photochemistry.
+**Fine-rim coverage (2026-11-07).** `scratch_leak_coverage` is a shoot-layer,
+non-live float 0–1, default 0, saved as `leakCoverage` with optional decoding
+for legacy edits. The UI shows **Rim coverage / 亮边覆盖** only for `rim`;
+other styles ignore it. Strength still controls brightness, Spread the radial
+soft halo, and Coverage the angular extent. At 0 the accepted one-sided arc
+is retained; increasing it extends the arc around the hole. At 1 all sides
+can receive a narrow rim, most visible at high Strength, with a brighter
+light-facing side and the existing per-hole ±20% size/strength differences.
 
-The halo shares the same light events, with angular widths multiplied by
-1.3+.7×Spread, so it fades more gently around each lit arc. Its spatial sigma
-remains .06+.54×Spread² mm (80% core, 20% tail at three times that sigma).
-Peak raw exposure is 1.4×Strength×smoothstep(0,1,Spread), modulated by the shared
-hole/direction weights and .04+.96×(1-exp(-event_field)). Three neighbouring
-nominal hole profiles are summed; their longitudinal support smoothly vanishes
-between one and 1.4 hole pitches, preventing nearest-cell amplitude jumps.
-The final actual-film mask keeps holes clear. Negligible Gaussian tails beyond
-six tail sigmas are skipped before generating events. Spread zero removes the
-broad term entirely and does not change the narrow rim. The original scan-wall
-baseline is unchanged.
+For `rim` only, coverage c multiplies angular event widths by 1+3c, mixes the
+old arc envelope e toward .35+.65e, and mixes directional weight d toward
+.65+.35d. This lifts the back-facing arc without rotating the shared light
+or forcing a uniformly bright ring. Radial sigma still follows the actual
+hole SDF and remains within the existing .042 mm maximum. The rim's soft halo
+shares the broadened events; the independent `halo` style is unchanged. Zero
+Strength remains an exact bypass for all coverage values. Invalid types and
+values outside 0–1 are refused. CLI/MCP use the same saved setting and wire.
+
+**Regular strip lighting for `rim` and `halo` (2026-11-07).** Every hole
+has a primary light event centred on the exact same saved strip direction,
+including both rows. There is no per-hole angular jitter, missing-hole draw,
+or slow random brightness drift. Size and strength have independent per-hole
+multipliers .8+.4×hash, bounded to ±20% around their shared bases. These are
+model-space bounds; nonlinear development and pixel sampling do not imply
+exactly ±20% output pixel brightness. Reuse the same scratch seed across frames
+to keep the shared direction; there is no new roll object.
+
+The primary angular event has unit amplitude and width .12×size turns. Two
+small shoulders at ±.10 turns, each .055×size turns wide and amplitude .1–.2,
+introduce local contour differences without moving the main direction. Wrapped
+angular distances avoid a seam. A smoothstep(.15,.85) envelope keeps the main
+arc present on every hole while allowing its ends to fade. The fixed outward-
+normal weight remains .15+.85×max(dot(normal,direction),0).
+
+The rim follows the actual perforation SDF, including local wear. Its radial
+sigma is .035×size×(.45+.55×direction) mm: the same thick-to-thin directional
+shape on every hole with only ±20% hole-size variation. The exposure profile
+peaks half this sigma onto the film and adds the existing .31-pixel footprint
+in quadrature. Peak raw exposure remains 6×Strength×hole_weight×direction×
+envelope×(1+.75×envelope), with hole_weight=.3×strength_multiplier. Pixel
+broadening preserves the peak through nonlinear development.
+
+The halo shares these directed events, with angular widths multiplied by
+1.3+.7×Spread. Its spatial sigma is (.06+.54×Spread²)×size mm (80% core,
+20% tail at 3×sigma). Halo weight is hole_weight×(.25+.75×direction)×
+(.04+.96×(1-exp(-event_field))). Three neighbours merge without nearest-cell
+jumps; longitudinal support fades from one to 1.4 hole pitches. In `rim` mode,
+the halo gain remains 1.4×Strength×smoothstep(0,1,Spread); Spread zero removes
+this broad term. Independent `halo` mode uses 20×Strength and no narrow rim.
+Search reach includes the largest 1.2× halo; the original rim reach already
+covers the new maximum .042 mm radial sigma.
+
+The suspended `shadow`, `band`, `streak` and `burn` styles retain their previous
+algorithms. In particular, the shadow keeps its original sparse, independently
+placed local events; the new regular field only applies to `rim` and `halo`.
 
 Both profiles still use the existing 2800K fog-light weights through the
 film's spectral sensitivity, development, print and scan. No fixed RGB tint

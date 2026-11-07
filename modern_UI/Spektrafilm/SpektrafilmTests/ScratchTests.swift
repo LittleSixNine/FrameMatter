@@ -4,6 +4,52 @@ import XCTest
 
 @MainActor
 final class ScratchTests: XCTestCase {
+    func testRimSoftnessDefaultsPersistenceAndWire() throws {
+        XCTAssertEqual(try JSONDecoder().decode(ScratchSettings.self, from: Data("{}".utf8)).leakSoftness, 0)
+        var p = FilmParams.default
+        p.filmEdge.active = true
+        p.lightLeaks.active = true
+        p.scratches.active = true
+        let before = p
+        p.lightLeaks.rimSoftness = 0.7
+        XCTAssertEqual(p.fullDelta["scratch_leak_softness"], .double(0.7))
+        XCTAssertEqual(p.delta(from: before).layers, [.shoot])
+        XCTAssertEqual(try JSONDecoder().decode(FilmParams.self, from: JSONEncoder().encode(p)), p)
+        p.lightLeaks.rimSoftness = 2
+        XCTAssertEqual(p.fullDelta["scratch_leak_softness"], .double(1))
+    }
+
+    func testRimCoverageDefaultsPersistenceAndWire() throws {
+        XCTAssertEqual(try JSONDecoder().decode(ScratchSettings.self, from: Data("{}".utf8)).leakCoverage, 0)
+        var p = FilmParams.default
+        p.filmEdge.active = true
+        p.lightLeaks.active = true
+        p.scratches.active = true
+        let before = p
+        p.lightLeaks.rimCoverage = 0.75
+        XCTAssertEqual(p.fullDelta["scratch_leak_coverage"], .double(0.75))
+        XCTAssertEqual(p.delta(from: before).layers, [.shoot])
+        XCTAssertEqual(try JSONDecoder().decode(FilmParams.self, from: JSONEncoder().encode(p)), p)
+        p.lightLeaks.rimCoverage = 2
+        XCTAssertEqual(p.fullDelta["scratch_leak_coverage"], .double(1))
+    }
+
+    func testPerforationStylesPersistenceAndWire() throws {
+        let legacy = try JSONDecoder().decode(ScratchSettings.self, from: Data("{}".utf8))
+        XCTAssertEqual(legacy.leakStyle, .rim)
+        for style in LightLeakStyle.allCases {
+            var p = FilmParams.default
+            p.filmEdge.active = true
+            p.lightLeaks.active = true
+            p.scratches.active = true
+            let before = p
+            p.lightLeaks.style = style
+            XCTAssertEqual(p.fullDelta["scratch_leak_style"], .string(style.rawValue))
+            XCTAssertEqual(try JSONDecoder().decode(FilmParams.self, from: JSONEncoder().encode(p)), p)
+            if style != .rim { XCTAssertEqual(p.delta(from: before).layers, [.shoot]) }
+        }
+    }
+
     func testDustDefaultsPersistenceAndWire() throws {
         let old = try JSONDecoder().decode(ScratchSettings.self, from: Data("{}".utf8))
         XCTAssertEqual(old.dustAmount, 0)
@@ -42,11 +88,12 @@ final class ScratchTests: XCTestCase {
         XCTAssertEqual(white.holes, .white)
         var p = FilmParams.default
         p.filmEdge.active = true
+        p.lightLeaks.active = true
         p.scratches.active = true
         p.scratches.longLines = 0.7
         p.scratches.edgeMarks = 0.6
-        p.scratches.leakStrength = 0.45
-        p.scratches.leakSpread = 0.7
+        p.lightLeaks.rimStrength = 0.45
+        p.lightLeaks.rimSpread = 0.7
         p.scratches.seed = 12345
         XCTAssertEqual(try JSONDecoder().decode(FilmParams.self, from: JSONEncoder().encode(p)), p)
         var encoded = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(p)) as? [String: Any])
@@ -77,6 +124,7 @@ final class ScratchTests: XCTestCase {
         p.filmEdge.active = false
         XCTAssertEqual(p.fullDelta["scratch_active"], .bool(false))
         p.filmEdge.active = true
+        p.lightLeaks.active = true
         for format in FilmEdgeFormat.allCases {
             p.filmEdge.format = format
             XCTAssertEqual(p.fullDelta["scratch_active"], .bool([.f135, .f135Half, .f135FullWidth].contains(format)))

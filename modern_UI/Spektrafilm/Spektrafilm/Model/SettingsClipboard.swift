@@ -74,6 +74,7 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
         // become a group of their own. Until then neither is copied, and the
         // seeds and the resolved text would be the source photograph's anyway.
         "params.filmEdge": "Film Edge: not copied until a group is decided (F10)",
+        "params.lightLeaks": "Perforation light and its saved patterns belong to the photograph",
         "params.scratches": "Film-border wear belongs to the photograph, like Film Edge and Date Back",
         "params.dateBack": "Date Back: not copied until a group is decided (F10)",
         // A half-frame pair's second placement and which frame is which: they

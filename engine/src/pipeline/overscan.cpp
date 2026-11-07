@@ -59,7 +59,11 @@ enum OsP : int {
     P_LEAKS = 200,          // up to kMaxLeaks x (s, side, amp, sigma_s, sigma_t)
     P_PAIR_ADV = 260,       // > 0: the same gate exposed again this far along (a half-frame pair)
     P_SCRATCH_STRENGTH = 261, P_SCRATCH_LONG, P_SCRATCH_SEED, P_SCRATCH_EDGE, P_PERF_LEAK, P_PERF_LEAK_SPREAD, P_FULL_WIDTH, P_DUST_AMOUNT, P_DUST_SIZE, P_DUST_STRENGTH, P_DUST_FULL_FRAME, P_DUST_FIBER_RATIO,
-    P_COUNT = 273
+    P_PERF_LEAK_STYLE = 273,
+    P_PERF_LEAK_COVERAGE = 274,
+    P_PERF_LEAK_SOFTNESS = 275,
+    P_PERF_LEAK_SEED = 276,
+    P_COUNT = 277
 };
 constexpr int kMaxLeaks = 12;
 // How far past each long edge of the film a strip scan reaches, mm.
@@ -932,9 +936,19 @@ void Pipeline::overscan_params_block(std::vector<float>& P) const {
         P[P_SCRATCH_STRENGTH] = float(scratches.strength);
         P[P_SCRATCH_LONG] = float(scratches.long_lines);
         P[P_SCRATCH_EDGE] = float(scratches.edge_marks);
+        P[P_SCRATCH_SEED] = float(uint32_t(scratches.seed) & 0xFFFFFFu);
+    }
+    const bool leak_on = scratches.leak_enabled < 0 ? scratches.active : scratches.leak_enabled > 0;
+    if (leak_on && (L.format == "135" || L.format == "135_half" || L.format == "135_full_67")) {
+        const auto& style = scratches.leak_style;
+        P[P_PERF_LEAK_STYLE] = style == "halo" ? 1.f : style == "shadow" ? 2.f :
+                              style == "band" ? 3.f : style == "streak" ? 4.f : style == "burn" ? 5.f : 0.f;
         P[P_PERF_LEAK] = float(scratches.leak_strength);
         P[P_PERF_LEAK_SPREAD] = float(scratches.leak_spread);
-        P[P_SCRATCH_SEED] = float(uint32_t(scratches.seed) & 0xFFFFFFu);
+        P[P_PERF_LEAK_COVERAGE] = float(scratches.leak_coverage);
+        P[P_PERF_LEAK_SOFTNESS] = float(scratches.leak_softness);
+        const int leak_seed = scratches.leak_seed > 0 ? scratches.leak_seed : scratches.seed;
+        P[P_PERF_LEAK_SEED] = float(uint32_t(leak_seed) & 0xFFFFFFu);
     }
     P[P_FULL_WIDTH] = L.format == "135_full_67" ? 1.0f : 0.0f;
     P[P_CW] = float(L.canvas_w); P[P_CH] = float(L.canvas_h); P[P_PX] = float(L.px);

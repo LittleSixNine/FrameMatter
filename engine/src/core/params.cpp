@@ -166,8 +166,13 @@ const SchemaField kFields[] = {
     {"scratch_long_lines",      "film_render.scratches.long_lines",     F, SHOOT, true, 0, 1, false},
     {"scratch_strength",        "film_render.scratches.strength",       F, SHOOT, true, 0, 1, false},
     {"scratch_edge_marks",      "film_render.scratches.edge_marks",     F, SHOOT, true, 0, 1, false},
+    {"scratch_leak_style",      "film_render.scratches.leak_style",     S, SHOOT, false, 0, 0, false},
+    {"scratch_leak_enabled",    "film_render.scratches.leak_enabled",   I, SHOOT, true, -1, 1, false},
+    {"scratch_leak_seed",       "film_render.scratches.leak_seed",      I, SHOOT, true, 0, 2147483647, false},
     {"scratch_leak_strength",   "film_render.scratches.leak_strength",  F, SHOOT, true, 0, 1, false},
     {"scratch_leak_spread",     "film_render.scratches.leak_spread",    F, SHOOT, true, 0, 1, false},
+    {"scratch_leak_softness",   "film_render.scratches.leak_softness",  F, SHOOT, true, 0, 1, false},
+    {"scratch_leak_coverage",   "film_render.scratches.leak_coverage",  F, SHOOT, true, 0, 1, false},
     {"scratch_dust_amount", "film_render.scratches.dust_amount", F, SHOOT, true, 0, 1, false},
     {"scratch_dust_size", "film_render.scratches.dust_size", F, SHOOT, true, 0, 1, false},
     {"scratch_dust_strength", "film_render.scratches.dust_strength", F, SHOOT, true, 0, 1, false},
@@ -251,6 +256,8 @@ double* float_slot(Params& p, const std::string& path) {
     if (path == "film_render.scratches.edge_marks") return &p.film_render.scratches.edge_marks;
     if (path == "film_render.scratches.leak_strength") return &p.film_render.scratches.leak_strength;
     if (path == "film_render.scratches.leak_spread") return &p.film_render.scratches.leak_spread;
+    if (path == "film_render.scratches.leak_softness") return &p.film_render.scratches.leak_softness;
+    if (path == "film_render.scratches.leak_coverage") return &p.film_render.scratches.leak_coverage;
     if (path == "film_render.scratches.dust_fiber_ratio") return &p.film_render.scratches.dust_fiber_ratio;
     if (path == "film_render.scratches.dust_amount") return &p.film_render.scratches.dust_amount;
     if (path == "film_render.scratches.dust_size") return &p.film_render.scratches.dust_size;
@@ -353,6 +360,7 @@ std::string* str_slot(Params& p, const std::string& path) {
     if (path == "camera.filter") return &p.camera.filter;
     if (path == "camera.scene_latitude.norm") return &p.camera.scene_latitude.norm;
     if (path == "print_render.contrast_mask.scheme") return &p.print_render.contrast_mask.scheme;
+    if (path == "film_render.scratches.leak_style") return &p.film_render.scratches.leak_style;
     if (path == "film_render.overscan.format") return &p.film_render.overscan.format;
     if (path == "film_render.overscan.mode") return &p.film_render.overscan.mode;
     if (path == "film_render.overscan.edge_text") return &p.film_render.overscan.edge_text;
@@ -369,6 +377,8 @@ std::string* str_slot(Params& p, const std::string& path) {
 }
 
 int* int_slot(Params& p, const std::string& path) {
+    if (path == "film_render.scratches.leak_enabled") return &p.film_render.scratches.leak_enabled;
+    if (path == "film_render.scratches.leak_seed") return &p.film_render.scratches.leak_seed;
     if (path == "film_render.scratches.seed") return &p.film_render.scratches.seed;
     if (path == "io.geometry.quarter_turns") return &p.io.geometry.quarter_turns;
     if (path == "io.preview_long_edge") return &p.io.preview_long_edge;
@@ -469,6 +479,21 @@ bool validate_delta(const Json& delta, std::string& error, std::string& param) {
         }
         // A closed set of names is not a range, so `has_range` cannot express
         // it; this, `contrast_mask_scheme` and `scene_latitude_norm` are the enumerated strings.
+        if ((kv.first == "scratch_leak_enabled" || kv.first == "scratch_leak_seed") &&
+            v.as_double() != std::floor(v.as_double())) {
+            error = kv.first + " must be an integer";
+            param = kv.first;
+            return false;
+        }
+        if (kv.first == "scratch_leak_style") {
+            const auto& style = v.as_string();
+            if (style != "rim" && style != "halo" && style != "shadow" &&
+                style != "band" && style != "streak" && style != "burn") {
+                error = "scratch_leak_style must be rim, halo, shadow, band, streak or burn";
+                param = kv.first;
+                return false;
+            }
+        }
         if (kv.first == "camera_filter" && !is_known_camera_filter(v.as_string())) {
             error = "'camera_filter' = '" + v.as_string() +
                     "' is not a camera filter ('' for none, w8, w11, w12, w15, w21, w25, w47, w58)";

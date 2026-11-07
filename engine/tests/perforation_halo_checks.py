@@ -26,11 +26,14 @@ with Engine() as engine:
     clean_rim, _ = render(overscan_holes='black', scratch_leak_strength=0.)
     thin, _ = render(overscan_holes='black', scratch_leak_spread=0.)
     broad, _ = render(overscan_holes='black', scratch_leak_spread=.5)
+    halo_only, _ = render(overscan_holes='black', scratch_leak_style='halo', scratch_leak_spread=.5)
+    halo_delta = np.max(abs(halo_only[..., :3].astype(float) - clean_rim[..., :3]), axis=2)
     delta = np.max(abs(broad[..., :3].astype(float) - thin[..., :3]), axis=2)
     offset = max(3, round(.13 / g['mm_per_px']))
     rim_delta = np.max(abs(thin[..., :3].astype(float) - clean_rim[..., :3]), axis=2)
     samples = []
     rim_samples = []
+    halo_samples = []
     rim_widths = []
     row_directions = []
     for row in runs(np.flatnonzero(holes.any(axis=1))):
@@ -46,6 +49,7 @@ with Engine() as engine:
             points = [(cx, y0-offset), (cx, y1+offset),
                       (x0-offset, cy), (x1+offset, cy)]
             samples.append([np.median(delta[y-1:y+2, x-1:x+2]) for x, y in points])
+            halo_samples.append([np.median(halo_delta[y-1:y+2, x-1:x+2]) for x, y in points])
             # Actual output, not a duplicated noise formula: compare lit arcs on each side.
             sides = [rim_delta[max(0,y0-2):y0+3, x0:x1+1],
                      rim_delta[y1-2:y1+3, x0:x1+1],
@@ -71,20 +75,31 @@ with Engine() as engine:
     print('upper/lower row lighting agreement:', agreement, flush=True)
     assert agreement > .8, 'the two rows do not share a main light direction'
     rim_samples = np.array(rim_samples)
+    for name, readings in [('rim', rim_samples), ('halo', np.array(halo_samples))]:
+        peaks = readings.max(axis=1)
+        alignment = np.bincount(readings.argmax(axis=1), minlength=4).max() / len(readings)
+        print(name, 'weakest hole:', peaks.min(), 'peak max/min:', peaks.max()/max(peaks.min(),1.),
+              'same-side fraction:', alignment, flush=True)
+        assert peaks.min() > 1000, (name, 'some holes have almost no light')
+        assert peaks.max()/peaks.min() < 2., (name, 'hole strengths vary too much')
+        assert alignment >= .9, (name, 'individual holes point in different directions')
     contrast = (rim_samples.max(axis=1) - rim_samples.min(axis=1)) / np.maximum(rim_samples.max(axis=1), 1.)
     print('median within-hole rim contrast:', np.median(contrast), flush=True)
     assert np.median(contrast) > .7, 'rim is still a nearly complete uniform outline'
     assert len(rim_widths) > 8, 'too few visible arcs to measure thickness'
     widths = np.percentile(rim_widths, [10, 90])
     print('visible arc widths, p10/p90 (pixels):', widths, flush=True)
-    assert widths[1]/widths[0] > 1.6, 'visible arcs still have nearly uniform thickness'
+    # A shared base size now varies only ±20% per hole; direction still tapers each arc.
+    assert widths[1]/widths[0] > 1.05, 'visible arcs lost all thickness variation'
     sides = np.median(samples, axis=0)
     print('four-side broad halo (16-bit output):', sides, flush=True)
     # Local lights intentionally leave some sides dark; each side must still be reachable.
     assert np.max(samples, axis=0).min() > 257, 'broad halo cannot reach all four sides'
     correlation = np.corrcoef(rim_samples.max(axis=1), np.max(samples, axis=1))[0, 1]
     print('rim/halo per-hole correlation:', correlation, flush=True)
-    assert correlation > .3, 'rim and halo do not share their main light events'
+    # With bounded hole strengths, correlation is dominated by pixel alignment/nonlinear response.
+    agreement = np.mean(rim_samples.argmax(axis=1) == np.array(halo_samples).argmax(axis=1))
+    assert agreement >= .9, 'rim and halo do not share their main lit side'
     inside = holes.copy()
     for axis in (0, 1):
         for shift in (-8, 8):

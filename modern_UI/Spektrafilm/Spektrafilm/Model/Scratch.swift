@@ -1,5 +1,20 @@
 import Foundation
 
+enum PerforationAppearance: String, Codable, CaseIterable, Sendable {
+    case rim, halo, shadow, band, streak, burn
+
+    @MainActor var title: String {
+        switch self {
+        case .rim: L("Fine rim", zh: "贴孔细亮边")
+        case .halo: L("Soft halo", zh: "孔外柔软色晕")
+        case .shadow: L("Dark transition", zh: "孔旁暗色过渡")
+        case .band: L("Continuous band", zh: "整排连续色带")
+        case .streak: L("Independent streak", zh: "独立条纹")
+        case .burn: L("Edge burn", zh: "强烈片边曝光")
+        }
+    }
+}
+
 struct ScratchSettings: Codable, Equatable, Sendable {
     var active = false
     var longLines = 0.4
@@ -7,6 +22,9 @@ struct ScratchSettings: Codable, Equatable, Sendable {
     var edgeMarks = 0.35
     var leakStrength = 0.0
     var leakSpread = 0.5
+    var leakSoftness = 0.0
+    var leakCoverage = 0.0
+    var leakStyle = PerforationAppearance.rim
     var dustAmount = 0.0
     var dustSize = 0.5
     var dustStrength = 0.5
@@ -26,6 +44,9 @@ struct ScratchSettings: Codable, Equatable, Sendable {
         edgeMarks = try c.decodeIfPresent(Double.self, forKey: .edgeMarks) ?? d.edgeMarks
         leakStrength = try c.decodeIfPresent(Double.self, forKey: .leakStrength) ?? d.leakStrength
         leakSpread = try c.decodeIfPresent(Double.self, forKey: .leakSpread) ?? d.leakSpread
+        leakSoftness = try c.decodeIfPresent(Double.self, forKey: .leakSoftness) ?? d.leakSoftness
+        leakCoverage = try c.decodeIfPresent(Double.self, forKey: .leakCoverage) ?? d.leakCoverage
+        leakStyle = try c.decodeIfPresent(PerforationAppearance.self, forKey: .leakStyle) ?? d.leakStyle
         dustAmount = try c.decodeIfPresent(Double.self, forKey: .dustAmount) ?? d.dustAmount
         dustSize = try c.decodeIfPresent(Double.self, forKey: .dustSize) ?? d.dustSize
         dustStrength = try c.decodeIfPresent(Double.self, forKey: .dustStrength) ?? d.dustStrength
@@ -44,8 +65,6 @@ struct ScratchSettings: Codable, Equatable, Sendable {
             ("scratch_long_lines", .double(longLines.clamped(to: Self.amountRange)), .shoot),
             ("scratch_strength", .double(strength.clamped(to: Self.amountRange)), .shoot),
             ("scratch_edge_marks", .double(edgeMarks.clamped(to: Self.amountRange)), .shoot),
-            ("scratch_leak_strength", .double(leakStrength.clamped(to: Self.amountRange)), .shoot),
-            ("scratch_leak_spread", .double(leakSpread.clamped(to: Self.amountRange)), .shoot),
             ("scratch_dust_amount", .double(dustAmount.clamped(to: Self.amountRange)), .shoot),
             ("scratch_dust_size", .double(dustSize.clamped(to: Self.amountRange)), .shoot),
             ("scratch_dust_strength", .double(dustStrength.clamped(to: Self.amountRange)), .shoot),

@@ -115,7 +115,7 @@ final class ParamsTests: XCTestCase {
                                   // RFC-032/031 (API-SPEC §13), native-only:
                                   // the two switches always; the rest only
                                   // while each is on (`FilmEdgeTests`).
-                                  "overscan_active", "date_imprint_active", "scratch_active",
+                                  "overscan_active", "date_imprint_active", "scratch_active", "scratch_leak_enabled",
                                   // Native-only (API-SPEC §14): the CC a unit
                                   // of the two filter shifts is. Sent always;
                                   // without it the Enlarger's filters were a

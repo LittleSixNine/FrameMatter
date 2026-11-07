@@ -33,7 +33,11 @@ enum : uint {
     P_LEAKS = 200,          // up to 12 x (s, side, amp, sigma_s, sigma_t)
     P_PAIR_ADV = 260,       // > 0: the same gate exposed again this far along (a half-frame pair)
     P_SCRATCH_STRENGTH = 261, P_SCRATCH_LONG, P_SCRATCH_SEED, P_SCRATCH_EDGE, P_PERF_LEAK, P_PERF_LEAK_SPREAD, P_FULL_WIDTH, P_DUST_AMOUNT, P_DUST_SIZE, P_DUST_STRENGTH, P_DUST_FULL_FRAME, P_DUST_FIBER_RATIO,
-    P_COUNT = 273
+    P_PERF_LEAK_STYLE = 273,
+    P_PERF_LEAK_COVERAGE = 274,
+    P_PERF_LEAK_SOFTNESS = 275,
+    P_PERF_LEAK_SEED = 276,
+    P_COUNT = 277
 };
 constant uint kQStride = 10u;
 
@@ -157,6 +161,10 @@ static float3 perforation_light(float2 st, device const float* P, int nearest, u
     const uint row_seed = seed ^ (row_top ? 0xA101u : 0xB202u);
     const uint hole = hash_u(uint(nearest * 2 + (row_top ? 0 : 1)) * 0x9E3779B9u ^ uint(P[P_PERF_SEED]));
     const uint rim_seed = row_seed ^ hole;
+    const bool regular = int(P[P_PERF_LEAK_STYLE]) <= 1;
+    const float coverage = int(P[P_PERF_LEAK_STYLE]) == 0 ? P[P_PERF_LEAK_COVERAGE] : 0.0f;
+    const float shared_angle = 2.0f * M_PI_F * hash_f(0, seed ^ 0x14u);
+    const float size = regular ? 0.8f + 0.4f * hash_f(0, rim_seed ^ 0x18u) : 1.0f;
     const bool top = st.y < 0.5f * P[P_FILM_W];
     const float2 half_size = 0.5f * float2(P[P_PERF_W], P[P_PERF_H]);
     const float2 center = float2(phase + float(nearest) * pitch + half_size.x,
@@ -166,17 +174,21 @@ static float3 perforation_light(float2 st, device const float* P, int nearest, u
     const float spread = P[P_PERF_LEAK_SPREAD];
     float rim_field = 0.0f, halo_field = 0.0f, thickness_sum = 0.0f;
     // Seeded light events, like spool leaks; wrapped distances have no seam around the outline.
-    const int count = 1 + min(2, int(3.0f * hash_f(0, rim_seed ^ 0x10u)));
+    const int count = regular ? 3 : 1 + min(2, int(3.0f * hash_f(0, rim_seed ^ 0x10u)));
     for (int k = 0; k < count; ++k) {
-        const float position = hash_f(k, rim_seed ^ 0x11u);
-        const float width = 0.035f + 0.09f * hash_f(k, rim_seed ^ 0x12u);
-        const float amplitude = exp2(-0.7f + 1.4f * hash_f(k, rim_seed ^ 0x13u));
-        const float du = min(abs(u - position), 1.0f - abs(u - position));
+        // Every hole has a main arc in the same direction; small shoulders vary its shape.
+        const float position = regular ? shared_angle * (0.5f / M_PI_F) + 0.5f +
+            (k == 0 ? 0.0f : (k == 1 ? -0.10f : 0.10f)) : hash_f(k, rim_seed ^ 0x11u);
+        const float width = regular ? (k == 0 ? 0.12f : 0.055f) * size * (1.0f + 3.0f * coverage) :
+            0.035f + 0.09f * hash_f(k, rim_seed ^ 0x12u);
+        const float amplitude = regular ? (k == 0 ? 1.0f : 0.1f + 0.1f * hash_f(k, rim_seed ^ 0x13u)) :
+            exp2(-0.7f + 1.4f * hash_f(k, rim_seed ^ 0x13u));
+        const float turn = u - position - floor(u - position + 0.5f);
+        const float du = regular ? abs(turn) : min(abs(u - position), 1.0f - abs(u - position));
         const float x = du / width;
         const float soft_x = du / (width * (1.3f + 0.7f * spread));
         const float event = amplitude * exp(-0.5f * x * x);
         // Each light event has its own thickness, tapering smoothly along the arc.
-        const float turn = u - position - floor(u - position + 0.5f);
         const float shift = 1.2f * (hash_f(k, rim_seed ^ 0x19u) - 0.5f);
         const float taper_x = turn / width + shift;
         const float sigma = 0.007f + 0.058f * pow(hash_f(k, rim_seed ^ 0x18u), 2.0f);
@@ -185,31 +197,35 @@ static float3 perforation_light(float2 st, device const float* P, int nearest, u
         halo_field += amplitude * exp(-0.5f * soft_x * soft_x);
     }
     // The scratch envelope's smooth threshold makes lit arcs fade to genuinely unlit stretches.
-    const float envelope = smoothstep(0.15f, 0.85f, rim_field);
+    const float arc = smoothstep(0.15f, 0.85f, rim_field);
+    const float envelope = mix(arc, 0.35f + 0.65f * arc, coverage);
     const float q_radius = P[P_PERF_R];
     const float2 q = abs(local) - (half_size - q_radius);
     const float2 outside = max(q, 0.0f);
     const float2 normal = length(outside) > 1e-5f ? normalize(outside) * sign(local)
         : (q.x > q.y ? float2(sign(local.x), 0.0f) : float2(0.0f, sign(local.y)));
-    // Both rows share a saved strip direction; only a small local deviation remains.
-    const float angle = 2.0f * M_PI_F * hash_f(0, seed ^ 0x14u) +
-                        0.12f * (hash_f(0, rim_seed ^ 0x15u) - 0.5f);
+    const float angle = shared_angle + (regular ? 0.0f :
+                        0.12f * (hash_f(0, rim_seed ^ 0x15u) - 0.5f));
     // As in the scan-wall model, a side facing the light receives more than the opposite side.
-    const float direction = 0.15f + 0.85f * max(0.0f, dot(normal, float2(cos(angle), sin(angle))));
+    const float facing = 0.15f + 0.85f * max(0.0f, dot(normal, float2(cos(angle), sin(angle))));
+    // Broader coverage lifts the back-facing arc without erasing the shared light direction.
+    const float direction = mix(facing, 0.65f + 0.35f * facing, coverage);
     const float presence = hash_f(0, rim_seed ^ 0x16u) < 0.75f ? 1.0f : 0.05f;
     const float trend = 0.4f + 0.6f * value_noise(st.x / (3.0f * pitch), seed);
-    const float hole_weight = presence * (0.35f + 0.65f * hash_f(0, rim_seed ^ 0x17u)) * trend;
+    const float hole_weight = regular ? 0.3f * (0.8f + 0.4f * hash_f(0, rim_seed ^ 0x17u)) :
+        presence * (0.35f + 0.65f * hash_f(0, rim_seed ^ 0x17u)) * trend;
     const float rim_weight = hole_weight * direction * envelope * (1.0f + 0.75f * envelope);
     // A three-neighbour sum merges adjacent halos without nearest-cell amplitude jumps.
     const float radius = length(outside) + min(max(q.x, q.y), 0.0f) - q_radius;
-    const float sigma = 0.06f + 0.54f * spread * spread;
+    const float sigma = (0.06f + 0.54f * spread * spread) * (int(P[P_PERF_LEAK_STYLE]) == 2 ? 2.2f : size);
     const float x = max(radius, 0.0f) / sigma;
     const float halo = 0.8f * exp(-0.5f * x * x) + 0.2f * exp(-0.5f * x * x / 9.0f);
     const float halo_weight = hole_weight * (0.25f + 0.75f * direction) *
                               (0.04f + 0.96f * (1.0f - exp(-halo_field)));
     const float support = 1.0f - smoothstep(pitch, 1.4f * pitch, abs(local.x));
     return float3(rim_weight, halo_weight * halo * support,
-                  thickness_sum / max(rim_field, 1e-8f) * (0.45f + 0.55f * direction));
+                  (regular ? 0.035f * size : thickness_sum / max(rim_field, 1e-8f)) *
+                  (0.45f + 0.55f * direction));
 }
 
 // Keep the real hole SDF for the thin rim; soft light merges from neighbouring holes.
@@ -220,10 +236,60 @@ static float perforation_leak(float2 st, device const float* P) {
     if (d < 0.0f) return 0.0f;
     const float pitch = P[P_PERF_PITCH], phase = P[P_PERF_PHASE];
     const int nearest = int(floor((st.x - phase - 0.5f * P[P_PERF_W]) / pitch + 0.5f));
-    const uint seed = uint(P[P_SCRATCH_SEED]) ^ 0x1EAFu;
+    const uint seed = uint(P[P_PERF_LEAK_SEED]) ^ 0x1EAFu;
     const float spread = P[P_PERF_LEAK_SPREAD];
-    const float max_sigma = sqrt(0.065f * 0.065f + 0.0961f * P[P_PX] * P[P_PX]);
-    const float reach = spread > 0.0f ? 18.0f * (0.06f + 0.54f * spread * spread) : 0.0325f + 6.0f * max_sigma;
+    const int style = int(P[P_PERF_LEAK_STYLE]);
+    const float strength = P[P_PERF_LEAK];
+    // Other appearances reuse the edge fog's smooth noise and spool leaks' exposure profiles.
+    if (style == 3 || style == 5) {
+        const bool top = st.y < 0.5f * P[P_FILM_W];
+        const float edge = max(0.0f, min(st.y, P[P_FILM_W] - st.y));
+        const uint side_seed = seed ^ (top ? 0x301u : 0x502u);
+        const float slow = value_noise(st.x / (3.0f * pitch), side_seed);
+        if (style == 3) {
+            const float center = P[P_PERF_EDGE] + 0.5f * P[P_PERF_H] + 0.7f * (slow - 0.5f);
+            const float sigma = (0.18f + 1.5f * spread * spread) * (0.65f + 0.7f * slow);
+            const float x = (edge - center) / sigma;
+            return 18.0f * strength * (0.45f + 0.55f * slow) *
+                   (0.8f * exp(-0.5f * x*x) + 0.2f * exp(-0.5f * x*x / 9.0f));
+        }
+        // A wandering exposure front merges the hole lobes into an irregular edge burn.
+        const float tongues = value_noise((st.x - 0.65f * edge) / (0.28f * pitch), side_seed ^ 0x71u);
+        const float front = 0.25f + (1.0f + 7.0f * spread) * slow * slow +
+                            (0.5f + 6.0f * spread) * pow(tongues, 3.0f);
+        const float x = max(0.0f, edge - front) / (0.2f + 0.75f * spread);
+        const bool primary = hash_f(0, seed ^ 0x59u) < 0.5f;
+        const float side_weight = top == primary ? 1.0f : 0.3f;
+        return 48.0f * strength * (0.35f + 0.65f * strength) * side_weight *
+               (0.15f + 0.85f * slow * slow) *
+               (exp(-0.5f*x*x) + 0.03f * exp(-edge / (1.0f + 3.0f*spread)));
+    }
+    if (style == 4) {
+        float field = 0.0f;
+        const int count = 1 + int(hash_f(0, seed ^ 0x40u) > 0.65f);
+        for (int k = 0; k < count; ++k) {
+            const float center = P[P_GS0] + (0.05f + 0.9f * hash_f(k, seed ^ 0x41u)) * P[P_GW];
+            const float drift = 0.35f * (value_noise(st.y / 6.0f, seed ^ uint(k)) - 0.5f);
+            const float sigma = 0.025f + 0.45f * spread * spread;
+            const float x = (st.x - center - drift) / sqrt(sigma*sigma + 0.0961f*P[P_PX]*P[P_PX]);
+            const float envelope = 0.4f + 0.6f * value_noise(st.y / 9.0f, seed ^ 0x42u ^ uint(k));
+            field += envelope * (exp(-0.5f*x*x) + 0.12f*exp(-0.5f*x*x/16.0f));
+        }
+        return 24.0f * strength * field;
+    }
+    if (style == 1 || style == 2) {
+        const float reach = 18.0f * (0.06f + 0.54f * spread * spread) * (style == 2 ? 2.2f : 1.2f);
+        if (d > reach) return 0.0f;
+        const float halo = perforation_light(st, P, nearest, seed).y +
+                           perforation_light(st, P, nearest - 1, seed).y +
+                           perforation_light(st, P, nearest + 1, seed).y;
+        return (style == 2 ? 18.0f : 20.0f) * strength * halo;
+    }
+    const float softness = P[P_PERF_LEAK_SOFTNESS];
+    const float max_soft_sigma = 0.384f * softness * softness;
+    const float max_sigma = sqrt(0.065f * 0.065f + max_soft_sigma * max_soft_sigma + 0.0961f * P[P_PX] * P[P_PX]);
+    const float rim_reach = 0.0325f + 6.0f * max_sigma;
+    const float reach = spread > 0.0f ? max(rim_reach, 21.6f * (0.06f + 0.54f * spread * spread)) : rim_reach;
     if (d > reach) return 0.0f; // Skip negligible Gaussian tails before generating light events.
     const float3 light = perforation_light(st, P, nearest, seed);
     const float sigma = max(light.z, 0.003f);
@@ -231,6 +297,14 @@ static float perforation_leak(float2 st, device const float* P) {
     const float rim_x = (d - 0.5f * sigma) / rim_sigma;
     // Keep the exposure peak: normalising before nonlinear development dims small previews.
     float amount = 6.00f * P[P_PERF_LEAK] * light.x * exp(-0.5f * rim_x * rim_x);
+    if (softness > 0.0f) {
+        const float soft_sigma = 0.32f * softness * softness * (sigma / 0.035f);
+        const float width = sqrt(rim_sigma * rim_sigma + soft_sigma * soft_sigma);
+        const float x = (d - 0.5f * sigma) / width;
+        // Retain a bright core; peak-preserving soft exposure avoids a dim blur after development.
+        amount = (1.0f - 0.55f * softness) * amount +
+                 6.00f * P[P_PERF_LEAK] * light.x * 0.85f * softness * exp(-0.5f * x * x);
+    }
     if (spread <= 0.0f) return amount;
     const float halo = light.y + perforation_light(st, P, nearest - 1, seed).y +
                                 perforation_light(st, P, nearest + 1, seed).y;
@@ -293,7 +367,10 @@ kernel void spk_overscan_canvas(device const float* frame [[buffer(0)]],
             const float ds = st.x - P[b];
             fog += P[b + 2u] * exp(-ds * ds / (2.0f * P[b + 3u] * P[b + 3u])) * exp(-dd / P[b + 4u]);
         }
-        fog += perforation_leak(st, P);
+        const float appearance = perforation_leak(st, P);
+        // Shadow is attenuation of scene exposure, never negative light or a changed film profile.
+        if (int(P[P_PERF_LEAK_STYLE]) == 2) e *= exp2(-appearance);
+        else fog += appearance;
         e += fog * float3(P[P_FOG_R], P[P_FOG_G], P[P_FOG_B]);
     }
     out[3u * i] = e.x;

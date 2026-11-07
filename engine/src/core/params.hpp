@@ -246,10 +246,14 @@ struct ScratchParams {
     bool active = false;
     double long_lines = 0.4, strength = 0.35, edge_marks = 0.35;
     double leak_strength = 0.0, leak_spread = 0.5;
+    double leak_coverage = 0.0, leak_softness = 0.0;
+    std::string leak_style = "rim";
     double dust_amount = 0.0, dust_size = 0.5, dust_strength = 0.5;
     bool dust_full_frame = false;
     double dust_fiber_ratio = 0.25;
     int seed = 1;
+    int leak_enabled = -1; // -1 retains legacy scratch_active gating for older native clients.
+    int leak_seed = 0;     // 0 reuses the legacy scratch seed.
 };
 
 struct FilmRenderParams {

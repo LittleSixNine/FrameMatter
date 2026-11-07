@@ -169,6 +169,7 @@
 		B74BF4FE2C8992579B3BCA1E /* Geometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Geometry.swift"; sourceTree = "<group>"; };
 		283E17892DB9D0520A803A34 /* HalfFramePair.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HalfFramePair.swift"; sourceTree = "<group>"; };
 		D9A5D4FB130D7DA5C1364A10 /* Latitude.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Latitude.swift"; sourceTree = "<group>"; };
+		92B323B5F485830133567446 /* LightLeaks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LightLeaks.swift"; sourceTree = "<group>"; };
 		BD3FA299D7EB9C019C5EB676 /* Mask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Mask.swift"; sourceTree = "<group>"; };
 		2AFE54D96D2505F69D272CBC /* Params.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Params.swift"; sourceTree = "<group>"; };
 		7CF62F1A128C34E4124DFC38 /* Scratch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Scratch.swift"; sourceTree = "<group>"; };
@@ -193,6 +194,7 @@
 				B74BF4FE2C8992579B3BCA1E /* Geometry.swift */,
 				283E17892DB9D0520A803A34 /* HalfFramePair.swift */,
 				D9A5D4FB130D7DA5C1364A10 /* Latitude.swift */,
+				92B323B5F485830133567446 /* LightLeaks.swift */,
 				BD3FA299D7EB9C019C5EB676 /* Mask.swift */,
 				2AFE54D96D2505F69D272CBC /* Params.swift */,
 				7CF62F1A128C34E4124DFC38 /* Scratch.swift */,
@@ -215,6 +217,7 @@
 		D683EAE35F9582121B7AA62C /* FilmSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FilmSection.swift"; sourceTree = "<group>"; };
 		A16627B3ED33AA97A8BDE08D /* GrainSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GrainSection.swift"; sourceTree = "<group>"; };
 		24D43BD7B9CBB43662F0CD4F /* LatitudeSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LatitudeSection.swift"; sourceTree = "<group>"; };
+		32FAE04AFF5B4F692F5AE6D1 /* LightLeakSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LightLeakSection.swift"; sourceTree = "<group>"; };
 		D8C62B445BB801BDB4827701 /* MasksSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MasksSection.swift"; sourceTree = "<group>"; };
 		AAE77600C4DB8964A93036B8 /* NavigatorSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NavigatorSection.swift"; sourceTree = "<group>"; };
 		6F4A151AC41077EF596D04AE /* PairSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PairSection.swift"; sourceTree = "<group>"; };
@@ -234,6 +237,7 @@
 				D683EAE35F9582121B7AA62C /* FilmSection.swift */,
 				A16627B3ED33AA97A8BDE08D /* GrainSection.swift */,
 				24D43BD7B9CBB43662F0CD4F /* LatitudeSection.swift */,
+				32FAE04AFF5B4F692F5AE6D1 /* LightLeakSection.swift */,
 				D8C62B445BB801BDB4827701 /* MasksSection.swift */,
 				AAE77600C4DB8964A93036B8 /* NavigatorSection.swift */,
 				6F4A151AC41077EF596D04AE /* PairSection.swift */,
@@ -390,6 +394,7 @@
 		250924B2CD408CCB39ED0A18 /* HalfFramePairTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HalfFramePairTests.swift"; sourceTree = "<group>"; };
 		D21FA14465ADF0C32032374E /* LayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LayoutTests.swift"; sourceTree = "<group>"; };
 		CE8421F06D7963E4B9992184 /* LicensingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LicensingTests.swift"; sourceTree = "<group>"; };
+		8D2BF696F94ED8B714C5BBD3 /* LightLeakTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LightLeakTests.swift"; sourceTree = "<group>"; };
 		CF61BA9413EC99F2810BB4DE /* MaskTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MaskTests.swift"; sourceTree = "<group>"; };
 		FEC7699D811DD42DBF704EEE /* OpenPathTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OpenPathTests.swift"; sourceTree = "<group>"; };
 		7D4B68041F25E6391CDA5225 /* PanelResizeWiringTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PanelResizeWiringTests.swift"; sourceTree = "<group>"; };
@@ -457,6 +462,7 @@
 				250924B2CD408CCB39ED0A18 /* HalfFramePairTests.swift */,
 				D21FA14465ADF0C32032374E /* LayoutTests.swift */,
 				CE8421F06D7963E4B9992184 /* LicensingTests.swift */,
+				8D2BF696F94ED8B714C5BBD3 /* LightLeakTests.swift */,
 				CF61BA9413EC99F2810BB4DE /* MaskTests.swift */,
 				FEC7699D811DD42DBF704EEE /* OpenPathTests.swift */,
 				7D4B68041F25E6391CDA5225 /* PanelResizeWiringTests.swift */,
@@ -676,6 +682,7 @@
 		CFAECA6E80EF89F7EF82465B /* Geometry.swift */ = {isa = PBXBuildFile; fileRef = B74BF4FE2C8992579B3BCA1E; };
 		D6601F758BA4C4FA9AA33532 /* HalfFramePair.swift */ = {isa = PBXBuildFile; fileRef = 283E17892DB9D0520A803A34; };
 		BAAAC48691BBE6D8BA752FD5 /* Latitude.swift */ = {isa = PBXBuildFile; fileRef = D9A5D4FB130D7DA5C1364A10; };
+		3BD68BB443433158F8AC33B1 /* LightLeaks.swift */ = {isa = PBXBuildFile; fileRef = 92B323B5F485830133567446; };
 		A19ACBE78BD64D5DB3012243 /* Mask.swift */ = {isa = PBXBuildFile; fileRef = BD3FA299D7EB9C019C5EB676; };
 		6822B6E3426D49DCE0044D28 /* Params.swift */ = {isa = PBXBuildFile; fileRef = 2AFE54D96D2505F69D272CBC; };
 		D0FDAFBDB9AD3B9BB4B23176 /* Scratch.swift */ = {isa = PBXBuildFile; fileRef = 7CF62F1A128C34E4124DFC38; };
@@ -694,6 +701,7 @@
 		3A77169194DAFBA07FFC2E92 /* FilmSection.swift */ = {isa = PBXBuildFile; fileRef = D683EAE35F9582121B7AA62C; };
 		58B195CD4228960E56D20D86 /* GrainSection.swift */ = {isa = PBXBuildFile; fileRef = A16627B3ED33AA97A8BDE08D; };
 		3F6884FA6F264661816CB578 /* LatitudeSection.swift */ = {isa = PBXBuildFile; fileRef = 24D43BD7B9CBB43662F0CD4F; };
+		FB5CF196E82DAD4087463A4C /* LightLeakSection.swift */ = {isa = PBXBuildFile; fileRef = 32FAE04AFF5B4F692F5AE6D1; };
 		3A4E60CE3031E48A48519664 /* MasksSection.swift */ = {isa = PBXBuildFile; fileRef = D8C62B445BB801BDB4827701; };
 		0CCA806D2F95EB2D2949855E /* NavigatorSection.swift */ = {isa = PBXBuildFile; fileRef = AAE77600C4DB8964A93036B8; };
 		6D4F7CDBC30F2321A525E63F /* PairSection.swift */ = {isa = PBXBuildFile; fileRef = 6F4A151AC41077EF596D04AE; };
@@ -812,6 +820,7 @@
 				CFAECA6E80EF89F7EF82465B /* Geometry.swift */,
 				D6601F758BA4C4FA9AA33532 /* HalfFramePair.swift */,
 				BAAAC48691BBE6D8BA752FD5 /* Latitude.swift */,
+				3BD68BB443433158F8AC33B1 /* LightLeaks.swift */,
 				A19ACBE78BD64D5DB3012243 /* Mask.swift */,
 				6822B6E3426D49DCE0044D28 /* Params.swift */,
 				D0FDAFBDB9AD3B9BB4B23176 /* Scratch.swift */,
@@ -830,6 +839,7 @@
 				3A77169194DAFBA07FFC2E92 /* FilmSection.swift */,
 				58B195CD4228960E56D20D86 /* GrainSection.swift */,
 				3F6884FA6F264661816CB578 /* LatitudeSection.swift */,
+				FB5CF196E82DAD4087463A4C /* LightLeakSection.swift */,
 				3A4E60CE3031E48A48519664 /* MasksSection.swift */,
 				0CCA806D2F95EB2D2949855E /* NavigatorSection.swift */,
 				6D4F7CDBC30F2321A525E63F /* PairSection.swift */,
@@ -941,6 +951,7 @@
 		CDF7D03174AE7319814EB8D7 /* HalfFramePairTests.swift */ = {isa = PBXBuildFile; fileRef = 250924B2CD408CCB39ED0A18; };
 		79A4427684DDABB45B19288D /* LayoutTests.swift */ = {isa = PBXBuildFile; fileRef = D21FA14465ADF0C32032374E; };
 		302F9DB7C81BCB801B293621 /* LicensingTests.swift */ = {isa = PBXBuildFile; fileRef = CE8421F06D7963E4B9992184; };
+		C30A1F29D1EAA8457B067F8F /* LightLeakTests.swift */ = {isa = PBXBuildFile; fileRef = 8D2BF696F94ED8B714C5BBD3; };
 		6FA174F7F62365ED82151A39 /* MaskTests.swift */ = {isa = PBXBuildFile; fileRef = CF61BA9413EC99F2810BB4DE; };
 		DB25777DBD5A1C4613A4AB95 /* OpenPathTests.swift */ = {isa = PBXBuildFile; fileRef = FEC7699D811DD42DBF704EEE; };
 		CCB54740C6B298D2CB260013 /* PanelResizeWiringTests.swift */ = {isa = PBXBuildFile; fileRef = 7D4B68041F25E6391CDA5225; };
@@ -1030,6 +1041,7 @@
 		82850D4001E4C1B1D9E56E9C /* Geometry.swift */ = {isa = PBXBuildFile; fileRef = B74BF4FE2C8992579B3BCA1E; };
 		716C5FBA2FB4669533310CF0 /* HalfFramePair.swift */ = {isa = PBXBuildFile; fileRef = 283E17892DB9D0520A803A34; };
 		0A290D67F9F65D4D1C54E33A /* Latitude.swift */ = {isa = PBXBuildFile; fileRef = D9A5D4FB130D7DA5C1364A10; };
+		D8511DB6366DA94C7F73C7E6 /* LightLeaks.swift */ = {isa = PBXBuildFile; fileRef = 92B323B5F485830133567446; };
 		6B8029673A50DF9EFFE45066 /* Mask.swift */ = {isa = PBXBuildFile; fileRef = BD3FA299D7EB9C019C5EB676; };
 		E90F7C134FA143167A66ED5F /* Params.swift */ = {isa = PBXBuildFile; fileRef = 2AFE54D96D2505F69D272CBC; };
 		4BD9D205D8843746F5730026 /* Scratch.swift */ = {isa = PBXBuildFile; fileRef = 7CF62F1A128C34E4124DFC38; };
@@ -1048,6 +1060,7 @@
 		892D59704DF88006FFC3F195 /* FilmSection.swift */ = {isa = PBXBuildFile; fileRef = D683EAE35F9582121B7AA62C; };
 		54489B0F5D55ABFA2278A02B /* GrainSection.swift */ = {isa = PBXBuildFile; fileRef = A16627B3ED33AA97A8BDE08D; };
 		9E0ED44BB5FBE33CE9F529B1 /* LatitudeSection.swift */ = {isa = PBXBuildFile; fileRef = 24D43BD7B9CBB43662F0CD4F; };
+		673CD577AF93279CA748CED4 /* LightLeakSection.swift */ = {isa = PBXBuildFile; fileRef = 32FAE04AFF5B4F692F5AE6D1; };
 		917B38BDBB45954BEDEC818C /* MasksSection.swift */ = {isa = PBXBuildFile; fileRef = D8C62B445BB801BDB4827701; };
 		6AAD8973CE3B98DD57053895 /* NavigatorSection.swift */ = {isa = PBXBuildFile; fileRef = AAE77600C4DB8964A93036B8; };
 		E70873AE9A7409C519D329AB /* PairSection.swift */ = {isa = PBXBuildFile; fileRef = 6F4A151AC41077EF596D04AE; };
@@ -1140,6 +1153,7 @@
 				CDF7D03174AE7319814EB8D7 /* HalfFramePairTests.swift */,
 				79A4427684DDABB45B19288D /* LayoutTests.swift */,
 				302F9DB7C81BCB801B293621 /* LicensingTests.swift */,
+				C30A1F29D1EAA8457B067F8F /* LightLeakTests.swift */,
 				6FA174F7F62365ED82151A39 /* MaskTests.swift */,
 				DB25777DBD5A1C4613A4AB95 /* OpenPathTests.swift */,
 				CCB54740C6B298D2CB260013 /* PanelResizeWiringTests.swift */,
@@ -1229,6 +1243,7 @@
 				82850D4001E4C1B1D9E56E9C /* Geometry.swift */,
 				716C5FBA2FB4669533310CF0 /* HalfFramePair.swift */,
 				0A290D67F9F65D4D1C54E33A /* Latitude.swift */,
+				D8511DB6366DA94C7F73C7E6 /* LightLeaks.swift */,
 				6B8029673A50DF9EFFE45066 /* Mask.swift */,
 				E90F7C134FA143167A66ED5F /* Params.swift */,
 				4BD9D205D8843746F5730026 /* Scratch.swift */,
@@ -1247,6 +1262,7 @@
 				892D59704DF88006FFC3F195 /* FilmSection.swift */,
 				54489B0F5D55ABFA2278A02B /* GrainSection.swift */,
 				9E0ED44BB5FBE33CE9F529B1 /* LatitudeSection.swift */,
+				673CD577AF93279CA748CED4 /* LightLeakSection.swift */,
 				917B38BDBB45954BEDEC818C /* MasksSection.swift */,
 				6AAD8973CE3B98DD57053895 /* NavigatorSection.swift */,
 				E70873AE9A7409C519D329AB /* PairSection.swift */,

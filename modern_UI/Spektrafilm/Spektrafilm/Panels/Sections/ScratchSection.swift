@@ -25,11 +25,6 @@ struct ScratchSection: View {
                 RailSubgroup {
                     amount(L("Strength", zh: "强度"), \.edgeMarks, zero: 0.35)
                 }
-                RailSubhead(L("Perforation light leaks", zh: "齿孔漏光"))
-                RailSubgroup {
-                    amount(L("Strength", zh: "强度"), \.leakStrength, zero: 0)
-                    amount(L("Spread", zh: "扩散范围"), \.leakSpread, zero: 0.5)
-                }
                 RailSubhead(L("Dust", zh: "灰尘"))
                 RailSubgroup {
                     amount(L("Amount", zh: "数量"), \.dustAmount, zero: 0)
@@ -49,7 +44,7 @@ struct ScratchSection: View {
                 HStack(spacing: 0) {
                     RowLabel(L("Pattern", zh: "样式"))
                     DiceButton(title: L("Another", zh: "换一组"),
-                               help: L("Change scratches, edge marks, light leaks and dust while keeping hole centres and pitch", zh: "更换划痕、孔缘痕迹、漏光及灰尘分布，保留齿孔中心与排列"), fill: true) {
+                               help: L("Change scratches, edge marks and dust while keeping hole centres and pitch", zh: "更换划痕、孔缘痕迹及灰尘分布，保留齿孔中心与排列"), fill: true) {
                         var p = session.params
                         p.scratches.seed = FilmEdgeSection.another(than: settings.seed, in: ScratchSettings.seedRange)
                         session.params = p
@@ -60,8 +55,8 @@ struct ScratchSection: View {
             .rowEnabled(settings.active && available,
                         because: available ? L("Switch Scratches & Dust on in its header.", zh: "先在标题栏开启划痕与灰尘。")
                             : L("Enable 135, half-frame or full-width Film Edge first.", zh: "需先开启 135、半格或全宽片边。"))
-            Text(available ? L("Film leader fixed left. Another changes all patterns. Wide light leaks may reach the picture.",
-                   zh: "片头固定向左；“换一组”更换所有痕迹。漏光范围较大时会进入画幅。")
+            Text(available ? L("Film leader fixed left. Another changes wear and dust; light leaks have their own controls.",
+                   zh: "片头固定向左；“换一组”仅更换磨损和灰尘，漏光独立设置。")
                 : L("Enable 135, half-frame or full-width Film Edge first.", zh: "需先开启 135、半格或全宽片边，才能显示划痕与灰尘。"))
                 .font(Theme.Font.caption).foregroundStyle(Theme.Ink.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
