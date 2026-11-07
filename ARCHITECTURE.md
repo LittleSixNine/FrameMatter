@@ -419,10 +419,20 @@ surface applies the geometry itself.
 - **Files land whole.** `Exporter.write` finalises to a hidden
   `.<name>.partial-*` and moves it into place, so a crash never leaves a
   truncated file that a `.skip` recipe would keep as "already exists".
-- **The source EXIF rides through** as a side channel; ImageIO rewrites the
-  pixel dimensions to the file's own. Only typed shooting values ever make
-  pixels — the date back's text and the gate's f-number (`ShootingData`,
-  RFC-033, answer E10); the dictionary itself never reaches the engine.
+- **Source metadata is a side channel.** Export snapshots TIFF camera identity,
+  EXIF, GPS, IPTC, lens auxiliary information and descriptive XMP from the
+  selected source before awaiting pixels. `ExportMetadata` supplements the three
+  EXIF timezone offsets with bounded TIFF/ARW or JPEG APP1 reads when ImageIO
+  omits them. Output dimensions/orientation/ICC belong to the exported pixels;
+  old thumbnails, RAW layout and HDR gain-map references do not travel. Some
+  ImageIO-unsupported GPS descriptors and the original software value are kept
+  under the `fm` source-metadata XMP namespace. Typed shooting values still feed
+  the date back and gate (`ShootingData`); the full metadata never enters the engine.
+- **Export feedback is a persistent sheet.** It opens before work with a large
+  progress bar (indeterminate for one frame, completed-frame count for batches),
+  then becomes success, notices, failure or stopped. A fast export still needs
+  Done to dismiss the result; skipped files are not reported as successful writes.
+  Encoding and atomic file writing run off the main actor so the sheet can animate.
 
 ### 7.9 Agents (RFC-026)
 

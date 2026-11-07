@@ -147,6 +147,7 @@ enum Exporter {
         // inside a package the user asked to be one TIFF and one cube. One
         // level up is still "beside" — the same `_prints/` folder every other
         // export's log lands in, under the same name it has today.
+        let sourceMetadata = ExportMetadata(source: session.decoded?.sourceURL ?? source, fallbackEXIF: session.decoded?.sourceEXIF)
         let logAnchor = out
         // Opt-in since 2026-09-26 (`Diagnostics.writeExportJobLog`). The job
         // is still assembled either way: it costs nothing, and the session
@@ -160,11 +161,11 @@ enum Exporter {
         let started = Date()
         do {
             var result = format == .di
-                ? try await exportDigitalIntermediate(session: session, to: out)
+                ? try await exportDigitalIntermediate(session: session, to: out, sourceMetadata: sourceMetadata)
                 : try await exportPrint(session: session, to: out, format: format,
                                         quality: recipe.quality, recipe: recipe,
                                         sessionID: sessionID,
-                                        sourceEXIF: session.decoded?.sourceEXIF)
+                                        sourceMetadata: sourceMetadata)
             // The fallback's reason, if the route did not have one of its own.
             // Merged rather than set, because the DI route has a note of its
             // own (a film/paper mismatch) and losing it to a colour note would
@@ -470,12 +471,13 @@ enum Exporter {
     private static func exportPrint(session: Session, to out: URL, format: ExportFormat,
                                     quality: Double, recipe: ExportRecipe,
                                     sessionID: String,
-                                    sourceEXIF: [CFString: Any]?) async throws -> Result {
+                                    sourceMetadata: ExportMetadata) async throws -> Result {
         let r = try await filePixels(session: session, recipe: recipe, sessionID: sessionID)
         guard let image = r.texture.makeCGImage(space: r.target) else { throw ExportError.noPixels }
         let preview = writesPreviewPage(recipe) ? preview(of: image) : nil
-        try write(image, to: out, format: format, quality: quality, preview: preview,
-                  sourceEXIF: sourceEXIF)
+        _ = try await Task.detached(priority: .userInitiated) {
+            try write(image, to: out, format: format, quality: quality, preview: preview, sourceMetadata: sourceMetadata)
+        }.value
         return Result(urls: [out], note: nil, appliedEV: r.appliedEV, pixels: r.pixels)
     }
 
@@ -496,7 +498,7 @@ enum Exporter {
     ///
     /// Geometry is already in the negative (`node_geometry` runs on the film
     /// side). Post-Dev is not, and must not be: the DI is where a grade starts.
-    private static func exportDigitalIntermediate(session: Session, to out: URL) async throws -> Result {
+    private static func exportDigitalIntermediate(session: Session, to out: URL, sourceMetadata: ExportMetadata) async throws -> Result {
         let di = try await session.client.renderDigitalIntermediate()
         guard let texture = di.texture,
               let cg = texture.makeCGImage(space: CGColorSpaceCreateDeviceRGB())
@@ -504,9 +506,9 @@ enum Exporter {
         let preview = session.renderer.applyCineonView(to: texture)
             .flatMap { $0.makeCGImage() }
             .flatMap { self.preview(of: $0) }
-        var exif = session.decoded?.sourceEXIF
-        exif?[kCGImagePropertyExifColorSpace] = 0xFFFF
-        try write(cg, to: out, format: .tiff, preview: preview, sourceEXIF: exif)
+        _ = try await Task.detached(priority: .userInitiated) {
+            try write(cg, to: out, format: .tiff, preview: preview, sourceMetadata: sourceMetadata)
+        }.value
         let luts = (try? CineonLUT.copyBeside(directory: out.deletingLastPathComponent())) ?? []
         let note = L("Digital Intermediate: Cineon log in ProPhoto primaries, 16-bit and untagged. The two DI-view LUTs beside it (to ProPhoto RGB, to Rec.709) show it as the canvas does.",
                      zh: "数字中间片：ProPhoto 原色的 Cineon 对数，16 位，不嵌入色彩配置。旁边的两个数字中间片视图 LUT（转 ProPhoto RGB、转 Rec.709）按画布的方式显示它。")
@@ -538,9 +540,9 @@ enum Exporter {
     /// worth 16 bits) and keeps its own profile, which is what lets IFD0 stay
     /// untagged.
     @discardableResult
-    static func write(_ image: CGImage, to url: URL, format: ExportFormat,
+    nonisolated static func write(_ image: CGImage, to url: URL, format: ExportFormat,
                       quality: Double = 0.95, preview: CGImage? = nil,
-                      sourceEXIF: [CFString: Any]? = nil) throws -> URL {
+                      sourceEXIF: [CFString: Any]? = nil, sourceMetadata: ExportMetadata? = nil) throws -> URL {
         var cg = image
         let needsEight = format.isEightBit
         if needsEight {
@@ -570,11 +572,23 @@ enum Exporter {
         var props: [CFString: Any] = [:]
         if format == .jpeg { props[kCGImageDestinationLossyCompressionQuality] = quality.clamped(to: 0.1...1) }
         if format == .tiff { props[kCGImagePropertyTIFFDictionary] = [kCGImagePropertyTIFFCompression: 5] }
-        // EXIF is a side channel, never an engine input. Pass the source
-        // dictionary through unchanged; ImageIO owns only the outer file
-        // container and the export's pixels.
-        if let sourceEXIF { props[kCGImagePropertyExifDictionary] = sourceEXIF }
-        CGImageDestinationAddImage(dest, cg, props as CFDictionary)
+        // Keep descriptive source metadata separate from output geometry and colour.
+        // Legacy EXIF-only callers remain supported for synthetic/preview writers.
+        if let sourceMetadata {
+            let metadata = sourceMetadata.output(width: cg.width, height: cg.height)
+            for (key, value) in metadata.properties {
+                if key == kCGImagePropertyTIFFDictionary,
+                   let extra = value as? [CFString: Any] {
+                    var tiff = props[key] as? [CFString: Any] ?? [:]
+                    tiff.merge(extra) { _, new in new }; props[key] = tiff
+                } else { props[key] = value }
+            }
+            props[kCGImageDestinationMergeMetadata] = true
+            CGImageDestinationAddImageAndMetadata(dest, cg, metadata.xmp, props as CFDictionary)
+        } else {
+            if let sourceEXIF { props[kCGImagePropertyExifDictionary] = sourceEXIF }
+            CGImageDestinationAddImage(dest, cg, props as CFDictionary)
+        }
         if let small { CGImageDestinationAddImage(dest, small, nil) }
         guard CGImageDestinationFinalize(dest) else { throw ExportError.write(url) }
         do {
@@ -596,7 +610,7 @@ enum Exporter {
     ///
     /// `size` is the context's, so a caller can ask for a *resample* rather
     /// than a copy — the preview page is the only one that does.
-    private static func redraw(_ cg: CGImage, in space: CGColorSpace, bitsPerComponent: Int,
+    nonisolated private static func redraw(_ cg: CGImage, in space: CGColorSpace, bitsPerComponent: Int,
                                size: CGSize? = nil) -> CGImage? {
         let w = Int(size?.width ?? CGFloat(cg.width))
         let h = Int(size?.height ?? CGFloat(cg.height))

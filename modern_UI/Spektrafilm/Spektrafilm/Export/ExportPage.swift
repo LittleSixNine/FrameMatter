@@ -75,6 +75,8 @@ struct ExportPage: View {
     @State private var filePreview: CGImage?
 
     @State private var running = false
+    @State private var progressPresented = false
+    @State private var exportStatus = ExportRunStatus()
     /// The batch in flight, kept so Stop can cancel it.
     @State private var runTask: Task<Void, Never>?
     @State private var note: ResultNote?
@@ -177,6 +179,10 @@ struct ExportPage: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .onAppear {
             mode = startIn
+        }
+        .allowsHitTesting(!running)
+        .sheet(isPresented: $progressPresented) {
+            ExportProgressSheet(status: exportStatus, stop: { runTask?.cancel() }, done: { progressPresented = false })
         }
         .task(id: proofKey) { await makeProof() }
         .task(id: recipe.wrappedValue.format) { OpenWithCatalog.refresh(for: recipe.wrappedValue.format) }
@@ -1661,12 +1667,15 @@ struct ExportPage: View {
     private func run() {
         guard let r = store.selected, !batch.isEmpty, !running else { return }
         running = true
+        exportStatus = ExportRunStatus(total: batch.count)
+        progressPresented = true
         session.batchExporting = true
         note = nil
         // The file on the pane is about to be replaced by one that does not
         // exist yet; until it does, the render stands.
         filePreview = nil
         runTask = Task {
+            await Task.yield()
             defer { running = false; session.batchExporting = false; runTask = nil }
             let home = session.selection
             let urls = batch
@@ -1687,6 +1696,8 @@ struct ExportPage: View {
             for (i, url) in urls.enumerated() {
                 if Task.isCancelled { stoppedAt = i; break }
                 session.exportProgress = Double(i) / Double(urls.count)
+                exportStatus.processed = i
+                exportStatus.currentFile = url.lastPathComponent
                 // `select`, not `click`: the run has to put each frame on the
                 // canvas — the exporter reads the open frame — and a click
                 // would collapse the picked set to that one frame on the first
@@ -1701,6 +1712,7 @@ struct ExportPage: View {
                     problems.append(L("\(url.lastPathComponent) could not be developed",
                                       zh: "\(url.lastPathComponent) 无法显影")
                                     + (why.map { L(": \($0)", zh: "：\($0)") } ?? L(".", zh: "。")))
+                    exportStatus.failed += 1
                     continue
                 }
                 if Task.isCancelled { stoppedAt = i; break }
@@ -1709,6 +1721,7 @@ struct ExportPage: View {
                 guard session.selection == url else {
                     problems.append(L("\(url.lastPathComponent) was skipped: another frame was opened.",
                                       zh: "已跳过 \(url.lastPathComponent)：打开了另一张图像。"))
+                    exportStatus.failed += 1
                     continue
                 }
                 do {
@@ -1717,15 +1730,18 @@ struct ExportPage: View {
                     switch out {
                     case .wrote(let files, _, let fb):
                         written += files
+                        exportStatus.written += 1
                         if url == home, let first = files.first { shown = first }
                         fellBack = fellBack || fb
                     case .skipped(let existing):
+                        exportStatus.skipped += 1
                         problems.append(L("\(existing.lastPathComponent) already exists — skipped.",
                                           zh: "\(existing.lastPathComponent) 已存在——已跳过。"))
                     }
                 } catch is CancellationError {
                     stoppedAt = i; break
                 } catch {
+                    exportStatus.failed += 1
                     let why = (error as? Exporter.ExportError).flatMap { chinese ? $0.chineseDescription : nil }
                         ?? EngineMessage.userFacing(error)
                     problems.append(L("\(url.lastPathComponent): \(why)", zh: "\(url.lastPathComponent)：\(why)"))
@@ -1759,6 +1775,12 @@ struct ExportPage: View {
                 : [L("Wrote ", zh: "已写入 ") + written.map(\.lastPathComponent).joined(separator: ", ")]
             parts += problems
             note = ResultNote(text: parts.joined(separator: "\n"), warning: !problems.isEmpty)
+            exportStatus.processed = stoppedAt ?? urls.count
+            exportStatus.files = written
+            exportStatus.detail = parts.joined(separator: "\n")
+            exportStatus.hasWarning = !problems.isEmpty
+            exportStatus.cancelled = stoppedAt != nil
+            exportStatus.finished = true
         }
     }
 }

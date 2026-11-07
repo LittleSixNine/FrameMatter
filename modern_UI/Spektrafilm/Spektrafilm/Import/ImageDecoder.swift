@@ -59,8 +59,8 @@ struct DecodedImage: @unchecked Sendable {
     let lensCorrectionSupported: Bool
     let sourceURL: URL
     /// The source file's EXIF dictionary, kept outside the render pipeline.
-    /// It is copied back to the finished export without interpreting or
-    /// rewriting it. The engine never sees the dictionary: the only metadata
+    /// Used by typed shooting data and legacy writers. Finished exports read
+    /// a broader ExportMetadata snapshot from sourceURL. The engine only sees
     /// that makes pixels is the handful of typed shooting values the date
     /// back and the film edge print (`ShootingData`, RFC-033, answer E10).
     let sourceEXIF: [CFString: Any]?
