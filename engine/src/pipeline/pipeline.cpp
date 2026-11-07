@@ -288,6 +288,11 @@ bool Pipeline::build(const Params& params, std::string& error) {
     // It replaces the paper exactly as `scan_film` does, and `scan_film` wins.
     // A positive has no mask and no paper, so the switch means nothing there.
     di_active_ = params_.io.digital_intermediate && !params_.io.scan_film && !film.info.is_positive();
+    if (params_.print_render.wide_leaks.active && params_.print_render.wide_leaks.strength > 0 &&
+        (di_active_ || params_.settings.striped)) {
+        error = "wide light leaks are unavailable in Digital Intermediate or striped rendering";
+        return false;
+    }
     if (di_active_) {
         if (!di_constants(*colour_, *blob_, params_, tc_lut_host_, baked_.tc_lut_side, tc_b_host_,
                           film_sensitivity_, di_, error)) return false;
@@ -2056,6 +2061,7 @@ bool Pipeline::print_output(const Chain& in, Chain& out, std::string& error) {
     // reduce its requested tail separation, and immediately before encoding.
     Image cur = in.cur, next;
     SPK_NODE(node_edr(cur, next, error)); cur = next;
+    SPK_NODE(node_wide_leak(cur, next, error)); cur = next;
     out = in;
     // `cctf` writes into the destination, exactly as it did when it was the
     // segment's last call -- the destination is the caller's `out.cur`, not a

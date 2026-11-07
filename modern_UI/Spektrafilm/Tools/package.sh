@@ -41,6 +41,12 @@ out="$proj/build/release"
 dry=false
 [[ "${1:-}" == "--dry-run" ]] && dry=true
 
+# Local texture derivatives have not been cleared for redistribution.
+if [[ -d "$proj/Spektrafilm/Resources/engine/local_light_leaks" ]]; then
+  echo "error: local-only wide light leak textures are present; remove them before release packaging." >&2
+  exit 1
+fi
+
 identity=${SPEKTRAFILM_SIGN_IDENTITY:--}
 team=${SPEKTRAFILM_TEAM_ID:-}
 profile=${SPEKTRAFILM_NOTARY_PROFILE:-}

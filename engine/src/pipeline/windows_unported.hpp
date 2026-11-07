@@ -16,6 +16,7 @@ inline const char* windows_unported_error(bool di, bool latitude, bool mask,
 }
 
 inline const char* windows_unported_error(const Params& p) {
+    if (p.print_render.wide_leaks.active) return "wide light leaks are not implemented by the Windows Vulkan backend yet";
     return windows_unported_error(p.io.digital_intermediate, p.camera.scene_latitude.active,
                                   p.print_render.contrast_mask.active,
                                   p.film_render.overscan.active, p.film_render.date_imprint.active);
@@ -24,6 +25,7 @@ inline const char* windows_unported_error(const Params& p) {
 // Validate an already schema-checked delta before it mutates the session.
 // A valid Windows session cannot already have any of these flags enabled.
 inline const char* windows_unported_delta_error(const Json& delta) {
+    if (delta.at("wide_leak_active").as_bool()) return "wide light leaks are not implemented by the Windows Vulkan backend yet";
     return windows_unported_error(delta.at("digital_intermediate").as_bool(),
                                   delta.at("scene_latitude_active").as_bool(),
                                   delta.at("contrast_mask_active").as_bool(),

@@ -691,6 +691,7 @@ private:
     bool node_gamut_compress(const Image& in, Image& out, std::string& error);
     bool node_scanner_blur(const Image& in, Image& out, std::string& error);
     bool node_unsharp(const Image& in, Image& out, std::string& error);
+    bool node_wide_leak(const Image& in, Image& out, std::string& error);
     bool node_cctf(const Image& in, Image& out, std::string& error);
 
     // --- helpers ---------------------------------------------------------
@@ -723,6 +724,10 @@ private:
     SetupCache* cache_;
     Blur blur_;
     gpu::BufferRef dust_atlas_;
+    gpu::BufferRef wide_texture_;
+    std::string wide_texture_path_;
+    uint32_t wide_texture_w_ = 0, wide_texture_h_ = 0, wide_texture_local_ = 0;
+    float wide_texture_front_ = 0;
     Params params_;
     bool built_ = false;
     int node_count_ = 0;

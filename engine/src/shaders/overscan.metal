@@ -703,3 +703,77 @@ kernel void spk_overscan_light(device const float* rgb [[buffer(0)]],
     out[3u * i + 1u] = r3.y;
     out[3u * i + 2u] = r3.z;
 }
+
+// Local user textures contain processed, assumed-sRGB RGB16 values, not spectral radiance.
+static float3 wide_sample(device const ushort* texture, uint w, uint h, float2 uv) {
+    const float2 p = clamp(uv, 0.0f, 1.0f) * float2(w-1u, h-1u);
+    const uint2 a = uint2(floor(p)), b = min(a+1u, uint2(w-1u,h-1u));
+    const float2 f = fract(p);
+    const uint i00=3u*(a.y*w+a.x), i10=3u*(a.y*w+b.x), i01=3u*(b.y*w+a.x), i11=3u*(b.y*w+b.x);
+    const float3 c00=float3(texture[i00],texture[i00+1],texture[i00+2]) / 65535.0f;
+    const float3 c10=float3(texture[i10],texture[i10+1],texture[i10+2]) / 65535.0f;
+    const float3 c01=float3(texture[i01],texture[i01+1],texture[i01+2]) / 65535.0f;
+    const float3 c11=float3(texture[i11],texture[i11+1],texture[i11+2]) / 65535.0f;
+    return mix(mix(c00,c10,f.x),mix(c01,c11,f.x),f.y);
+}
+static float3 wide_matrix(float3 c, device const float* m) {
+    return float3(dot(c,float3(m[0],m[1],m[2])),dot(c,float3(m[3],m[4],m[5])),dot(c,float3(m[6],m[7],m[8])));
+}
+static float3 wide_encode(float3 c) {
+    return select(12.92f*c,1.055f*pow(max(c,0.0f),float3(1.0f/2.4f))-0.055f,c>0.0031308f);
+}
+static float3 wide_decode(float3 c) {
+    return select(c/12.92f,pow(max((c+0.055f)/1.055f,0.0f),float3(2.4f)),c>0.04045f);
+}
+kernel void spk_wide_light_leak(device const float* rgb [[buffer(0)]],
+                                device const float* P [[buffer(1)]],
+                                device const ushort* texture [[buffer(2)]],
+                                device const float* geometry [[buffer(3)]],
+                                device float* out [[buffer(4)]],
+                                uint3 tid [[thread_position_in_grid]]) {
+    const uint i=tid.x, w=uint(P[0]), h=uint(P[1]);
+    if (i>=w*h) return;
+    const float3 original=float3(rgb[3*i],rgb[3*i+1],rgb[3*i+2]);
+    const float2 pixel=float2(float(i%w)+0.5f,float(i/w)+0.5f);
+    float film=1.0f;
+    if (P[12]>0.5f) film=film_alpha(canvas_to_film(pixel.x-0.5f,pixel.y-0.5f,geometry),geometry);
+    float2 q=pixel, span=float2(w,h);
+    const int direction=int(P[7]);
+    if (direction==1) q.x=span.x-q.x;
+    else if (direction==2) { q=float2(pixel.y,float(w)-pixel.x); span=float2(h,w); }
+    else if (direction==3) { q=float2(float(h)-pixel.y,pixel.x); span=float2(h,w); }
+    const float2 ts=float2(P[2],P[3]);
+    const uint seed=uint(P[9]);
+    const float jitter=0.03f*(hash_f(0,seed^0xA31u)-0.5f);
+    const float vertical=0.03f*(hash_f(0,seed^0xA32u)-0.5f);
+    float2 uv;
+    if (P[10]>0.5f) {
+        const float scale=max(span.x/ts.x,span.y/ts.y)*P[6]/1.2f;
+        uv=((q-(span-ts*scale)*0.5f)/scale)/ts+float2(jitter,vertical);
+    } else {
+        const float scale=span.y/ts.y*P[6];
+        uv=float2((q.x-(P[5]+jitter)*span.x)/(scale*ts.x)+P[11],
+                  (q.y-(span.y-ts.y*scale)*0.5f)/(scale*ts.y)+vertical);
+    }
+    float3 light=wide_sample(texture,uint(ts.x),uint(ts.y),uv);
+    if (P[8]>0.0f) {
+        const float radius=0.025f*min(ts.x,ts.y)*P[8]*P[8];
+        const float2 dx=float2(radius/ts.x,0),dy=float2(0,radius/ts.y);
+        light=0.4f*light+0.15f*(wide_sample(texture,uint(ts.x),uint(ts.y),uv-dx)+
+              wide_sample(texture,uint(ts.x),uint(ts.y),uv+dx)+wide_sample(texture,uint(ts.x),uint(ts.y),uv-dy)+
+              wide_sample(texture,uint(ts.x),uint(ts.y),uv+dy));
+    }
+    float3 result=original;
+    const float peak=max(light.x,max(light.y,light.z));
+    if (film>1e-6f && peak>1e-8f) {
+        const float strength=P[4];
+        const float gain=strength*(1.0f+3.0f*strength*strength*strength);
+        const float3 encoded=wide_encode(wide_matrix(original,P+13));
+        float3 screen=encoded+max(1.0f-encoded,0.0f)*clamp(light*gain,0.0f,1.0f);
+        // High strength deliberately washes all channels to white, leaving coloured outer tails.
+        const float white=pow(strength,6.0f)*smoothstep(0.12f,0.65f,peak);
+        screen=mix(screen,max(screen,1.0f),white);
+        result=mix(original,wide_matrix(wide_decode(screen),P+22),film);
+    }
+    out[3*i]=result.x;out[3*i+1]=result.y;out[3*i+2]=result.z;
+}

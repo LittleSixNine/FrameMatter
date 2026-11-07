@@ -27,6 +27,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <fstream>
 
 #include "pipeline.hpp"
 #include "spectral.hpp"
@@ -2609,6 +2610,62 @@ bool Pipeline::node_overscan_light(const Image& in, Image& out, std::string& err
                           {gpu::Arg::buf(in.buf), gpu::Arg::buf(pb), gpu::Arg::inline_bytes(n, 1),
                            gpu::Arg::buf(out.buf)},
                           in.pixels(), error);
+}
+
+// A display-referred scan appearance, after EDR and before output encoding.
+bool Pipeline::node_wide_leak(const Image& in, Image& out, std::string& error) {
+    const auto& look = params_.print_render.wide_leaks;
+    if (!look.active || look.strength <= 0.0) { out = in; return true; }
+    if (!wide_texture_ || wide_texture_path_ != look.texture) {
+        struct Header { char magic[4]; uint32_t version, w, h, local; float front; } header{};
+        static_assert(sizeof(Header) == 24);
+        std::ifstream file(look.texture, std::ios::binary | std::ios::ate);
+        if (!file) { error = "wide light leak texture is missing: " + look.texture; return false; }
+        const auto bytes = file.tellg();
+        file.seekg(0);
+        if (!file.read(reinterpret_cast<char*>(&header), sizeof(header)) ||
+            std::memcmp(header.magic, "SPKL", 4) != 0 || header.version != 1 ||
+            header.w < 2 || header.h < 2 || header.w > 4096 || header.h > 4096 ||
+            header.local > 1 || !std::isfinite(header.front) || header.front < 0 || header.front > 1 ||
+            bytes != std::streamoff(sizeof(header) + uint64_t(header.w) * header.h * 6)) {
+            error = "invalid wide light leak texture: " + look.texture; return false;
+        }
+        std::vector<uint16_t> pixels(size_t(header.w) * header.h * 3);
+        if (!file.read(reinterpret_cast<char*>(pixels.data()), std::streamsize(pixels.size()*2))) {
+            error = "cannot read wide light leak texture: " + look.texture; return false;
+        }
+        auto texture = gpu_->upload_persistent(pixels.data(), pixels.size()*2, error);
+        if (!texture) return false;
+        wide_texture_ = texture;
+        wide_texture_path_ = look.texture;
+        wide_texture_w_ = header.w; wide_texture_h_ = header.h;
+        wide_texture_local_ = header.local; wide_texture_front_ = header.front;
+    }
+    std::vector<float> P(31, 0.0f);
+    P[0] = float(in.w); P[1] = float(in.h);
+    P[2] = float(wide_texture_w_); P[3] = float(wide_texture_h_);
+    P[4] = float(look.strength); P[5] = float(look.depth); P[6] = float(look.scale);
+    P[7] = float(look.direction); P[8] = float(look.softness);
+    P[9] = float(uint32_t(look.seed) & 0xFFFFFFu);
+    P[10] = float(wide_texture_local_); P[11] = wide_texture_front_;
+    P[12] = overscan_wanted() ? 1.0f : 0.0f;
+    Mat3 to_srgb, from_srgb;
+    if (!colour_->matrix_RGB_to_RGB(params_.io.output_color_space, "sRGB", "CAT02", to_srgb, error) ||
+        !colour_->matrix_RGB_to_RGB("sRGB", params_.io.output_color_space, "CAT02", from_srgb, error)) return false;
+    double matrix[9];
+    row_major(to_srgb, matrix);
+    for (int k=0;k<9;++k) P[13+k] = float(matrix[k]);
+    row_major(from_srgb, matrix);
+    for (int k=0;k<9;++k) P[22+k] = float(matrix[k]);
+    std::vector<float> geometry;
+    if (overscan_wanted()) overscan_params_block(geometry);
+    else geometry.assign(P_COUNT, 0.0f);
+    auto pb = gpu_->upload(P.data(), P.size()*sizeof(float), error);
+    auto gb = gpu_->upload(geometry.data(), geometry.size()*sizeof(float), error);
+    if (!pb || !gb || !alloc_like(in, out, error)) return false;
+    return gpu_->dispatch("spk_wide_light_leak",
+        {gpu::Arg::buf(in.buf), gpu::Arg::buf(pb), gpu::Arg::buf(wide_texture_),
+         gpu::Arg::buf(gb), gpu::Arg::buf(out.buf)}, in.pixels(), error);
 }
 
 }  // namespace spk

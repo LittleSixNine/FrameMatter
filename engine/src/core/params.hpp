@@ -297,7 +297,15 @@ struct ContrastMaskParams {
 
 bool is_known_contrast_mask_scheme(const std::string& scheme);
 
+struct WideLeakParams {
+    bool active = false;
+    std::string texture;
+    double strength = 0.0, depth = 0.28, scale = 1.2, softness = 0.0;
+    int direction = 0, seed = 1;
+};
+
 struct PrintRenderParams {
+    WideLeakParams wide_leaks;
     GlareParams glare;
     ContrastMaskParams contrast_mask;
     PrintCurvesMorphParams density_curves_morph;

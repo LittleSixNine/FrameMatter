@@ -162,6 +162,14 @@ const SchemaField kFields[] = {
     {"overscan_f_number",        "film_render.overscan.f_number",         F, SHOOT, true, 0.0, 64.0, false},
     {"overscan_gate",            "film_render.overscan.gate",             S, SHOOT, false, 0, 0, false},
     {"overscan_holes",           "film_render.overscan.holes",            S, SHOOT, false, 0, 0, false},
+    {"wide_leak_active",    "print_render.wide_leaks.active",    B, PRINT, false, 0, 0, false},
+    {"wide_leak_texture",   "print_render.wide_leaks.texture",   S, PRINT, false, 0, 0, false},
+    {"wide_leak_strength",  "print_render.wide_leaks.strength",  F, PRINT, true, 0, 1, false},
+    {"wide_leak_depth",     "print_render.wide_leaks.depth",     F, PRINT, true, 0, 1, false},
+    {"wide_leak_scale",     "print_render.wide_leaks.scale",     F, PRINT, true, 0.5, 3, false},
+    {"wide_leak_softness",  "print_render.wide_leaks.softness",  F, PRINT, true, 0, 1, false},
+    {"wide_leak_direction", "print_render.wide_leaks.direction", I, PRINT, true, 0, 3, false},
+    {"wide_leak_seed",      "print_render.wide_leaks.seed",      I, PRINT, true, 1, 2147483647, false},
     {"scratch_active",          "film_render.scratches.active",         B, SHOOT, false, 0, 0, false},
     {"scratch_long_lines",      "film_render.scratches.long_lines",     F, SHOOT, true, 0, 1, false},
     {"scratch_strength",        "film_render.scratches.strength",       F, SHOOT, true, 0, 1, false},
@@ -252,6 +260,10 @@ const SchemaField* find_field(const std::string& name) {
 // error here and a test failure there, never a silently ignored slider.
 
 double* float_slot(Params& p, const std::string& path) {
+    if (path == "print_render.wide_leaks.strength") return &p.print_render.wide_leaks.strength;
+    if (path == "print_render.wide_leaks.depth") return &p.print_render.wide_leaks.depth;
+    if (path == "print_render.wide_leaks.scale") return &p.print_render.wide_leaks.scale;
+    if (path == "print_render.wide_leaks.softness") return &p.print_render.wide_leaks.softness;
     if (path == "film_render.scratches.long_lines") return &p.film_render.scratches.long_lines;
     if (path == "film_render.scratches.edge_marks") return &p.film_render.scratches.edge_marks;
     if (path == "film_render.scratches.leak_strength") return &p.film_render.scratches.leak_strength;
@@ -318,6 +330,7 @@ double* float_slot(Params& p, const std::string& path) {
 }
 
 bool* bool_slot(Params& p, const std::string& path) {
+    if (path == "print_render.wide_leaks.active") return &p.print_render.wide_leaks.active;
     if (path == "film_render.scratches.dust_full_frame") return &p.film_render.scratches.dust_full_frame;
     if (path == "film_render.scratches.active") return &p.film_render.scratches.active;
     if (path == "camera.auto_exposure") return &p.camera.auto_exposure;
@@ -351,6 +364,7 @@ bool* bool_slot(Params& p, const std::string& path) {
 }
 
 std::string* str_slot(Params& p, const std::string& path) {
+    if (path == "print_render.wide_leaks.texture") return &p.print_render.wide_leaks.texture;
     if (path == "film.info.stock") return &p.film_stock;
     if (path == "print.info.stock") return &p.print_stock;
     if (path == "io.input_color_space") return &p.io.input_color_space;
@@ -377,6 +391,8 @@ std::string* str_slot(Params& p, const std::string& path) {
 }
 
 int* int_slot(Params& p, const std::string& path) {
+    if (path == "print_render.wide_leaks.direction") return &p.print_render.wide_leaks.direction;
+    if (path == "print_render.wide_leaks.seed") return &p.print_render.wide_leaks.seed;
     if (path == "film_render.scratches.leak_enabled") return &p.film_render.scratches.leak_enabled;
     if (path == "film_render.scratches.leak_seed") return &p.film_render.scratches.leak_seed;
     if (path == "film_render.scratches.seed") return &p.film_render.scratches.seed;
@@ -479,7 +495,8 @@ bool validate_delta(const Json& delta, std::string& error, std::string& param) {
         }
         // A closed set of names is not a range, so `has_range` cannot express
         // it; this, `contrast_mask_scheme` and `scene_latitude_norm` are the enumerated strings.
-        if ((kv.first == "scratch_leak_enabled" || kv.first == "scratch_leak_seed") &&
+        if ((kv.first == "scratch_leak_enabled" || kv.first == "scratch_leak_seed" ||
+             kv.first == "wide_leak_direction" || kv.first == "wide_leak_seed") &&
             v.as_double() != std::floor(v.as_double())) {
             error = kv.first + " must be an integer";
             param = kv.first;
@@ -704,6 +721,7 @@ bool digest(Params& p, const Json& neutral_filters, std::string& error) {
     }
 
     if (p.debug.deactivate_spatial_effects) {
+        p.print_render.wide_leaks.active = false;
         p.film_render.halation.active = false;
         set3(p.film_render.halation.scatter_core_um, 0.0, 0.0, 0.0);
         set3(p.film_render.halation.scatter_tail_um, 0.0, 0.0, 0.0);

@@ -375,3 +375,6 @@ You_Still_Fucked_Film_Simulation/
 
 # Personal development references (local only)
 /pravite/
+
+# User-supplied wide-leak textures: local development, redistribution unverified.
+/engine/resources/local_light_leaks/

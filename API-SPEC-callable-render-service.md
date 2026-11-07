@@ -1266,7 +1266,8 @@ transmission rather than adding glow; it does not invent cyan/yellow wear.
 
 **Independent Light Leaks card (2026-11-07).** The left rail now has a dedicated
 Light Leaks / 漏光 section, separate from Scratches & Dust. It exposes only
-`rim` and `halo`. `FilmParams.lightLeaks` saves an independent `active` switch,
+`rim` and `halo`. `FilmParams.lightLeaks` saves an `active` master switch (and, since the wide
+addition, a separate `perforationActive` switch defaulting true),
 `style`, `rimStrength`, `rimCoverage`, `rimSoftness`, `rimSpread`, `rimSeed`,
 `haloStrength`, `haloSpread`, `haloSeed`. Switching styles retains both sets;
 Another changes only the selected style's saved seed. Wear/dust have their own
@@ -1423,6 +1424,70 @@ seed changes with all other scratch strengths zero. Wire fields, saved-edit
 shape, format gating and the original scan-wall treatment are unchanged;
 existing nonzero edits acquire the revised appearance. The parameters are
 visual estimates, not calibrated film-base light-piping measurements.
+
+### 18.2 Material-based wide light leaks (local development)
+
+The Light Leaks card now has a master `active` and separate `perforationActive`
+(default true, preserving older edits) and `wideActive` (default false) groups.
+Wide light works without Film Edge and can overlap perforation light. Its saved
+fields are `wideMaterial` (11/14/28/36/42/17), `wideStrength` (default .5),
+`wideDepth` (.28), `wideScale` (1.2), `wideSoftness` (0), `wideDirection` (0),
+`wideSeed` (1). Old light-setting objects decode missing keys to these defaults.
+Another changes only the wide material, direction and seed, retaining strength,
+depth, size and softness. Material 17 keeps its local light spot, so depth is
+not editable for that material. Perforation patterns and wear seeds are retained.
+
+| native field | type / range / default | layer |
+|---|---|---|
+| `wide_leak_active` | bool / false | print, non-live |
+| `wide_leak_texture` | string / empty | print, non-live |
+| `wide_leak_strength` | float / 0–1 / 0 | print, non-live |
+| `wide_leak_depth` | float / 0–1 / .28 | print, non-live |
+| `wide_leak_scale` | float / .5–3 / 1.2 | print, non-live |
+| `wide_leak_softness` | float / 0–1 / 0 | print, non-live |
+| `wide_leak_direction` | int / 0–3 / 0 (left,right,top,bottom) | print, non-live |
+| `wide_leak_seed` | int / 1–2³¹−1 / 1 | print, non-live |
+
+The app resolves the chosen file from its engine resources' `local_light_leaks`
+folder. Missing local assets are explained in the card and the app's wide wire
+stays off. Active native requests with a missing/malformed file fail explicitly.
+The decoder accepts SPKL version 1: 24-byte little-endian header (magic, version,
+width, height, local-spot flag, float front-u) then row-major RGB16 UNORM.
+Dimensions must be 2–4096, the front finite in 0–1, and byte count exact. Only
+one selected texture is uploaded persistently per pipeline, loaded on demand.
+Zero strength or inactive bypasses loading and preserves all pixels exactly.
+
+This is a scan appearance, after EDR and before output CCTF, not film exposure.
+Output-linear RGB is converted to linear sRGB with CAT02 whitepoint adaptation,
+encoded for Screen compositing and decoded/converted back. The original
+texture colours therefore are not redeveloped through the film/paper model.
+Uniform scaling preserves shape; side selection rotates/mirrors placement;
+seeded jitter is at most 1.5% of the placement span. No per-render random seed
+or tiling is used. Softness blends the centre and four offset samples, radius
+.025×min(texture dimensions)×Softness² pixels, weights .4/.15/.15/.15/.15.
+
+At strength s, Screen light gain is s×(1+3s³). A white lift of
+s⁶×smoothstep(.12,.65,max(textureRGB)) then brings all channels toward at least
+encoded white, while retaining any existing HDR headroom. Thus low settings
+retain coloured transitions; 100% may deliberately wash the core to white.
+The actual film/perforation alpha gates the result where Film Edge is on, so
+holes/carrier are not coloured. An untouched texture region copies the original
+pixel without a colourspace round trip. Print reprints reuse the film negative. Dedicated DI exports omit this scan
+appearance and preserve the unchanged film negative.
+The feature is disabled by spatial/LUT debug mode; DI and striped native modes
+refuse an active nonzero overlay. The app disables it in DI; Vulkan refuses it
+explicitly rather than silently omitting the effect.
+
+`engine/tools/prepare_wide_leaks.py --source-dir <TIFF directory>` makes local
+1536-long-edge textures from the six selected original RGB16 TIFFs: darkest-15%
+per-channel median subtraction, smooth residual gate .015–.09, then direction
+normalisation/front measurement. Untagged source colour is assumed sRGB for
+this visual effect; this is not spectral calibration. Source TIFFs are intact.
+Derivatives and manifests are ignored by Git. `engine/build.sh bundle` copies
+them into this machine's development app. Redistribution terms remain
+unverified, so `Tools/package.sh` refuses release packaging while that local-only
+folder is present. Source builds without these private assets still work, with
+the unavailable-material message and wide light off. No public release is made.
 
 ## 19. Full-width 135 exposure
 

@@ -861,7 +861,7 @@ struct FilmParams: Codable, Equatable, Sendable {
         fields += pairPlacementWire
         fields += filmEdge.wire
         fields += scratches.wire(filmEdge: filmEdge)
-        fields += lightLeaks.wire(filmEdge: filmEdge)
+        fields += lightLeaks.wire(filmEdge: filmEdge, digitalIntermediate: digitalIntermediate)
         fields += dateBack.wire(filmEdge: filmEdge, scale: dateScale)
         return fields
     }

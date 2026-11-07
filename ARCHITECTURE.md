@@ -482,6 +482,17 @@ their own card, switch and seed. The native `scratch_leak_enabled`/`seed`
 fields preserve old-client defaults while giving the app independent gating
 and a dedicated GPU light seed. API-SPEC §18.1 records migration and the wire.
 
+Wide material light (2026-11-07) is the second group in that card. Its print-layer
+`wide_leak_*` wire feeds a scan-look node after EDR, before CCTF. The node uses
+processed local RGB16 textures, sRGB Screen plus high-strength white lift, then
+converts back to the selected output space; the material profiles are untouched.
+Film alpha keeps perforations/carrier clear. Six user-provided derivatives live
+in ignored `engine/resources/local_light_leaks`, prepared explicitly by
+`engine/tools/prepare_wide_leaks.py`, with no Python at runtime/build. Their
+redistribution is unverified; the release packager rejects the local-only folder.
+The normal source build remains valid without them, with a clear unavailable
+message. API-SPEC §18.2 holds the binary format, controls and platform boundaries.
+
 ### 7.12 The half-frame pair
 
 - **A pair is a file**, `.spektrapair` JSON under `Sidecars/Pairs`, and its URL
