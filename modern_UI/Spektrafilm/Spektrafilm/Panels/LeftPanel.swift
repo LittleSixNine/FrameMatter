@@ -39,10 +39,9 @@ struct LeftPanel: View {
         // neither the paper nor the DI (2026-10-01 drawings).
         s.append((FilmEdgeSection.key, AnyView(FilmEdgeSection(session: session))))
         s.append((LightLeakSection.key, AnyView(LightLeakSection(session: session))))
-        s.append((ScratchSection.key, AnyView(ScratchSection(session: session))))
-        s.append((AgingTextureSection.key, AnyView(AgingTextureSection(session: session))))
         s.append((DateBackSection.key, AnyView(DateBackSection(session: session))))
         s.append(("print", AnyView(PrintProfileSection(session: session))))
+        s.append((ScratchSection.key, AnyView(ScratchSection(session: session))))
         if !isPair { s.append(("crop", AnyView(CropSection(session: session)))) }
         s.append(("enlarger", AnyView(EnlargerSection(session: session))))
         return s

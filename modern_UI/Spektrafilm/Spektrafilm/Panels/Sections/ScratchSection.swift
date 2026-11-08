@@ -64,6 +64,7 @@ struct ScratchSection: View {
                 : L("Enable 135, half-frame or full-width Film Edge first.", zh: "需先开启 135、半格或全宽片边，才能显示划痕与灰尘。"))
                 .font(Theme.Font.caption).foregroundStyle(Theme.Ink.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
+            AgingTextureSection(session: session)
         }
     }
     private func amount(_ title: String, _ key: WritableKeyPath<ScratchSettings, Double>, zero: Double) -> some View {

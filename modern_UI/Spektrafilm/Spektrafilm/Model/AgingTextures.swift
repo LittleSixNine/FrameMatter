@@ -9,11 +9,11 @@ enum AgingTextureMaterial: String, Codable, CaseIterable, Sendable {
 
     @MainActor var title: String {
         switch self {
-        case .dust01: L("01 · Specks and scuffs", zh: "01 · 散点擦痕")
-        case .dust02: L("02 · Patchy wear", zh: "02 · 局部积痕")
-        case .dust03: L("03 · Worn edges", zh: "03 · 周边磨损")
-        case .dust04: L("04 · Long scratches", zh: "04 · 长划痕")
-        case .dust05: L("05 · Heavy wear", zh: "05 · 重度做旧")
+        case .dust01: L("Aging 1", zh: "做旧 1")
+        case .dust02: L("Aging 2", zh: "做旧 2")
+        case .dust03: L("Aging 3", zh: "做旧 3")
+        case .dust04: L("Aging 4", zh: "做旧 4")
+        case .dust05: L("Aging 5", zh: "做旧 5")
         }
     }
     var assetName: String {
