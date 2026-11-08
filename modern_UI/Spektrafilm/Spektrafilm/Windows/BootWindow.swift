@@ -29,9 +29,10 @@ struct BootWindow: View {
     var body: some View {
         VStack(spacing: 0) {
             Spacer(minLength: 0)
-            Text("FrameMatter")
-                .font(.system(size: 26, weight: .semibold))
-                .foregroundStyle(Theme.text)
+            Image("BootTitle")
+                .resizable()
+                .frame(width: 180, height: 32)
+                .accessibilityLabel("FrameMatter")
             Text("film simulation")
                 .font(Theme.Font.caption)
                 .foregroundStyle(Theme.dim)
@@ -66,8 +67,18 @@ struct BootWindow: View {
             .padding(.bottom, 16)
         }
         .frame(width: BootWindowController.size.width, height: BootWindowController.size.height)
-        .background(Theme.card)
+        .background {
+            // Crop the 1024 px icon at (128, 320), keeping the red wave below the title.
+            Image("BootBackground")
+                .resizable()
+                .frame(width: 480, height: 480)
+                .offset(x: -60, y: -150)
+                .frame(width: BootWindowController.size.width,
+                       height: BootWindowController.size.height, alignment: .topLeading)
+                .clipped()
+        }
         .preferredColorScheme(.dark)
+        .ignoresSafeArea()
     }
 }
 
@@ -123,7 +134,11 @@ final class BootWindowController {
         w.standardWindowButton(.zoomButton)?.isHidden = true
         w.appearance = NSAppearance(named: .darkAqua)
         w.backgroundColor = NSColor(srgbRed: 0x2C / 255.0, green: 0x2D / 255.0, blue: 0x2B / 255.0, alpha: 1)
-        w.contentView = NSHostingView(rootView: BootWindow(session: session))
+        let content = NSHostingView(rootView: BootWindow(session: session))
+        content.sizingOptions = []
+        w.contentView = content
+        // The full-size content includes the hidden title bar, so size the whole window.
+        w.setFrame(CGRect(origin: w.frame.origin, size: Self.size), display: false)
         w.center()
         w.makeKeyAndOrderFront(nil)
         window = w
