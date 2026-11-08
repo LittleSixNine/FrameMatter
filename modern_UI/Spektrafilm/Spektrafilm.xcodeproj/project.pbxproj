@@ -407,6 +407,8 @@
 		A80314DB52E95A2058ED6D6E /* GeometryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GeometryTests.swift"; sourceTree = "<group>"; };
 		034DC24DA000E5AAF2528601 /* GrainControlsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GrainControlsTests.swift"; sourceTree = "<group>"; };
 		250924B2CD408CCB39ED0A18 /* HalfFramePairTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HalfFramePairTests.swift"; sourceTree = "<group>"; };
+		F6737FCAF8793A999F2437D2 /* HSLTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HSLTests.swift"; sourceTree = "<group>"; };
+		C0C5E086E32A72F48044569B /* HSLWorkflowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HSLWorkflowTests.swift"; sourceTree = "<group>"; };
 		D21FA14465ADF0C32032374E /* LayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LayoutTests.swift"; sourceTree = "<group>"; };
 		CE8421F06D7963E4B9992184 /* LicensingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LicensingTests.swift"; sourceTree = "<group>"; };
 		8D2BF696F94ED8B714C5BBD3 /* LightLeakTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LightLeakTests.swift"; sourceTree = "<group>"; };
@@ -481,6 +483,8 @@
 				A80314DB52E95A2058ED6D6E /* GeometryTests.swift */,
 				034DC24DA000E5AAF2528601 /* GrainControlsTests.swift */,
 				250924B2CD408CCB39ED0A18 /* HalfFramePairTests.swift */,
+				F6737FCAF8793A999F2437D2 /* HSLTests.swift */,
+				C0C5E086E32A72F48044569B /* HSLWorkflowTests.swift */,
 				D21FA14465ADF0C32032374E /* LayoutTests.swift */,
 				CE8421F06D7963E4B9992184 /* LicensingTests.swift */,
 				8D2BF696F94ED8B714C5BBD3 /* LightLeakTests.swift */,
@@ -550,6 +554,7 @@
 		C6454FA299ABB90F982C453B /* make-smoke.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = "make-smoke.py"; sourceTree = "<group>"; };
 		5FD5A6F01E9E37CE817FE7D2 /* measure-layout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "measure-layout.swift"; sourceTree = "<group>"; };
 		CAC54B5D1A76CDDB8C5B1FC4 /* package.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "package.sh"; sourceTree = "<group>"; };
+		A5343D275FD68704D018E6F5 /* render-boot-title.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "render-boot-title.swift"; sourceTree = "<group>"; };
 		8F4A80183C0335C6FCC96A68 /* render-icon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "render-icon.swift"; sourceTree = "<group>"; };
 		1CF4EBBC105C01A3E15AAE22 /* snapshot.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "snapshot.sh"; sourceTree = "<group>"; };
 		B023CA8F0F68491740229B47 /* Tools */ = {
@@ -568,6 +573,7 @@
 				C6454FA299ABB90F982C453B /* make-smoke.py */,
 				5FD5A6F01E9E37CE817FE7D2 /* measure-layout.swift */,
 				CAC54B5D1A76CDDB8C5B1FC4 /* package.sh */,
+				A5343D275FD68704D018E6F5 /* render-boot-title.swift */,
 				8F4A80183C0335C6FCC96A68 /* render-icon.swift */,
 				1CF4EBBC105C01A3E15AAE22 /* snapshot.sh */
 			);
@@ -994,6 +1000,8 @@
 		2209A1D226457302F50FFEE6 /* GeometryTests.swift */ = {isa = PBXBuildFile; fileRef = A80314DB52E95A2058ED6D6E; };
 		F527B458F7D3B4522929B80E /* GrainControlsTests.swift */ = {isa = PBXBuildFile; fileRef = 034DC24DA000E5AAF2528601; };
 		CDF7D03174AE7319814EB8D7 /* HalfFramePairTests.swift */ = {isa = PBXBuildFile; fileRef = 250924B2CD408CCB39ED0A18; };
+		63B6557C1CCA0E27012AAF4B /* HSLTests.swift */ = {isa = PBXBuildFile; fileRef = F6737FCAF8793A999F2437D2; };
+		92D95353DE0F4F6B5278BF09 /* HSLWorkflowTests.swift */ = {isa = PBXBuildFile; fileRef = C0C5E086E32A72F48044569B; };
 		79A4427684DDABB45B19288D /* LayoutTests.swift */ = {isa = PBXBuildFile; fileRef = D21FA14465ADF0C32032374E; };
 		302F9DB7C81BCB801B293621 /* LicensingTests.swift */ = {isa = PBXBuildFile; fileRef = CE8421F06D7963E4B9992184; };
 		C30A1F29D1EAA8457B067F8F /* LightLeakTests.swift */ = {isa = PBXBuildFile; fileRef = 8D2BF696F94ED8B714C5BBD3; };
@@ -1207,6 +1215,8 @@
 				2209A1D226457302F50FFEE6 /* GeometryTests.swift */,
 				F527B458F7D3B4522929B80E /* GrainControlsTests.swift */,
 				CDF7D03174AE7319814EB8D7 /* HalfFramePairTests.swift */,
+				63B6557C1CCA0E27012AAF4B /* HSLTests.swift */,
+				92D95353DE0F4F6B5278BF09 /* HSLWorkflowTests.swift */,
 				79A4427684DDABB45B19288D /* LayoutTests.swift */,
 				302F9DB7C81BCB801B293621 /* LicensingTests.swift */,
 				C30A1F29D1EAA8457B067F8F /* LightLeakTests.swift */,

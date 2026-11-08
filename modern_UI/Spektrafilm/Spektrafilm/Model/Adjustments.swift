@@ -45,6 +45,39 @@ struct Vignette: Codable, Equatable, Sendable {
     var isNeutral: Bool { amount == 0 }
 }
 
+/// Eight cyclic hue anchors in the encoded ProPhoto working space; zero bypasses HSL.
+struct HSLBand: Codable, Equatable, Sendable {
+    var hue: Double = 0             // degrees, −30…30
+    var saturation: Double = 0      // percent, −100…100
+    var lightness: Double = 0       // percent, −100…100
+    var isNeutral: Bool { hue == 0 && saturation == 0 && lightness == 0 }
+    var uniform: SIMD4<Float> {
+        func finite(_ x: Double, _ r: ClosedRange<Double>) -> Float { Float(x.isFinite ? min(max(x, r.lowerBound), r.upperBound) : 0) }
+        return SIMD4(finite(hue, -30...30) / 360, finite(saturation, -100...100) / 100,
+                     finite(lightness, -100...100) / 100, 0)
+    }
+}
+
+struct HSLAdjustments: Codable, Equatable, Sendable {
+    var red = HSLBand(), orange = HSLBand(), yellow = HSLBand(), green = HSLBand()
+    var aqua = HSLBand(), blue = HSLBand(), purple = HSLBand(), magenta = HSLBand()
+    static var keys: [WritableKeyPath<HSLAdjustments, HSLBand>] {
+        [\.red, \.orange, \.yellow, \.green, \.aqua, \.blue, \.purple, \.magenta]
+    }
+    static let names = ["red", "orange", "yellow", "green", "aqua", "blue", "purple", "magenta"]
+    var isNeutral: Bool { Self.keys.allSatisfy { self[keyPath: $0].isNeutral } }
+    var uniforms: HSLUniforms {
+        var u = HSLUniforms()
+        u.hslRed = red.uniform; u.hslOrange = orange.uniform
+        u.hslYellow = yellow.uniform; u.hslGreen = green.uniform
+        u.hslAqua = aqua.uniform; u.hslBlue = blue.uniform
+        u.hslPurple = purple.uniform; u.hslMagenta = magenta.uniform
+        u.active = isNeutral ? 0 : 1
+        return u
+    }
+
+}
+
 struct Adjustments: Codable, Equatable, Sendable {
     var enabled: Bool = true
     // White balance, post-print (Capture One's model, but as an offset).
@@ -63,6 +96,28 @@ struct Adjustments: Codable, Equatable, Sendable {
     var curves = CurveSet()
     var colorBalance = ColorBalance()
     var vignette = Vignette()
+    var hsl = HSLAdjustments()
+
+    init(enabled: Bool = true) { self.enabled = enabled }
+    private enum CodingKeys: String, CodingKey { case enabled, temperature, tint, exposure, contrast, brightness, saturation, highlights, shadows, blackPoint, whitePoint, curves, colorBalance, vignette, hsl }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        enabled = try c.decode(Bool.self, forKey: .enabled)
+        temperature = try c.decode(Double.self, forKey: .temperature)
+        tint = try c.decode(Double.self, forKey: .tint)
+        exposure = try c.decode(Double.self, forKey: .exposure)
+        contrast = try c.decode(Double.self, forKey: .contrast)
+        brightness = try c.decode(Double.self, forKey: .brightness)
+        saturation = try c.decode(Double.self, forKey: .saturation)
+        highlights = try c.decode(Double.self, forKey: .highlights)
+        shadows = try c.decode(Double.self, forKey: .shadows)
+        blackPoint = try c.decode(Double.self, forKey: .blackPoint)
+        whitePoint = try c.decode(Double.self, forKey: .whitePoint)
+        curves = try c.decode(CurveSet.self, forKey: .curves)
+        colorBalance = try c.decode(ColorBalance.self, forKey: .colorBalance)
+        vignette = try c.decode(Vignette.self, forKey: .vignette)
+        hsl = try c.decodeIfPresent(HSLAdjustments.self, forKey: .hsl) ?? HSLAdjustments()
+    }
 
     static let `default` = Adjustments()
     var isNeutral: Bool { self == Adjustments(enabled: enabled) }
@@ -122,6 +177,7 @@ struct Layer2Uniforms: Sendable {
     /// Set by the renderer for a Digital Intermediate, never by an edit.
     var inputDecode: UInt32 = 0
 
+
     /// `pow(0.18, 1/1.8)` — mid-grey through ROMM γ1.8, the working space's
     /// own curve since RFC-018. The number `layer2Tone` pivots on.
     ///
@@ -134,4 +190,13 @@ struct Layer2Uniforms: Sendable {
     /// which is what Display P3 has and what this code pivoted on by accident
     /// until RFC-018.
     static let srgbMidGrey: Float = 0.4614
+}
+
+/// Global HSL is separate so local mask uniforms retain their existing size.
+struct HSLUniforms: Sendable {
+    var hslRed = SIMD4<Float>(repeating: 0), hslOrange = SIMD4<Float>(repeating: 0)
+    var hslYellow = SIMD4<Float>(repeating: 0), hslGreen = SIMD4<Float>(repeating: 0)
+    var hslAqua = SIMD4<Float>(repeating: 0), hslBlue = SIMD4<Float>(repeating: 0)
+    var hslPurple = SIMD4<Float>(repeating: 0), hslMagenta = SIMD4<Float>(repeating: 0)
+    var active: UInt32 = 0
 }

@@ -130,6 +130,7 @@ struct EditorCommands: Commands {
         }
         CommandGroup(replacing: .undoRedo) {
             Button(L("Undo", zh: "撤销")) { session.undo() }.keyboardShortcut("z").disabled(!session.canUndo)
+            Button(L("Redo", zh: "重做")) { session.redo() }.keyboardShortcut("z", modifiers: [.command, .shift]).disabled(!session.canRedo)
         }
         CommandGroup(replacing: .pasteboard) {
             Button(L("Copy Settings", zh: "复制设置")) { session.copySettings() }

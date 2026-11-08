@@ -50,6 +50,7 @@ struct RightPanel: View {
         } else {
             s.append(("wb2", AnyView(WhiteBalanceSection(session: session))))
             s.append(("exposure2", AnyView(ExposureSection(session: session))))
+            s.append(("hsl", AnyView(HSLSection(session: session))))
             s.append(("curve", AnyView(CurveSection(session: session))))
             s.append(("colorbalance", AnyView(ColorBalanceSection(session: session))))
             // Withdrawn while the mask system is redesigned; the section

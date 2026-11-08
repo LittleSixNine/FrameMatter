@@ -155,11 +155,11 @@ final class SettingsClipboardTests: XCTestCase {
         XCTAssertEqual(SettingsClip(groups: [], settings: source(), sourceName: "src").applied(to: t), t)
     }
 
-    func testAllGroupsLeaveTheFrameItsCropGradeLensAndState() {
+    func testAllGroupsLeaveTheFrameItsCropLensAndState() {
         let t = target()
         let out = SettingsClip(groups: Set(ClipboardGroup.allCases), settings: source(), sourceName: "src").applied(to: t)
         XCTAssertEqual(out.geometry, t.geometry)
-        XCTAssertEqual(out.adjustments, t.adjustments)
+        XCTAssertEqual(out.adjustments, source().adjustments)
         XCTAssertEqual(out.decode.lensCorrection, t.decode.lensCorrection)
         XCTAssertEqual(out.state, t.state)
     }

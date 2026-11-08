@@ -116,3 +116,37 @@ struct ColorBalanceSection: View {
         }
     }
 }
+
+struct HSLSection: View {
+    @Bindable var session: Session
+    @State private var selected = 0
+    private let colors: [Color] = [.red, .orange, .yellow, .green, .cyan, .blue, .purple, .pink]
+    private var names: [String] { [L("Red", zh: "红"), L("Orange", zh: "橙"), L("Yellow", zh: "黄"),
+        L("Green", zh: "绿"), L("Aqua", zh: "青"), L("Blue", zh: "蓝"), L("Purple", zh: "紫"), L("Magenta", zh: "洋红")] }
+    var body: some View {
+        PanelSection("HSL", key: "hsl", initiallyExpanded: false, menu: { AnyView(Button(L(.helpReset)) {
+            var a = session.layerAdjustments; a.hsl = HSLAdjustments(); session.layerAdjustments = a
+        }) }, metrics: .right) {
+            RailRows {
+                HStack(spacing: 0) {
+                    ForEach(0..<8, id: \.self) { i in
+                        Button { selected = i } label: {
+                            Circle().fill(colors[i]).frame(width: 15, height: 15)
+                                .padding(4).overlay(Circle().stroke(selected == i ? Theme.text : .clear, lineWidth: 1))
+                        }.buttonStyle(.plain).help(names[i]).accessibilityLabel(names[i])
+                            .accessibilityAddTraits(selected == i ? .isSelected : [])
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                Text(names[selected]).font(Theme.Font.caption).foregroundStyle(Theme.secondaryText)
+                ScrubSlider(label: L("Hue", zh: "色相"), value: band(\.hue), range: -30...30, snap: 1, format: { String(format: "%+.0f°", $0) })
+                ScrubSlider(label: L("Saturation", zh: "饱和度"), value: band(\.saturation), range: -100...100, snap: 5, format: { String(format: "%+.0f", $0) })
+                ScrubSlider(label: L("Lightness", zh: "明度"), value: band(\.lightness), range: -100...100, snap: 5, format: { String(format: "%+.0f", $0) })
+            }
+        }
+    }
+    private func band(_ key: WritableKeyPath<HSLBand, Double>) -> Binding<Double> {
+        Binding(get: { session.layerAdjustments.hsl[keyPath: HSLAdjustments.keys[selected]][keyPath: key] },
+                set: { var a = session.layerAdjustments; a.hsl[keyPath: HSLAdjustments.keys[selected]][keyPath: key] = $0; session.layerAdjustments = a })
+    }
+}

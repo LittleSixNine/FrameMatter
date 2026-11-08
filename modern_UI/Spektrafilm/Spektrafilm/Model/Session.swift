@@ -160,6 +160,7 @@ final class Session: CanvasHost {
               let curvesChanged = newValue.curves != sidecar.adjustments.curves
               sidecar.adjustments = newValue
               renderer.layer2 = newValue.uniforms
+              renderer.hsl = newValue.hsl.uniforms
               if curvesChanged { renderer.setCurves(newValue.curves) } else { renderer.needsDraw?() }
               scheduleSave() }
     }
@@ -871,13 +872,16 @@ final class Session: CanvasHost {
 
     private static func storedClipboardGroups(in defaults: UserDefaults) -> Set<ClipboardGroup> {
         guard let raw = defaults.stringArray(forKey: clipboardGroupsKey)
-        else { return Set(ClipboardGroup.allCases) }
+        else { return Set(ClipboardGroup.allCases.filter { $0 != .postDev }) }
         return Set(raw.compactMap(ClipboardGroup.init(rawValue:)))
     }
 
     // MARK: undo and the work clock
 
     private var undoStack: [Sidecar] = []
+    private var redoStack: [Sidecar] = []
+    private var redoURL: URL?
+    private var redoPairs: [(url: URL, pair: HalfFramePair)?] = []
     /// The piece each snapshot was taken with, in step with `undoStack`: a
     /// pair's own edits (its frames, their crops, the spacing) undo with the
     /// look. Nil for a frame.
@@ -1126,6 +1130,7 @@ final class Session: CanvasHost {
             self?.isDigitalIntermediate(texture) ?? false
         }
         renderer.layer2 = sidecar.adjustments.uniforms
+        renderer.hsl = sidecar.adjustments.hsl.uniforms
         Session.removeLegacyLinearCache()
         if let cache {
             Task.detached(priority: .utility) {
@@ -2719,7 +2724,7 @@ final class Session: CanvasHost {
         // Navigator show what the canvas shows, through the same table.
         if digitalIntermediateActive {
             var viewOnly = Layer2Uniforms(); viewOnly.enabled = 0
-            if let decoded = renderer.applyLayer2(to: source, uniforms: viewOnly) { source = decoded }
+            if let decoded = renderer.applyLayer2(to: source, uniforms: viewOnly, hsl: HSLUniforms()) { source = decoded }
         }
         let box = TextureBox(source)
         Task.detached(priority: .utility) {
@@ -2800,6 +2805,7 @@ final class Session: CanvasHost {
     private func pushLayer2(_ adjustments: Adjustments) {
         let shown = pairIsLayered ? Adjustments() : adjustments
         renderer.layer2 = shown.uniforms
+        renderer.hsl = shown.hsl.uniforms
         renderer.setCurves(shown.curves)
     }
 
@@ -3891,6 +3897,7 @@ final class Session: CanvasHost {
     /// Snapshot before a mutation, coalesced. A slider drag sets its value
     /// dozens of times and only the state before the drag is worth keeping.
     private func pushUndo() {
+        redoStack.removeAll(); redoPairs.removeAll(); redoURL = nil
         let now = Date()
         guard now.timeIntervalSince(lastUndoAt) > 0.5 else { return }
         lastUndoAt = now
@@ -3900,14 +3907,28 @@ final class Session: CanvasHost {
     }
 
     var canUndo: Bool { !undoStack.isEmpty }
+    var canRedo: Bool { !redoStack.isEmpty && redoURL == selection }
 
     /// Undo is a deterministic re-render from a snapshot: the params are tiny,
     /// the service never needs to know, and grain is baked into its cached
     /// negative so a reprint is stable (HANDOFF §5).
     func undo() {
         guard !batchExporting, selection != nil, let previous = undoStack.popLast() else { return }
+        redoURL = selection
+        redoStack.append(sidecar)
+        redoPairs.append(pair.flatMap { p in selection.map { ($0, p) } })
+        restoreHistory(previous, piece: undoPairs.popLast() ?? nil, action: "Undo")
+    }
+
+    func redo() {
+        guard !batchExporting, canRedo, let next = redoStack.popLast() else { return }
+        undoStack.append(sidecar)
+        undoPairs.append(pair.flatMap { p in selection.map { ($0, p) } })
+        restoreHistory(next, piece: redoPairs.popLast() ?? nil, action: "Redo")
+    }
+
+    private func restoreHistory(_ previous: Sidecar, piece: (url: URL, pair: HalfFramePair)?, action: String) {
         let current = sidecar
-        let piece = undoPairs.popLast() ?? nil
         sidecar = previous
         pushLayer2(previous.adjustments)
         renderer.geometry = canvasGeometry
@@ -3931,7 +3952,14 @@ final class Session: CanvasHost {
             markStale()
             scheduleSave()
             lastUndoAt = .distantPast
-            status = "Undo — \(undoStack.count) step\(undoStack.count == 1 ? "" : "s") left."
+            status = "\(action) — \(undoStack.count) step\(undoStack.count == 1 ? "" : "s") left."
+            return
+        }
+        if pair == nil, current.params == previous.params, current.geometry == previous.geometry,
+           current.decode == previous.decode, current.masks == previous.masks, current.noFilm == previous.noFilm {
+            scheduleSave()
+            lastUndoAt = .distantPast
+            status = action
             return
         }
         if current.decode != previous.decode {
@@ -3943,7 +3971,7 @@ final class Session: CanvasHost {
         markStale()
         scheduleSave()
         lastUndoAt = .distantPast
-        status = "Undo — \(undoStack.count) step\(undoStack.count == 1 ? "" : "s") left."
+        status = "\(action) — \(undoStack.count) step\(undoStack.count == 1 ? "" : "s") left."
     }
 
     var canCopySettings: Bool { selection != nil && !clipboardGroups.isEmpty }

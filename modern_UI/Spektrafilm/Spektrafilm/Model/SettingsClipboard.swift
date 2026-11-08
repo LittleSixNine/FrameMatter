@@ -30,7 +30,7 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
         allCases.filter { $0 != .masks || FeatureFlags.masks || FeatureFlags.toneMask }
     }
 
-    case filmAndPaper, exposure, whiteBalance, filmEffects, printEffects, scenePlacement, masks
+    case filmAndPaper, exposure, whiteBalance, filmEffects, printEffects, scenePlacement, masks, postDev
 
     var id: String { rawValue }
 
@@ -62,6 +62,8 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
             ["params.printEffects", "params.preflashExposure"]
         case .scenePlacement:
             ["params.sceneLatitude", "placementNeedsFit"]
+        case .postDev:
+            ["adjustments"]
         case .masks:
             ["params.contrastMask", "masks"]
         }
@@ -70,7 +72,6 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
     /// Stored fields no group owns, and why.
     static let notCopied: [String: String] = [
         "decode.lensCorrection": "a property of the lens, not of the look",
-        "adjustments": "the Post-Dev grade, outside the 2026-09-23 positioning",
         "geometry": "crop and framing belong to the photograph (PRD §7)",
         "heldCrop": "the photograph's own crop, kept while Film Edge frames it",
         "noFilm": "Don't Apply Film Simulation is the frame's own choice, like its crop",
@@ -103,6 +104,7 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
         case .printEffects: L(.clipPrintEffects)
         case .scenePlacement: L(.clipScenePlacement)
         case .masks: L(.clipMasks)
+        case .postDev: L("Post-Dev", zh: "后期调色")
         }
     }
 
@@ -115,6 +117,7 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
         case .printEffects: L(.clipPrintEffectsHelp)
         case .scenePlacement: L(.clipScenePlacementHelp)
         case .masks: L(.clipMasksHelp)
+        case .postDev: L("Copy the complete post-print grade, including HSL.", zh: "复制完整的成片后调色，包括 HSL。")
         }
     }
 }
@@ -130,6 +133,7 @@ struct SettingsClip: Equatable, Sendable {
     func applied(to target: Sidecar) -> Sidecar {
         var out = target
         let s = settings
+        if groups.contains(.postDev) { out.adjustments = s.adjustments }
         if groups.contains(.filmAndPaper) {
             out.params.filmStock = s.params.filmStock
             out.params.printStock = s.params.printStock

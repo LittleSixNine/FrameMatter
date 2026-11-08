@@ -277,6 +277,14 @@ enum AgentSchema {
             ]
         }
 
+        for band in HSLAdjustments.names {
+            f += [
+                .init("adjustments.hsl.\(band).hue", .number(-30...30), "Post-print ProPhoto HSL: hue shift in degrees."),
+                .init("adjustments.hsl.\(band).saturation", .number(-100...100), "Post-print HSL saturation, percent."),
+                .init("adjustments.hsl.\(band).lightness", .number(-100...100), "Post-print HSL lightness, percent."),
+            ]
+        }
+
         // --- geometry ---
         f += [
             .init("geometry.crop.x", .number(0...1), "Crop left, normalised, before rotation."),

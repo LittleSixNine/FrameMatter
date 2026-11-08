@@ -320,6 +320,17 @@ between a slider that tracks the mouse and one that does not.
 `parity_schema.py` pin them: **a rename fails a test instead of silently
 rejecting every delta.**
 
+Post-Dev also offers eight cyclic hue ranges (red, orange, yellow, green,
+aqua, blue, purple, magenta), with hue, saturation and lightness in encoded
+ProPhoto RGB. The global HSL pass follows tone/colour balance and precedes
+curves; neutral settings bypass it exactly, grey is untouched, and values
+outside the working cube are preserved until the existing final clamp.
+Its independent uniform block does not enlarge local masks. Large local-mask
+arrays bind a Metal buffer instead of exceeding `setBytes`' 4 KiB limit.
+Older sidecars load neutral HSL. An explicit Post-Dev clipboard group copies
+the complete grade and is off for a fresh clipboard selection. Shared CLI/MCP
+schema exposes all 24 values; undo/redo restores the grade without a film render.
+
 ### 7.3 Resolution: two states, not a ladder
 
 - **Preview:** every interactive edit renders at the preview long edge — 3840,

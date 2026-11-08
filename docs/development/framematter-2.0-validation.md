@@ -15,3 +15,11 @@ The default resident full and repeated full reprint had different hashes. Reusin
 
 - default: proof 816.2 ms / 0 decode / 1 full reprint, export 2575.2 ms / 0 decode / 1 full reprint, return 41.4 ms / 0 decode / 0 full reprint.
 - deterministic: proof 820.0 ms / 0 decode / 1 full reprint, export 2319.2 ms / 0 decode / 1 full reprint, return 9.3 ms / 0 decode / 0 full reprint.
+
+## C — eight-range HSL (2026-11-09)
+
+- Native rail controls use eight colour selectors and the existing scrub sliders. Hue anchors wrap continuously through red; neutral HSL is an exact bypass. HSL operates on encoded ProPhoto after tone/colour balance, before curves. Grey and non-target ranges stay unchanged; excess values from preceding exposure survive until the existing final clamp.
+- Old sidecars load zero HSL; new values roundtrip. A new explicit Post-Dev clipboard group is off by default, and copies the complete grade only when selected. CLI/MCP share 24 bounded schema fields, readback and whole-patch refusal. Undo/redo restores a single-frame grade without film reprocessing.
+- 24 targeted model/schema/clipboard/GPU checks passed without skips, including red continuity, skin/saturated samples, tiny edits after out-of-range exposure, and 4/8 local masks. Global HSL has its own uniform block; existing mask size is unchanged, and oversized mask arrays use a Metal buffer.
+- One additional opt-in real-RAW workflow passed with zero skips: 7008×4672, no extra decode or render during grade/undo/redo, saved named uncompressed TIFF, ICC/compression readback, full RGB16 soft-proof/file hash equality. This controlled comparison disables grain/glare without changing defaults. The test was run directly with its RAW environment after xcodebuild correctly skipped it without that opt-in.
+- True-window HSL interaction is not claimed; the computer-use limitation in A remains.
