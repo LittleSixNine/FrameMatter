@@ -259,6 +259,7 @@ struct spk_session {
 // ---------------------------------------------------------------------------
 
 struct spk_engine {
+    explicit spk_engine(const char* dir) : resources_dir(dir), setup_cache(resources_dir) {}
     std::string resources_dir;
     Blob blob;
     Colour colour;
@@ -563,8 +564,7 @@ void spk_string_free(char* s) { std::free(s); }
 spk_engine* spk_engine_create(const char* resources_dir, void* device) {
     g_error.clear();
     if (!resources_dir) { g_error = "resources_dir is null"; return nullptr; }
-    auto engine = std::make_unique<spk_engine>();
-    engine->resources_dir = resources_dir;
+    auto engine = std::make_unique<spk_engine>(resources_dir);
 
     std::string error;
     if (!engine->blob.open(engine->resources_dir + "/spektrafilm_constants.bin", error)) {

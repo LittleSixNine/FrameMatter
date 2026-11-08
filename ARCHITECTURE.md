@@ -417,6 +417,11 @@ surface applies the geometry itself.
   (`ExportRecipe`). The export page proves the file at its own resolution
   before it is written (soft proof, §7.5 row 7c) — measured identical to the
   file, pixel for pixel.
+- **CAM16 cold setup can read qualified float64 artifacts** from that engine's
+  resource root on macOS. Version, constants, matrices, grids and checksum must
+  match; otherwise the unchanged serial computation runs. Six tracked tables
+  add about 2.2 MB, need no runtime Python and do not change the knee or hot
+  in-memory setup cache. Linux/Vulkan retains its original computation.
 - **TIFF compression is per recipe.** Ordinary 16-bit TIFF accepts LZW (5,
   including missing fields in older recipes) or uncompressed (1). Both use
   the same pixels, metadata, preview-page and atomic writer. DI stays on its

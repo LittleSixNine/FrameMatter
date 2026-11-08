@@ -43,6 +43,14 @@ if [ -n "$missing" ]; then
   exit 1
 fi
 
+# Optional on older bundles: the engine computes the exact serial table on a miss.
+if [ -d "$res/engine/cam16" ]; then
+  (cd "$res/engine/cam16" && shasum -a 256 -c SHA256SUMS) || {
+    echo "error: CAM16 artifacts are incomplete or stale; run engine/build.sh bundle" >&2
+    exit 1
+  }
+fi
+
 licences=""
 for f in README.txt Effect-Textures-NOTICE.txt PhotoTrail-Metadata-NOTICE.txt FrameMatter-COPYRIGHT.txt DSEG-OFL-1.1.txt FrameMatter-GPL-3.0.txt Profiles-and-LUTs-CC-BY-SA-4.0.txt \
          Profiles-and-LUTs-CHANGELOG.txt metal-cpp-Apache-2.0.txt \
