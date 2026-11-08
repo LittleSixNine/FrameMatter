@@ -75,6 +75,7 @@ final class SettingsClipboardTests: XCTestCase {
         s.decode.temperature = 3400
         s.decode.tint = 12
         s.decode.lensCorrection = true
+        s.decode.perspective.vertical = 5
         var p = FilmParams()
         p.filmStock = "kodak_gold_200"
         p.printStock = "fujifilm_crystal_archive_typeii"

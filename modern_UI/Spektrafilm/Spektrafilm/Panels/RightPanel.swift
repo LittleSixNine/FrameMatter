@@ -43,6 +43,7 @@ struct RightPanel: View {
             // exposure, its white balance; Film Format describes one frame
             // and sets the grain's scale for the piece.
             s.append(("camera", AnyView(CameraSection(session: session))))
+            s.append(("perspective", AnyView(PerspectiveSection(session: session))))
             s.append(("filmFormat", AnyView(FilmFormatSection(session: session))))
             s.append(("scenePlacement", AnyView(ScenePlacementSection(session: session))))
             // Withdrawn for the next version (`FeatureFlags.toneMask`).

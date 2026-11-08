@@ -164,6 +164,8 @@ final class Session: CanvasHost {
               if curvesChanged { renderer.setCurves(newValue.curves) } else { renderer.needsDraw?() }
               scheduleSave() }
     }
+    var canCorrectPerspective: Bool { pair == nil && decoded?.isRAW == true }
+
     var decode: DecodeSettings {
         get {
             guard var d = focusHole?.decode else { return sidecar.decode }
@@ -172,7 +174,9 @@ final class Session: CanvasHost {
             if d.whiteBalance == .asShot, let shot = asShotWhiteBalance { d.temperature = shot.temperature; d.tint = shot.tint }
             return d
         }
-        set { // On a pair the white balance and lens correction are the
+        set {
+              guard newValue.perspective == decode.perspective || canCorrectPerspective || newValue.perspective.isNeutral else { return }
+              // On a pair the white balance and lens correction are the
               // picked frame's own, written to that frame.
               if pair != nil { setFocusDecode(newValue); return }
               guard newValue != sidecar.decode else { return }
@@ -872,7 +876,7 @@ final class Session: CanvasHost {
 
     private static func storedClipboardGroups(in defaults: UserDefaults) -> Set<ClipboardGroup> {
         guard let raw = defaults.stringArray(forKey: clipboardGroupsKey)
-        else { return Set(ClipboardGroup.allCases.filter { $0 != .postDev }) }
+        else { return Set(ClipboardGroup.allCases.filter { $0 != .postDev && $0 != .perspective }) }
         return Set(raw.compactMap(ClipboardGroup.init(rawValue:)))
     }
 
@@ -4038,11 +4042,13 @@ final class Session: CanvasHost {
     /// effect the individual setters would have had.
     @discardableResult
     private func pasteLive(_ clip: SettingsClip) -> Bool {
-        let next = clip.applied(to: sidecar)
+        let prior = sidecar
+        let next = clip.applied(to: prior, perspectiveAllowed: canCorrectPerspective)
         guard next != sidecar else { return false }
         pushUndo()
         let decodeChanged = next.decode != sidecar.decode
         sidecar = next
+        pushLayer2(next.adjustments)
         if clip.groups.contains(.filmEffects) { recomputeFilmFormat(beforeOpen: true) }
         // The clip carries a Tone, so the label follows the paste the same way
         // it follows the pill.
@@ -4051,13 +4057,15 @@ final class Session: CanvasHost {
             selectedMaskID = sidecar.masks.first?.id
             syncMasks()
         }
+        let onlyGrade = pair == nil && next.params == prior.params && next.geometry == prior.geometry
+            && next.decode == prior.decode && next.masks == prior.masks && next.noFilm == prior.noFilm
         if decodeChanged {
             previewSoft = true
             scheduleReopen()
-        } else {
+        } else if !onlyGrade {
             requestPrint()
         }
-        markStale()
+        if !onlyGrade { markStale() }
         scheduleSave()
         // A developed frame can fit at once; one that is not yet will when its
         // first render lands (`applyRender`).
@@ -4086,7 +4094,7 @@ final class Session: CanvasHost {
 
     private func pasteOffline(_ clip: SettingsClip, to url: URL) -> SettingsWriteResult {
         let current = Sidecar.load(for: url) ?? Sidecar()
-        var next = clip.applied(to: current)
+        var next = clip.applied(to: current, perspectiveAllowed: ImageDecoder.rawExtensions.contains(url.pathExtension.lowercased()))
         guard next != current else { return .unchanged }
         next.state = .stale
         do {

@@ -98,4 +98,18 @@ final class HSLTests: XCTestCase {
         for (x,y) in zip(before, after) { XCTAssertLessThan(abs(Int(x)-Int(y)), 5) }
     }
 
+    func testEveryAnchorChangesOnlyItsOwnCenteredColor() throws {
+        let colors: [[Float]] = [[1,0,0],[1,0.5,0],[1,1,0],[0,1,0],[0,1,1],[0,0,1],[0.5,0,1],[1,0,1]]
+        let neutral=try pixels(colors,Adjustments())
+        for band in 0..<8 {
+            var a=Adjustments();a.hsl[keyPath:HSLAdjustments.keys[band]].hue=10
+            let changed=try pixels(colors,a)
+            for color in 0..<8 {
+                let range=(color*4)..<(color*4+3)
+                if color == band {XCTAssertNotEqual(Array(changed[range]),Array(neutral[range]))}
+                else {XCTAssertEqual(Array(changed[range]),Array(neutral[range]))}
+            }
+        }
+    }
+
 }

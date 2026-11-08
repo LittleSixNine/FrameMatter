@@ -44,6 +44,18 @@ struct DecodeSettings: Codable, Equatable, Hashable, Sendable {
     /// straighten made before it was turned on would no longer describe the
     /// same rectangle.
     var lensCorrection: Bool = false
+    var perspective = RawPerspective()
+
+    init() {}
+    private enum CodingKeys: String, CodingKey { case whiteBalance, temperature, tint, lensCorrection, perspective }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        whiteBalance = try c.decode(WhiteBalance.self, forKey: .whiteBalance)
+        temperature = try c.decode(Double.self, forKey: .temperature)
+        tint = try c.decode(Double.self, forKey: .tint)
+        lensCorrection = try c.decode(Bool.self, forKey: .lensCorrection)
+        perspective = try c.decodeIfPresent(RawPerspective.self, forKey: .perspective) ?? RawPerspective()
+    }
 }
 
 /// The two "As Shot" checkboxes beside the white-balance sliders, as a value.

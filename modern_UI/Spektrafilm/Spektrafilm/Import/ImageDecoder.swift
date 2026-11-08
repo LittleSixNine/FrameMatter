@@ -259,7 +259,8 @@ enum ImageDecoder {
         let asShotTint = displayResult.asShotTint
         try checkpoint()
         guard let display = displayResult.filter.outputImage else { throw Failure.unsupported(url) }
-        return DecodedImage(linear: linear, display: display, pixelSize: linear.extent.size,
+        return DecodedImage(linear: try settings.perspective.applying(to: linear),
+                            display: try settings.perspective.applying(to: display), pixelSize: linear.extent.size,
                             isRAW: true,
                             lensCorrectionSupported: displayResult.filter.isLensCorrectionSupported,
                             sourceURL: url,

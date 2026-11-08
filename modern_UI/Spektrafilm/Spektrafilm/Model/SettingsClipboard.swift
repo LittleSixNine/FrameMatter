@@ -30,7 +30,7 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
         allCases.filter { $0 != .masks || FeatureFlags.masks || FeatureFlags.toneMask }
     }
 
-    case filmAndPaper, exposure, whiteBalance, filmEffects, printEffects, scenePlacement, masks, postDev
+    case filmAndPaper, exposure, whiteBalance, filmEffects, printEffects, scenePlacement, masks, postDev, perspective
 
     var id: String { rawValue }
 
@@ -62,6 +62,8 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
             ["params.printEffects", "params.preflashExposure"]
         case .scenePlacement:
             ["params.sceneLatitude", "placementNeedsFit"]
+        case .perspective:
+            ["decode.perspective"]
         case .postDev:
             ["adjustments"]
         case .masks:
@@ -104,6 +106,7 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
         case .printEffects: L(.clipPrintEffects)
         case .scenePlacement: L(.clipScenePlacement)
         case .masks: L(.clipMasks)
+        case .perspective: L("RAW Perspective", zh: "RAW 透视")
         case .postDev: L("Post-Dev", zh: "后期调色")
         }
     }
@@ -117,6 +120,7 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
         case .printEffects: L(.clipPrintEffectsHelp)
         case .scenePlacement: L(.clipScenePlacementHelp)
         case .masks: L(.clipMasksHelp)
+        case .perspective: L("Copy both perspective axes to single RAW targets only.", zh: "仅向单张 RAW 复制两个透视轴。")
         case .postDev: L("Copy the complete post-print grade, including HSL.", zh: "复制完整的成片后调色，包括 HSL。")
         }
     }
@@ -130,9 +134,10 @@ struct SettingsClip: Equatable, Sendable {
     var sourceName: String
 
     /// `target` with this clip's groups written into it, and nothing else.
-    func applied(to target: Sidecar) -> Sidecar {
+    func applied(to target: Sidecar, perspectiveAllowed: Bool = true) -> Sidecar {
         var out = target
         let s = settings
+        if perspectiveAllowed && groups.contains(.perspective) { out.decode.perspective = s.decode.perspective }
         if groups.contains(.postDev) { out.adjustments = s.adjustments }
         if groups.contains(.filmAndPaper) {
             out.params.filmStock = s.params.filmStock

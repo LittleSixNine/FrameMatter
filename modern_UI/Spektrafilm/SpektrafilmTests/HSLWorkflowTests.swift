@@ -53,6 +53,12 @@ final class HSLWorkflowTests: XCTestCase {
         XCTAssertEqual(session.log.records().filter { $0.message == "render" }.count,beforeRenderCount)
         session.flushSave();XCTAssertEqual(Sidecar.load(for:url)?.adjustments,adjusted)
         XCTAssertFalse(session.clipboardGroups.contains(.postDev))
+        session.clipboardGroups=[.postDev];session.copySettings()
+        session.adjustments=Adjustments();session.pasteSettings()
+        XCTAssertEqual(session.adjustments,adjusted)
+        XCTAssertEqual(session.renderer.hsl.active,1)
+        XCTAssertEqual(session.log.records().filter {$0.message == "render"}.count,beforeRenderCount)
+
         let store=ExportRecipeStore(url:root.appending(path:"recipes.json"))
         var recipe=try XCTUnwrap(store.selected);recipe.name="HSL proof";recipe.format = .tiff
         recipe.tiffCompression = .none;recipe.colorSpace = .displayP3

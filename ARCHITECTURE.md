@@ -331,6 +331,18 @@ Older sidecars load neutral HSL. An explicit Post-Dev clipboard group copies
 the complete grade and is off for a fresh clipboard selection. Shared CLI/MCP
 schema exposes all 24 values; undo/redo restores the grade without a film render.
 
+Single RAW perspective belongs to the decode (`decode.perspective`, vertical and
+horizontal, ±30 degrees). Both the scene-linear and original-display images use
+the same centred projective correction, preserving the source dimensions, before
+any film or film-edge crop. Existing post-print geometry is unchanged. A zero
+correction returns the original image object; older edits load zero. Decode and
+print identities include the correction. The newly encoded neutral field causes
+one cold cache miss for older disk entries; photographs and edits do not change.
+Pairs explicitly zero perspective for composition/cache identity while retaining
+the source/hole's saved setting. An opt-in RAW Perspective clipboard group skips
+non-RAW/pair targets. CLI/MCP reject a non-neutral correction outside a decoded
+single RAW before applying any part of the patch.
+
 ### 7.3 Resolution: two states, not a ladder
 
 - **Preview:** every interactive edit renders at the preview long edge — 3840,

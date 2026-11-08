@@ -304,6 +304,8 @@ enum AgentSchema {
 
         // --- decode: the RAW development before the film ---
         f += [
+            .init("decode.perspective.vertical", .number(-30...30), "RAW-only perspective before film: vertical, degrees."),
+            .init("decode.perspective.horizontal", .number(-30...30), "RAW-only perspective before film: horizontal, degrees."),
             .init("decode.whiteBalance", .choice(DecodeSettings.WhiteBalance.allCases.map(\.rawValue)),
                   "Decode white balance. A preset sets temperature itself."),
             .init("decode.temperature", .number(2000...12000), "Decode Kelvin (makes whiteBalance Custom)."),
@@ -484,6 +486,9 @@ extension Session {
         }
         if positive, touched.contains("params.scanFilm"), !want.params.scanFilm {
             throw AgentError.refused("\(want.params.filmStock) is a slide film; scanFilm must stay true.")
+        }
+        if has("decode.perspective"), !canCorrectPerspective, !want.decode.perspective.isNeutral {
+            throw AgentError.refused("Perspective correction requires a single decoded RAW frame.")
         }
         if has("decode.lensCorrection"), want.decode.lensCorrection, !lensCorrectionEnabled {
             throw AgentError.refused(lensCorrectionReason)

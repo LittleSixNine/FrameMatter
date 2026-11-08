@@ -177,6 +177,7 @@
 		92B323B5F485830133567446 /* LightLeaks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LightLeaks.swift"; sourceTree = "<group>"; };
 		BD3FA299D7EB9C019C5EB676 /* Mask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Mask.swift"; sourceTree = "<group>"; };
 		2AFE54D96D2505F69D272CBC /* Params.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Params.swift"; sourceTree = "<group>"; };
+		EAFEC317CB9BAF9E218E0DB3 /* RawPerspective.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RawPerspective.swift"; sourceTree = "<group>"; };
 		7CF62F1A128C34E4124DFC38 /* Scratch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Scratch.swift"; sourceTree = "<group>"; };
 		DD7E26A3E79A78EBDD307CA5 /* Session+FilmEdge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Session+FilmEdge.swift"; sourceTree = "<group>"; };
 		5E28E5289A5F9446065A3593 /* Session.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Session.swift"; sourceTree = "<group>"; };
@@ -204,6 +205,7 @@
 				92B323B5F485830133567446 /* LightLeaks.swift */,
 				BD3FA299D7EB9C019C5EB676 /* Mask.swift */,
 				2AFE54D96D2505F69D272CBC /* Params.swift */,
+				EAFEC317CB9BAF9E218E0DB3 /* RawPerspective.swift */,
 				7CF62F1A128C34E4124DFC38 /* Scratch.swift */,
 				DD7E26A3E79A78EBDD307CA5 /* Session+FilmEdge.swift */,
 				5E28E5289A5F9446065A3593 /* Session.swift */,
@@ -416,6 +418,8 @@
 		FEC7699D811DD42DBF704EEE /* OpenPathTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OpenPathTests.swift"; sourceTree = "<group>"; };
 		7D4B68041F25E6391CDA5225 /* PanelResizeWiringTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PanelResizeWiringTests.swift"; sourceTree = "<group>"; };
 		670BA02F66C2FB67FF1B53EE /* ParamsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ParamsTests.swift"; sourceTree = "<group>"; };
+		1F7D493E10C34B077E04183D /* PerspectiveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PerspectiveTests.swift"; sourceTree = "<group>"; };
+		FA6F0FF54DC4B8B79BA52B49 /* PerspectiveWorkflowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PerspectiveWorkflowTests.swift"; sourceTree = "<group>"; };
 		01CA7776C0EA70DF7CA1038D /* PrintCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PrintCacheTests.swift"; sourceTree = "<group>"; };
 		A02C1261DEB889B4B7370EFA /* PrintLUTTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PrintLUTTests.swift"; sourceTree = "<group>"; };
 		E3EB8BA02101A5094E3983D5 /* PrintWritebackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PrintWritebackTests.swift"; sourceTree = "<group>"; };
@@ -492,6 +496,8 @@
 				FEC7699D811DD42DBF704EEE /* OpenPathTests.swift */,
 				7D4B68041F25E6391CDA5225 /* PanelResizeWiringTests.swift */,
 				670BA02F66C2FB67FF1B53EE /* ParamsTests.swift */,
+				1F7D493E10C34B077E04183D /* PerspectiveTests.swift */,
+				FA6F0FF54DC4B8B79BA52B49 /* PerspectiveWorkflowTests.swift */,
 				01CA7776C0EA70DF7CA1038D /* PrintCacheTests.swift */,
 				A02C1261DEB889B4B7370EFA /* PrintLUTTests.swift */,
 				E3EB8BA02101A5094E3983D5 /* PrintWritebackTests.swift */,
@@ -724,6 +730,7 @@
 		3BD68BB443433158F8AC33B1 /* LightLeaks.swift */ = {isa = PBXBuildFile; fileRef = 92B323B5F485830133567446; };
 		A19ACBE78BD64D5DB3012243 /* Mask.swift */ = {isa = PBXBuildFile; fileRef = BD3FA299D7EB9C019C5EB676; };
 		6822B6E3426D49DCE0044D28 /* Params.swift */ = {isa = PBXBuildFile; fileRef = 2AFE54D96D2505F69D272CBC; };
+		DB15DC05164D69139BDE5A4C /* RawPerspective.swift */ = {isa = PBXBuildFile; fileRef = EAFEC317CB9BAF9E218E0DB3; };
 		D0FDAFBDB9AD3B9BB4B23176 /* Scratch.swift */ = {isa = PBXBuildFile; fileRef = 7CF62F1A128C34E4124DFC38; };
 		DF567A683015AAB03F594D6A /* Session+FilmEdge.swift */ = {isa = PBXBuildFile; fileRef = DD7E26A3E79A78EBDD307CA5; };
 		88BD30B14D98C97D23F43C21 /* Session.swift */ = {isa = PBXBuildFile; fileRef = 5E28E5289A5F9446065A3593; };
@@ -867,6 +874,7 @@
 				3BD68BB443433158F8AC33B1 /* LightLeaks.swift */,
 				A19ACBE78BD64D5DB3012243 /* Mask.swift */,
 				6822B6E3426D49DCE0044D28 /* Params.swift */,
+				DB15DC05164D69139BDE5A4C /* RawPerspective.swift */,
 				D0FDAFBDB9AD3B9BB4B23176 /* Scratch.swift */,
 				DF567A683015AAB03F594D6A /* Session+FilmEdge.swift */,
 				88BD30B14D98C97D23F43C21 /* Session.swift */,
@@ -1009,6 +1017,8 @@
 		DB25777DBD5A1C4613A4AB95 /* OpenPathTests.swift */ = {isa = PBXBuildFile; fileRef = FEC7699D811DD42DBF704EEE; };
 		CCB54740C6B298D2CB260013 /* PanelResizeWiringTests.swift */ = {isa = PBXBuildFile; fileRef = 7D4B68041F25E6391CDA5225; };
 		039B6FFCF4BFB676662323BD /* ParamsTests.swift */ = {isa = PBXBuildFile; fileRef = 670BA02F66C2FB67FF1B53EE; };
+		91C5CDA806BF0F7698F4D7A9 /* PerspectiveTests.swift */ = {isa = PBXBuildFile; fileRef = 1F7D493E10C34B077E04183D; };
+		1AA14C0BAACE21C2F250D0FB /* PerspectiveWorkflowTests.swift */ = {isa = PBXBuildFile; fileRef = FA6F0FF54DC4B8B79BA52B49; };
 		D9117673191FD5C22C19AC20 /* PrintCacheTests.swift */ = {isa = PBXBuildFile; fileRef = 01CA7776C0EA70DF7CA1038D; };
 		503F68DEA38B3A6A770B76FC /* PrintLUTTests.swift */ = {isa = PBXBuildFile; fileRef = A02C1261DEB889B4B7370EFA; };
 		498EAF27D8FD685268C6725B /* PrintWritebackTests.swift */ = {isa = PBXBuildFile; fileRef = E3EB8BA02101A5094E3983D5; };
@@ -1101,6 +1111,7 @@
 		D8511DB6366DA94C7F73C7E6 /* LightLeaks.swift */ = {isa = PBXBuildFile; fileRef = 92B323B5F485830133567446; };
 		6B8029673A50DF9EFFE45066 /* Mask.swift */ = {isa = PBXBuildFile; fileRef = BD3FA299D7EB9C019C5EB676; };
 		E90F7C134FA143167A66ED5F /* Params.swift */ = {isa = PBXBuildFile; fileRef = 2AFE54D96D2505F69D272CBC; };
+		E882E26EF400B52CF04AA585 /* RawPerspective.swift */ = {isa = PBXBuildFile; fileRef = EAFEC317CB9BAF9E218E0DB3; };
 		4BD9D205D8843746F5730026 /* Scratch.swift */ = {isa = PBXBuildFile; fileRef = 7CF62F1A128C34E4124DFC38; };
 		2EDF729FF7E2F40EE520272A /* Session+FilmEdge.swift */ = {isa = PBXBuildFile; fileRef = DD7E26A3E79A78EBDD307CA5; };
 		9BB0059CCEA6F6A2DDE94304 /* Session.swift */ = {isa = PBXBuildFile; fileRef = 5E28E5289A5F9446065A3593; };
@@ -1224,6 +1235,8 @@
 				DB25777DBD5A1C4613A4AB95 /* OpenPathTests.swift */,
 				CCB54740C6B298D2CB260013 /* PanelResizeWiringTests.swift */,
 				039B6FFCF4BFB676662323BD /* ParamsTests.swift */,
+				91C5CDA806BF0F7698F4D7A9 /* PerspectiveTests.swift */,
+				1AA14C0BAACE21C2F250D0FB /* PerspectiveWorkflowTests.swift */,
 				D9117673191FD5C22C19AC20 /* PrintCacheTests.swift */,
 				503F68DEA38B3A6A770B76FC /* PrintLUTTests.swift */,
 				498EAF27D8FD685268C6725B /* PrintWritebackTests.swift */,
@@ -1316,6 +1329,7 @@
 				D8511DB6366DA94C7F73C7E6 /* LightLeaks.swift */,
 				6B8029673A50DF9EFFE45066 /* Mask.swift */,
 				E90F7C134FA143167A66ED5F /* Params.swift */,
+				E882E26EF400B52CF04AA585 /* RawPerspective.swift */,
 				4BD9D205D8843746F5730026 /* Scratch.swift */,
 				2EDF729FF7E2F40EE520272A /* Session+FilmEdge.swift */,
 				9BB0059CCEA6F6A2DDE94304 /* Session.swift */,

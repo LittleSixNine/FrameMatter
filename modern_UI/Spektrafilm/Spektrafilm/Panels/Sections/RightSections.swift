@@ -150,3 +150,21 @@ struct HSLSection: View {
                 set: { var a = session.layerAdjustments; a.hsl[keyPath: HSLAdjustments.keys[selected]][keyPath: key] = $0; session.layerAdjustments = a })
     }
 }
+
+struct PerspectiveSection: View {
+    @Bindable var session: Session
+    var body: some View {
+        PanelSection(L("Perspective", zh: "透视校正"), key: "perspective", initiallyExpanded: false,
+                     menu: { AnyView(Button(L(.helpReset)) { var d=session.decode;d.perspective=RawPerspective();session.decode=d }) }, metrics: .right) {
+            RailRows {
+                ScrubSlider(label: L("Vertical", zh: "垂直"), value: axis(\.vertical), range: -30...30, snap: 1, format: { String(format:"%+.1f°",$0) })
+                ScrubSlider(label: L("Horizontal", zh: "水平"), value: axis(\.horizontal), range: -30...30, snap: 1, format: { String(format:"%+.1f°",$0) })
+                Text(L("RAW source correction, before film.", zh: "仅单张 RAW，在胶片模拟前校正。"))
+                    .font(Theme.Font.caption).foregroundStyle(Theme.secondaryText)
+            }.disabled(!session.canCorrectPerspective)
+        }
+    }
+    private func axis(_ key: WritableKeyPath<RawPerspective, Double>) -> Binding<Double> {
+        Binding(get:{session.decode.perspective[keyPath:key]},set:{var d=session.decode;d.perspective[keyPath:key]=$0;session.decode=d})
+    }
+}
