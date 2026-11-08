@@ -1992,6 +1992,7 @@ bool Pipeline::film_couplers(const Chain& in, Chain& out, std::string& error) {
     SPK_NODE(node_dir_couplers(in.cur, in.log_e_film, next, error));
     out = in;
     out.cur = next;
+    out.log_e_film = Image{};
     return true;
 }
 
