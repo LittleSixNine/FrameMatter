@@ -57,6 +57,20 @@ struct CacheKey: Codable, Hashable, Sendable {
         ].joined(separator: "|")
     }
 
+    /// Zero perspective must retain the pre-perspective disk identity; sidecar/schema encoding stays complete.
+    static func decodeConfiguration(_ settings: DecodeSettings) -> String {
+        struct Identity: Encodable {
+            let whiteBalance: DecodeSettings.WhiteBalance
+            let temperature: Double
+            let tint: Double
+            let lensCorrection: Bool
+            let perspective: RawPerspective?
+        }
+        return encodedConfiguration(Identity(whiteBalance: settings.whiteBalance,
+            temperature: settings.temperature, tint: settings.tint, lensCorrection: settings.lensCorrection,
+            perspective: settings.perspective.isNeutral ? nil : settings.perspective))
+    }
+
     static func encodedConfiguration<T: Encodable>(_ value: T) -> String {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]

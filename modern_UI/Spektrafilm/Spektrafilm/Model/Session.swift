@@ -1971,7 +1971,7 @@ final class Session: CanvasHost {
         CacheKey(
             kind: .decode,
             sourceIdentity: CacheKey.sourceIdentity(for: url),
-            configuration: CacheKey.encodedConfiguration(settings),
+            configuration: CacheKey.decodeConfiguration(settings),
             previewLongEdge: previewLongEdge,
             engineVersion: engineVersion
         )
@@ -1990,7 +1990,7 @@ final class Session: CanvasHost {
         return CacheKey(
             kind: tier == .live ? .printLive : .printFull,
             sourceIdentity: sourceIdentity ?? CacheKey.sourceIdentity(for: url),
-            configuration: "single-print-3;rgba16Unorm;" + CacheKey.encodedConfiguration(effectiveDecode)
+            configuration: "single-print-3;rgba16Unorm;" + CacheKey.decodeConfiguration(effectiveDecode)
                 + ";" + printStamp(params),
             tier: tier,
             previewLongEdge: tier == .live ? previewLongEdge : nil,

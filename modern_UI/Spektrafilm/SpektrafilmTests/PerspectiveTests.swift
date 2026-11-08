@@ -82,4 +82,43 @@ final class PerspectiveTests: XCTestCase {
         XCTAssertEqual(before,PairComposer.renderKey(hole,size:CGSize(width:6000,height:4000),hole:CGSize(width:1800,height:2400),aspect:0.75))
     }
 
+    private struct LegacyDecode: Encodable {
+        var whiteBalance = DecodeSettings.WhiteBalance.asShot
+        var temperature: Double = 5500
+        var tint: Double = 0
+        var lensCorrection = false
+    }
+
+    func testNeutralPerspectiveKeepsTheHistoricalDisplayAndPrintKeys() {
+        let url=URL(fileURLWithPath:"/tmp/legacy-neutral.ARW"),settings=DecodeSettings()
+        let legacy=LegacyDecode()
+        let display=Session.displayCacheKey(url:url,settings:settings,previewLongEdge:2560,engineVersion:"test")
+        XCTAssertEqual(display.configuration,CacheKey.encodedConfiguration(legacy))
+        var effective=legacy;effective.temperature=0;effective.tint=0
+        for tier in [CacheTier.live,.full] {
+            let print=Session.printCacheKey(url:url,params:.default,settings:settings,tier:tier,previewLongEdge:2560,engineVersion:"test")
+            XCTAssertEqual(print.configuration,"single-print-3;rgba16Unorm;"+CacheKey.encodedConfiguration(effective)+";"+Session.printStamp(.default))
+        }
+        var corrected=settings;corrected.perspective.vertical=10
+        let key=Session.displayCacheKey(url:url,settings:corrected,previewLongEdge:2560,engineVersion:"test")
+        XCTAssertTrue(key.configuration.contains("\"horizontal\":0"));XCTAssertTrue(key.configuration.contains("\"vertical\":10"))
+    }
+
+    func testNeutralPerspectiveReadsHistoricalDisplayAndOrdinaryPrintCacheValues() async throws {
+        let root=FileManager.default.temporaryDirectory.appending(path:"legacy-perspective-cache-\(UUID())")
+        defer {try? FileManager.default.removeItem(at:root)}
+        let store=try DiskCacheStore(root:root),url=root.appending(path:"source.ARW")
+        let source=CacheKey.sourceIdentity(for:url),legacy=LegacyDecode(),data=Data(repeating:123,count:8)
+        var normalized=legacy;normalized.temperature=0;normalized.tint=0
+        let oldDisplay=CacheKey(kind:.decode,sourceIdentity:source,configuration:CacheKey.encodedConfiguration(legacy),previewLongEdge:2560,engineVersion:"test")
+        let oldPrint=CacheKey(kind:.printLive,sourceIdentity:source,configuration:"single-print-3;rgba16Unorm;"+CacheKey.encodedConfiguration(normalized)+";"+Session.printStamp(.default),tier:.live,previewLongEdge:2560,engineVersion:"test")
+        let newDisplay=Session.displayCacheKey(url:url,settings:DecodeSettings(),previewLongEdge:2560,engineVersion:"test")
+        let newPrint=Session.printCacheKey(url:url,params:.default,tier:.live,previewLongEdge:2560,engineVersion:"test")
+        for (old,new) in [(oldDisplay,newDisplay),(oldPrint,newPrint)] {
+            try await store.store(key:old,data:data,width:1,height:1,format:"rgba16Unorm",costMs:1)
+            let restored=try await store.load(new)
+            XCTAssertEqual(restored?.data,data)
+        }
+    }
+
 }
