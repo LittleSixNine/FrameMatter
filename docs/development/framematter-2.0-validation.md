@@ -11,7 +11,7 @@
 
 Two isolated real-host runs used the same copied 7008×4672 RAW: normal grain/glare and a deterministic control with both disabled. Both passed, zero skips. Proof and ordinary export each issued one full reprint and no decode; after another frame developed, returning displayed the cached print without decoding or waiting for a full render.
 
-The default resident full and repeated full reprint had different hashes. Reusing that resident texture would freeze an existing stochastic redraw and change the current product behavior. The deterministic control matched, but a single non-default condition is insufficient evidence for a generally useful cache. **No new reuse path was added.** This avoids changing glare/grain semantics or admitting ambiguous pairs, DI or film edges. Timings below are individual observations, not benchmark medians.
+The default resident full and repeated full reprint had different hashes. Reusing that resident texture would freeze an existing stochastic redraw and change the current product behavior. The deterministic control matched, but a single non-default condition is insufficient evidence for a generally useful cache. **No new reuse path was added.** This avoids changing glare/grain semantics or admitting ambiguous pairs, DI or film edges. No simultaneous system-load sample was captured for these two probes; the timings below are individual observations, not benchmark medians or speedup evidence.
 
 - default: proof 816.2 ms / 0 decode / 1 full reprint, export 2575.2 ms / 0 decode / 1 full reprint, return 41.4 ms / 0 decode / 0 full reprint.
 - deterministic: proof 820.0 ms / 0 decode / 1 full reprint, export 2319.2 ms / 0 decode / 1 full reprint, return 9.3 ms / 0 decode / 0 full reprint.
@@ -38,3 +38,15 @@ D final gate: 32 targeted checks passed with zero skips or failures, plus an app
 ### D follow-up — preserve neutral cache identity
 
 Independent review requested preserving existing hits for photographs without perspective. Two new regressions first failed with 5 assertions: historical display/live/full key strings changed and two stored values missed. The cache-only Codable view now omits zero perspective while including both axes at nonzero values. Normal sidecar/MCP encoding is unchanged. Seven perspective/cache checks passed without skips, including reads of values stored under the frozen pre-perspective keys.
+
+## Research — scene curve before film (2026-11-09)
+
+A private controlled study used one fixed scene-linear photograph and a synthetic gray/colour control, with the same optical engine, fixed exposure and stochastic stages disabled. Six optical renders and two bit-identical baseline returns completed; an isolated probe used the current local Metal Layer 2 for a post curve matched to the gray response. Six native TIFFs passed full RGB16/ICC readback and all view PNGs used the same sRGB conversion/profile.
+
+The selected before/after curves produced similar overall tone but different colour/local transitions. The gray match still had a residual, and one scene does not establish universal fidelity or benefit. This supports keeping the two stages conceptually distinct; it does not justify a new default or a production scene-curve control in this round. No image, private path or one-off study probe is included in the public target.
+
+## Final integration
+
+Final functional source: `900e1b9` on `development/framematter-2.0`. The built application passed its build. XCTest: **652 total = 576 passed + 75 skipped + 1 existing expected failure; 0 unexpected failures**. Skips are 73 unavailable original fixtures and 2 opt-in cases; the new real-RAW HSL/perspective and original RAW cache regression actually ran with a copied input in an isolated user directory. The existing expected failure is the uncropped histogram. DiagnosticsTests retains a QoS runtime warning.
+
+A 650-test integration had already passed before review requested neutral-key compatibility; the final 652-test integration was necessary because that follow-up changed code and added two regressions. Native GPU smoke against the actual application's Metal library passed, and the fast-math guard rejected unsafe math while accepting the shipped safe library. No full Python-oracle parity or cross-Mac/Linux acceptance is claimed. GUI save/reopen remains unverified, and the date glyph did not receive an independent geometry ROI check. No commit was pushed or published; the separate startup-tool work on main was left intact.
