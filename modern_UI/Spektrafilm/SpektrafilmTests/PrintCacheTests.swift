@@ -183,4 +183,127 @@ final class PrintCacheTests: XCTestCase {
         XCTAssertNil(session.renderer.store.print(for: url),
                      "a print made by a different engine version was restored")
     }
+    func testPrintIdentityTracksDecodeButIgnoresAsShotReadouts() {
+        let url = URL(fileURLWithPath: "/tmp/print-identity")
+        func key(_ settings: DecodeSettings) -> CacheKey {
+            Session.printCacheKey(url: url, params: .default, settings: settings,
+                                  tier: .live, previewLongEdge: 2560, engineVersion: "test")
+        }
+        let original = DecodeSettings()
+        var changed = original
+        changed.temperature = 7800
+        changed.tint = 17
+        XCTAssertEqual(key(original), key(changed), "as-shot UI readouts changed actual input identity")
+        changed.whiteBalance = .custom
+        XCTAssertNotEqual(key(original), key(changed))
+        let custom = key(changed)
+        changed.lensCorrection.toggle()
+        XCTAssertNotEqual(custom, key(changed))
+        let old = CacheKey(kind: .printLive, sourceIdentity: key(original).sourceIdentity,
+                           configuration: Session.printStamp(.default), tier: .live,
+                           previewLongEdge: 2560, engineVersion: "test")
+        XCTAssertNotEqual(old, key(original), "ambiguous legacy namespace is still readable")
+    }
+
+    func testDecodeEditDuringDiskLookupRejectsTheCompletedOldRead() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "print-read-race-\(UUID())")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let url = root.appending(path: "frame.tif")
+        try Data().write(to: url)
+        let session = Session(diagnostics: try diagnostics(),
+                              diskCache: try DiskCacheStore(root: root.appending(path: "cache")))
+        try await waitUntil("engine version") { session.diagnostics.engineVersion != nil }
+        let store = try DiskCacheStore(root: root.appending(path: "cache"))
+        let key = Session.printCacheKey(url: url, params: .default, tier: .live,
+                                       previewLongEdge: session.previewLongEdge,
+                                       engineVersion: try XCTUnwrap(session.diagnostics.engineVersion))
+        try await store.store(key: key, data: Data(repeating: 0x22, count: 16),
+                              width: 2, height: 1, sourceWidth: 5504, sourceHeight: 8256,
+                              format: "rgba16Unorm", costMs: 1)
+        var lookedUp = false
+        session.afterPrintLookupForTesting = {
+            lookedUp = true
+            var decode = session.decode
+            decode.whiteBalance = .custom
+            decode.temperature = 3200
+            session.decode = decode
+        }
+        session.open(urls: [url])
+        try await waitUntil("the in-flight lookup") { lookedUp }
+        XCTAssertNil(session.renderer.store.print(for: url), "the completed A read was relabelled as B")
+        session.afterPrintLookupForTesting = nil
+    }
+
+    func testRAMPrintRejectsChangedDecodeAndReplacedSource() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "print-ram-\(UUID())")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        for replaceSource in [false, true] {
+            let url = root.appending(path: "frame-\(replaceSource).tif")
+            try Data([1]).write(to: url)
+            let session = Session(diagnostics: try diagnostics(),
+                                  diskCache: try DiskCacheStore(root: root.appending(path: "cache-\(replaceSource)")))
+            try await waitUntil("engine version") { session.diagnostics.engineVersion != nil }
+            let key = Session.printCacheKey(url: url, params: .default, tier: .live,
+                                           previewLongEdge: session.previewLongEdge,
+                                           engineVersion: try XCTUnwrap(session.diagnostics.engineVersion))
+            let texture = try XCTUnwrap(session.renderer.store.uploadRGBA16(
+                data: Data(repeating: 0x22, count: 16), width: 2, height: 1))
+            session.renderer.store.setPrint(texture, stamp: Session.printStamp(.default),
+                                            for: url, cacheKey: key)
+            if replaceSource {
+                try Data([2, 3]).write(to: url, options: .atomic)
+            } else {
+                var edit = Sidecar()
+                edit.decode.whiteBalance = .custom
+                edit.decode.temperature = 3200
+                try edit.save(for: url)
+            }
+            session.open(urls: [url])
+            XCTAssertNil(session.renderer.store.print(for: url), "URL-only RAM hit survived changed input")
+            session.open(urls: [])
+        }
+    }
+
+    func testPreviewEdgeChangeRejectsAnAlreadyIssuedLiveResult() async throws {
+        let url = try smokeFrame()
+        let session = Session(diagnostics: try diagnostics(), diskCache: try DiskCacheStore(
+            root: FileManager.default.temporaryDirectory.appending(path: "print-edge-\(UUID())")))
+        session.open(urls: [url])
+        try await waitUntil("decode") { session.decoded != nil }
+        _ = await session.ensureDeveloped()
+        let priorEdge = session.previewLongEdge
+        defer { session.setPreviewLongEdge(priorEdge) }
+        let keyForRender = session.scheduler.cacheKeyForRender
+        let receive = session.scheduler.onResult
+        var changed = false
+        var rejected = false
+        session.scheduler.cacheKeyForRender = { params in
+            let key = keyForRender?(params)
+            if !changed {
+                changed = true
+                session.setPreviewLongEdge(priorEdge == 1080 ? 3840 : 1080)
+            }
+            return key
+        }
+        session.scheduler.onResult = { result, generation, key in
+            if let key, key.previewLongEdge != session.previewLongEdge {
+                let before = session.renderer.store.print(for: url)
+                receive?(result, generation, key)
+                XCTAssertTrue(session.renderer.store.print(for: url) === before,
+                              "an old live request was relabelled with the new preview edge")
+                rejected = true
+            } else { receive?(result, generation, key) }
+        }
+        defer {
+            session.scheduler.cacheKeyForRender = keyForRender
+            session.scheduler.onResult = receive
+        }
+        var params = session.params
+        params.exposureCompensationEV += 0.5
+        session.params = params
+        try await waitUntil("the stale live result", timeout: 30) { rejected }
+    }
+
 }

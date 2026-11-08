@@ -382,6 +382,15 @@ RFC-018. One working space, exactly one conversion per destination.
 | the session log | `~/Library/Logs/SpektraLab/` (RFC-016), settable | its retention settings |
 | an export's job log | `<file>.joblog.jsonl` beside it — **opt-in** since 2026-09-26 (Settings ▸ Diagnostics) | — |
 
+Ordinary single-frame finished prints use the `single-print-3` namespace:
+source file identity, effective decode (as-shot readout numbers excluded),
+Layer 1, engine version, tier and live edge identify the pre-Layer-2 RGBA16
+pixels. RAM restoration and disk restoration check the same key; async renders
+keep the key captured when issued. Ambiguous older prints go cold. Pairs,
+engine-cropped film/date edges, no-film, DI and scan-film bypass these ordinary
+cross-frame/persistent print shortcuts until their complete producer inputs are
+represented; their existing current-session full-render paths remain separate.
+
 Nothing is written into the photo's folder except exports. A develop writes
 the sidecar and changes the exposure meter's input, so a test opens a **copy**
 of a fixture, never the fixture.

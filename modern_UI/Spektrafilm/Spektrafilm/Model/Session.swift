@@ -830,13 +830,16 @@ final class Session: CanvasHost {
         guard let sid = serviceSessionID, selection != nil else { return }
         Task { [weak self] in
             guard let self else { return }
-            _ = try? await self.client.call(.setParams,
-                SetParamsRequest(sessionID: sid,
-                                 paramsDelta: ["preview_long_edge": .double(Double(clamped))]),
-                as: SetParamsResponse.self)
-            guard self.serviceSessionID == sid, self.selection != nil else { return }
-            if let rr = try? await self.client.render(.reprint, RenderRequest(sessionID: sid)) {
-                self.applyRender(rr, generation: self.serviceGeneration)
+            let key = self.selection.flatMap {
+                self.residentPrintKey(for: $0, params: self.scheduler.sent, tier: .live, previewEdge: clamped)
+            }
+            do {
+                let rr = try await self.client.render(.reprint, RenderRequest(sessionID: sid,
+                    paramsDelta: ["preview_long_edge": .double(Double(clamped))]))
+                guard self.serviceSessionID == sid else { return }
+                self.applyRender(rr, generation: self.serviceGeneration, cacheKey: key)
+            } catch {
+                self.noteFailure(error, operation: "preview_size", frame: self.selection?.lastPathComponent)
             }
         }
     }
@@ -924,6 +927,34 @@ final class Session: CanvasHost {
     /// or nil for the whole decode. Compared with `wantedEngineFraming` on
     /// every request: a different cut is a different frame (`requestPrint`).
     private(set) var engineFraming: String?
+    private struct PrintInput {
+        let source: String
+        let decode: DecodeSettings
+    }
+    private var decodedPrintInput: PrintInput?
+    private var enginePrintInput: PrintInput?
+
+    // shortcut: complex producers bypass cross-frame finished prints until their full input is represented.
+    private var canCacheSinglePrint: Bool {
+        pair == nil && !sidecar.noFilm && !sidecar.params.cutsFrame
+            && !sidecar.params.digitalIntermediate && !sidecar.params.scanFilm
+    }
+
+    private func requestedPrintKey(for url: URL, tier: CacheTier) -> CacheKey? {
+        guard canCacheSinglePrint, let version = diagnostics.engineVersion,
+              version != "unknown" else { return nil }
+        return Self.printCacheKey(url: url, params: sidecar.params, settings: sidecar.decode,
+                                 tier: tier, previewLongEdge: previewLongEdge, engineVersion: version)
+    }
+
+    private func residentPrintKey(for url: URL, params: FilmParams, tier: CacheTier, previewEdge: Int? = nil) -> CacheKey? {
+        guard canCacheSinglePrint, !params.cutsFrame, !params.digitalIntermediate, !params.scanFilm,
+              let input = enginePrintInput, let version = diagnostics.engineVersion,
+              version != "unknown" else { return nil }
+        return Self.printCacheKey(url: url, params: params, settings: input.decode,
+                                 sourceIdentity: input.source, tier: tier,
+                                 previewLongEdge: previewEdge ?? previewLongEdge, engineVersion: version)
+    }
     private var engineArenaHandle: MemoryArena.Handle?
     /// Approximate engine session footprint for a 45 MP frame (PRD/IMPL-RFC-019-memory.md §3.2);
     /// this is an accounting estimate, not a live measurement.
@@ -1067,7 +1098,13 @@ final class Session: CanvasHost {
         // the canvas can draw without a copy.
         client = EngineClient(device: renderer.device, log: diagnostics.log)
         scheduler = RenderScheduler(client: client, log: diagnostics.log)
-        scheduler.onResult = { [weak self] r, gen in self?.applyRender(r, generation: gen) }
+        scheduler.cacheKeyForRender = { [weak self] params in
+            guard let self, let url = self.selection else { return nil }
+            return self.residentPrintKey(for: url, params: params, tier: .live)
+        }
+        scheduler.onResult = { [weak self] r, gen, key in
+            self?.applyRender(r, generation: gen, cacheKey: key)
+        }
         scheduler.onError = { [weak self] error in
             // Three, deliberately: the status line gets something a user can
             // act on, the canvas trace keeps the engine's own words, and the
@@ -1404,6 +1441,7 @@ final class Session: CanvasHost {
         releaseEngineAccounting()
         serviceSessionID = nil
         engineFraming = nil
+        enginePrintInput = nil
         status = "\(frames.count) frames · pick one in the filmstrip to develop."
     }
 
@@ -1625,6 +1663,10 @@ final class Session: CanvasHost {
         // known until this frame decodes — so until then it is expressed
         // against what is on screen, and `load` corrects it when the decode
         // lands (`refreshLogicalSize` refits, because the view was fitted).
+        let expectedPrintKey = requestedPrintKey(for: url, tier: .live)
+        if expectedPrintKey == nil || renderer.store.printEntry(for: url)?.cacheKey != expectedPrintKey {
+            renderer.store.invalidatePrint(for: url)
+        }
         if let cached = renderer.store.print(for: url) {
             renderer.setLive(cached, logical: printLogicalSize(for: cached, params: sidecar.params, frame: nativeSourceSize)
                              ?? CGSize(width: cached.width, height: cached.height)); previewSoft = true
@@ -1640,6 +1682,7 @@ final class Session: CanvasHost {
         releaseEngineAccounting()
         serviceSessionID = nil
         engineFraming = nil
+        enginePrintInput = nil
         // A memory boundary (§3): what switching frames costs is the question
         // behind "switching frames is slow".
         sampleMemory("frame_switch")
@@ -1925,13 +1968,21 @@ final class Session: CanvasHost {
         )
     }
 
-    nonisolated static func printCacheKey(url: URL, params: FilmParams, tier: CacheTier,
+    nonisolated static func printCacheKey(url: URL, params: FilmParams, settings: DecodeSettings = DecodeSettings(),
+                                          sourceIdentity: String? = nil, tier: CacheTier,
                                           previewLongEdge: Int,
                                           engineVersion: String) -> CacheKey {
-        CacheKey(
+        // As-shot numbers are UI readouts; CIRAWFilter ignores them.
+        var effectiveDecode = settings
+        if effectiveDecode.whiteBalance == .asShot {
+            effectiveDecode.temperature = 0
+            effectiveDecode.tint = 0
+        }
+        return CacheKey(
             kind: tier == .live ? .printLive : .printFull,
-            sourceIdentity: CacheKey.sourceIdentity(for: url),
-            configuration: printStamp(params),
+            sourceIdentity: sourceIdentity ?? CacheKey.sourceIdentity(for: url),
+            configuration: "single-print-3;rgba16Unorm;" + CacheKey.encodedConfiguration(effectiveDecode)
+                + ";" + printStamp(params),
             tier: tier,
             previewLongEdge: tier == .live ? previewLongEdge : nil,
             engineVersion: engineVersion
@@ -1942,17 +1993,19 @@ final class Session: CanvasHost {
     /// engine. Layer 2 and geometry are applied at draw time, so the stored
     /// bytes are the same live/full engine output the canvas would otherwise
     /// wait to recompute.
+    var afterPrintLookupForTesting: (() -> Void)?
+
     private func cachedPrint(for url: URL) async -> (texture: MTLTexture, sourceSize: CGSize,
                                                       costMs: Double, key: CacheKey)? {
+        guard let key = requestedPrintKey(for: url, tier: .live) else { return nil }
+        if let entry = renderer.store.printEntry(for: url), entry.cacheKey == key {
+            return (entry.texture, CGSize(width: entry.sourceWidth, height: entry.sourceHeight), entry.costMs, key)
+        }
         guard let diskCache else { return nil }
-        let key = Self.printCacheKey(
-            url: url,
-            params: sidecar.params,
-            tier: .live,
-            previewLongEdge: previewLongEdge,
-            engineVersion: diagnostics.engineVersion ?? "unknown"
-        )
-        guard let payload = try? await diskCache.load(key),
+        let payload = try? await diskCache.load(key)
+        afterPrintLookupForTesting?()
+        guard let payload,
+              !Task.isCancelled, selection == url,
               payload.kind == .printLive,
               payload.format == "rgba16Unorm",
               let texture = renderer.store.uploadRGBA16(
@@ -2039,13 +2092,15 @@ final class Session: CanvasHost {
         await awaitBoot(clock)
         guard !Task.isCancelled, selection == url else { return }
         let settings = sidecar.decode
+        let printInput = PrintInput(source: CacheKey.sourceIdentity(for: url), decode: settings)
         let device = renderer.device
         let edge = previewLongEdge
         // The two cache shortcuts end the open at a picture. A frame that has
         // already asked for its develop (a paste made while it was off the
         // canvas, RFC-027 §4) needs the decode anyway, so it skips them —
         // otherwise it would stop at the cached picture and never develop.
-        if !requiresDecode, !wantsDevelop, let picture = await cachedPrint(for: url) {
+        if !requiresDecode, !wantsDevelop, let picture = await cachedPrint(for: url),
+           picture.key == requestedPrintKey(for: url, tier: .live) {
             guard !Task.isCancelled, selection == url else { return }
             sourceLongEdge = max(picture.sourceSize.width, picture.sourceSize.height)
             displaySourceSize = picture.sourceSize
@@ -2150,6 +2205,7 @@ final class Session: CanvasHost {
         }
         let key = DecodeKey(url: url, settings: sidecar.decode)
         decodeResidency.adopt(d, for: key)
+        decodedPrintInput = printInput
         decodedGeneration = generation
         decodeIsStale = false
         sourceLongEdge = max(d.pixelSize.width, d.pixelSize.height)
@@ -2391,6 +2447,7 @@ final class Session: CanvasHost {
             // as sent is how a paste showed the new film over the old print
             // (RFC-027 §5.1). The `request` at the end of the develop sends it.
             var opened = sidecar.params
+            let printInput = decodedPrintInput
             do {
                 // Its own scope, so the 727 MB buffer is gone before the solve
                 // and the first render run — at -Onone too, where a value is
@@ -2433,6 +2490,7 @@ final class Session: CanvasHost {
             serviceReady = true
             serviceSessionID = r.sessionID
             engineFraming = framing
+            enginePrintInput = printInput
             // Before the first render can reach the canvas, so nothing is ever
             // drawn in a space the layer cannot show. §5.1: the space comes
             // from the reply, because an explicit `io.output_color_space` in a
@@ -2458,14 +2516,16 @@ final class Session: CanvasHost {
                 scheduleSave()
             }
             clock.lap("solve")
+            let issuedGeneration = serviceGeneration
+            let key = residentPrintKey(for: url, params: scheduler.sent, tier: .live)
             let rr = try await client.render(.reprint, RenderRequest(sessionID: r.sessionID))
             clock.lap("reprint")
             canvasLog(clock.summary()
                       + (warmUpMs.map { "  ·  warm_up \(Int($0)) ms" } ?? "")
                       + "  ·  core=\(renderCore ?? "?")"
                       + (backend?.sessionCache.map { "  ·  \($0.summary)" } ?? ""))
-            guard selection == url else { return nil }
-            applyRender(rr, generation: serviceGeneration)
+            guard selection == url, serviceSessionID == r.sessionID else { return nil }
+            applyRender(rr, generation: issuedGeneration, cacheKey: key)
             noteOpen(clock, url: url, mode: "develop",
                      pixels: CGSize(width: r.meta.width, height: r.meta.height))
             // What the status line names is the working space and the space on
@@ -2521,7 +2581,8 @@ final class Session: CanvasHost {
         log.info(.engine, "working_space", [.init("space", source)])
     }
 
-    private func applyRender(_ outcome: RenderOutcome, generation: Int, composed: Bool = false) {
+    private func applyRender(_ outcome: RenderOutcome, generation: Int, composed: Bool = false,
+                             cacheKey: CacheKey? = nil) {
         // A pair's print is cut together from its frames' own prints first
         // (`composePairRender`), and comes back here as `composed`.
         if pair != nil, !composed {
@@ -2540,6 +2601,10 @@ final class Session: CanvasHost {
             canvasLog("applyRender dropped: generation \(generation) != \(serviceGeneration)"); return
         }
         guard let url = selection else { canvasLog("applyRender dropped: no selection"); return }
+        if let cacheKey, cacheKey != requestedPrintKey(for: url, tier: .live) {
+            noteRenderOutcome(r, generation: generation, outcome: "input_superseded")
+            return
+        }
         guard let tex = outcome.texture, let w = r.width, let h = r.height else {
             noteRenderOutcome(r, generation: generation, outcome: "no_pixels")
             canvasLog("applyRender dropped: the engine returned no texture"); return
@@ -2550,15 +2615,10 @@ final class Session: CanvasHost {
         // decides whether it is a memory boundary (§3).
         let firstPrint = renderer.store.print(for: url) == nil
         let sourceSize = decoded?.pixelSize
-        let printKey = Self.printCacheKey(
-            url: url, params: scheduler.sent, tier: .live,
-            previewLongEdge: previewLongEdge,
-            engineVersion: diagnostics.engineVersion ?? "unknown"
-        )
         renderer.store.setPrint(
             tex, stamp: Self.printStamp(scheduler.sent), for: url,
             costMs: r.elapsedMs + (openClock?.setupMs ?? 0),
-            cacheKey: printKey,
+            cacheKey: cacheKey,
             sourceWidth: sourceSize.map { Int($0.width.rounded()) },
             sourceHeight: sourceSize.map { Int($0.height.rounded()) }
         )
@@ -2597,7 +2657,10 @@ final class Session: CanvasHost {
             renderer.dropFullRender()
             renderer.store.dropFullRender()
             previewSoft = false
-        } else if let resident = renderer.store.fullRender(for: url, stamp: printStamp) {
+        } else if let resident = renderer.store.fullRender(for: url, stamp: printStamp),
+                  !canCacheSinglePrint || (renderer.store.fullEntry(for: url)?.cacheKey != nil
+                    && renderer.store.fullEntry(for: url)?.cacheKey
+                    == residentPrintKey(for: url, params: scheduler.sent, tier: .full)) {
             fullTask?.cancel(); fullTask = nil
             fullPending = false
             renderer.setFullRender(resident)
@@ -2724,6 +2787,7 @@ final class Session: CanvasHost {
         releaseEngineAccounting()
         serviceSessionID = nil
         engineFraming = nil
+        enginePrintInput = nil
         fullPending = false
         fullTask?.cancel(); fullTask = nil
         fullGeneration += 1
@@ -2823,8 +2887,9 @@ final class Session: CanvasHost {
             // (RFC-015 §1.1).
             scheduler.invalidate()
             releaseEngineAccounting()
-        serviceSessionID = nil
-        engineFraming = nil
+            serviceSessionID = nil
+            engineFraming = nil
+            enginePrintInput = nil
             // The native render is made from the engine's frame too, so it
             // would otherwise keep the old white balance. Both copies have to
             // go: the renderer's is the one on screen now, and the store's is
@@ -3100,8 +3165,10 @@ final class Session: CanvasHost {
                                      paramsDelta: ["digital_intermediate_blue_compensation": .bool(newValue)]),
                     as: SetParamsResponse.self)
                 guard self.serviceSessionID == sid, self.selection != nil else { return }
+                let key = self.selection.flatMap { self.residentPrintKey(for: $0, params: self.scheduler.sent, tier: .live) }
                 if let rr = try? await self.client.render(.reprint, RenderRequest(sessionID: sid)) {
-                    self.applyRender(rr, generation: self.serviceGeneration)
+                    guard self.serviceSessionID == sid else { return }
+                    self.applyRender(rr, generation: self.serviceGeneration, cacheKey: key)
                 }
             }
         }
@@ -3767,6 +3834,9 @@ final class Session: CanvasHost {
         // guard above has just established that no edit is owed a render, so
         // `sent` is exactly what this reprint will be made from.
         let stamp = printStamp
+        let key = residentPrintKey(for: url, params: scheduler.sent, tier: .full)
+        let sourceSize = decoded?.pixelSize
+        let issuedServiceGeneration = serviceGeneration
         // The peak §11.5 is about — 7.6 GB at 45 MP and the largest single
         // allocation the app ever asks for. The frame is already open, so this
         // is the last cheap moment to say so; the crop only ever makes it
@@ -3787,18 +3857,15 @@ final class Session: CanvasHost {
             // a different decode, and storing it under a stamp that still
             // matches would serve the old colour on the next edit.
             guard gen == fullGeneration, selection == url, sid == serviceSessionID,
+                  issuedServiceGeneration == serviceGeneration, stamp == printStamp,
+                  !scheduler.pending,
+                  key == nil || key == requestedPrintKey(for: url, tier: .full),
                   var tex = outcome.texture, let w = r.width, let h = r.height else { return }
             // A pair at its own resolution: the same cut of the same prints.
             if pair != nil {
                 if let layered = await pairLayered(base: tex, tier: "full") { tex = layered }
                 guard gen == fullGeneration, selection == url, sid == serviceSessionID else { return }
             }
-            let sourceSize = decoded?.pixelSize
-            let key = Self.printCacheKey(
-                url: url, params: scheduler.sent, tier: .full,
-                previewLongEdge: previewLongEdge,
-                engineVersion: diagnostics.engineVersion ?? "unknown"
-            )
             renderer.store.setFullRender(
                 tex, stamp: stamp, costMs: r.elapsedMs + (openClock?.setupMs ?? 0),
                 cacheKey: key,
@@ -4044,9 +4111,10 @@ final class Session: CanvasHost {
                 guard let sid = await ensureDeveloped(), serviceSessionID == sid else { return }
                 try await solveFilterPack(sessionID: sid)
                 guard serviceSessionID == sid else { return }
+                let key = selection.flatMap { residentPrintKey(for: $0, params: scheduler.sent, tier: .live) }
                 let rr = try await client.render(.reprint, RenderRequest(sessionID: sid))
                 guard serviceSessionID == sid else { return }
-                applyRender(rr, generation: serviceGeneration)
+                applyRender(rr, generation: serviceGeneration, cacheKey: key)
                 status = "Solved  ·  reprint \(Int(rr.response.elapsedMs)) ms"
                 scheduleSave()
             } catch {
@@ -4088,6 +4156,7 @@ final class Session: CanvasHost {
             releaseEngineAccounting()
         serviceSessionID = nil
         engineFraming = nil
+        enginePrintInput = nil
             scheduler.invalidate()
             renderer.dropFullRender()
             renderer.store.dropFullRender()
