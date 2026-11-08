@@ -103,6 +103,19 @@ extension ExportFormat {
     var depthIsChoosable: Bool { self == .png || self == .tiff }
 }
 
+enum TIFFCompression: String, Codable, CaseIterable, Sendable {
+    case lzw, none
+
+    @MainActor var label: String {
+        switch self {
+        case .lzw: "LZW"
+        case .none: L("Uncompressed (fast)", zh: "无压缩（快速）")
+        }
+    }
+
+    var imageIOValue: Int { self == .lzw ? 5 : 1 }
+}
+
 // MARK: - colour space
 
 /// A profile to tag the exported file with.
@@ -539,6 +552,8 @@ struct ExportRecipe: Codable, Identifiable, Hashable, Sendable {
     var existing: ExistingFilePolicy = .addSuffix
     /// JPEG only, 0…1.
     var quality: Double = 0.95
+    /// Ordinary 16-bit TIFF only; legacy recipes keep LZW.
+    var tiffCompression: TIFFCompression = .lzw
     /// The pixels to write. Applied by `Exporter.exportPrint` through
     /// `Renderer.applyResize` — the same `geometryResample` the canvas
     /// samples with — after the geometry and *before* the output transform,
@@ -564,6 +579,7 @@ struct ExportRecipe: Codable, Identifiable, Hashable, Sendable {
         naming = (try? c.decode(NamingRule.self, forKey: .naming)) ?? NamingRule()
         existing = (try? c.decode(ExistingFilePolicy.self, forKey: .existing)) ?? .addSuffix
         quality = (try? c.decode(Double.self, forKey: .quality)) ?? 0.95
+        tiffCompression = (try? c.decode(TIFFCompression.self, forKey: .tiffCompression)) ?? .lzw
         outputSize = (try? c.decode(OutputSize.self, forKey: .outputSize)) ?? .original
         embedsPreview = (try? c.decode(Bool.self, forKey: .embedsPreview)) ?? false
         openWith = try? c.decodeIfPresent(OpenWith.self, forKey: .openWith)
@@ -589,7 +605,7 @@ struct ExportRecipe: Codable, Identifiable, Hashable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case id, name, format, colorSpace, folder, subfolder, naming, existing, quality,
-             outputSize, openWith, embedsPreview
+             outputSize, openWith, embedsPreview, tiffCompression
     }
 
     /// The directory this recipe writes into for a given source frame,

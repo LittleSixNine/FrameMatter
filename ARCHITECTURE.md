@@ -417,6 +417,10 @@ surface applies the geometry itself.
   (`ExportRecipe`). The export page proves the file at its own resolution
   before it is written (soft proof, §7.5 row 7c) — measured identical to the
   file, pixel for pixel.
+- **TIFF compression is per recipe.** Ordinary 16-bit TIFF accepts LZW (5,
+  including missing fields in older recipes) or uncompressed (1). Both use
+  the same pixels, metadata, preview-page and atomic writer. DI stays on its
+  existing dedicated route. CLI/MCP use the saved recipe by name.
 - **Batch is a loop, one frame at a time** (`ExportPage.run`): select →
   `ensureDeveloped` → `Exporter.export` → next. No queue, no parallelism, no
   database: one full render's peak, not N.

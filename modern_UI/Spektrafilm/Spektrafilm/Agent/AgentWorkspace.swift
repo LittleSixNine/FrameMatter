@@ -298,6 +298,7 @@ final class AgentWorkspace {
             case .fixed(let p): o["folder"] = .string(p)
             }
             if !r.subfolder.isEmpty { o["subfolder"] = .string(r.subfolder) }
+            if r.format == .tiff { o["tiff_compression"] = .string(r.tiffCompression.rawValue) }
             switch r.outputSize {
             case .original: o["size"] = "original"
             case .longEdge(let e): o["size"] = .string("long edge \(e) px")

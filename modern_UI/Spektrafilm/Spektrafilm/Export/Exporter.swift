@@ -231,6 +231,7 @@ enum Exporter {
             .init("files", result.urls.count),
             .init("frame", session.selection?.lastPathComponent ?? "-"),
         ]
+        if recipe.format == .tiff { fields.append(.init("tiff_compression", recipe.tiffCompression.rawValue)) }
         if job != nil {
             fields.append(.init("job_log", JobLog.url(beside: result.urls[0]).lastPathComponent))
         }
@@ -318,7 +319,7 @@ enum Exporter {
             .init("engine", session.diagnostics.engineVersion ?? "unknown"),
             .init("app", Diagnostics.bundleInfo.version),
             .init("marker", "job"),
-        ]
+        ] + (recipe.format == .tiff ? [.init("tiff_compression", recipe.tiffCompression.rawValue)] : [])
     }
 
     /// The file's pixels, before anything is written: **render, grade, frame,
@@ -351,6 +352,7 @@ enum Exporter {
         // codes; the Layer 2 pass below reads them through the DI view first
         // (`Renderer.layer2DecodesCineon`), so from there on it is ProPhoto
         // like any print.
+        let clock = Session.LoadClock()
         let (target, _, _, _) = resolveTarget(recipe)
         var full: MTLTexture
         var appliedEV: Double?
@@ -369,6 +371,7 @@ enum Exporter {
             full = tex
             appliedEV = outcome.progress?.autoExposureEV
         }
+        clock.lap("full-source")
         try Task.checkCancellation()
         // A pair: each frame printed and graded as its own, cut together, as
         // the canvas shows it. The grade below is then none.
@@ -438,6 +441,7 @@ enum Exporter {
         }
         // The one conversion, at the end, out of the working space and into
         // the destination — the same kernel the canvas and the soft proof run.
+        clock.lap("layer2-geometry-resize")
         let (setup, problem) = await ColourManagement.setup(client: session.client,
                                                             source: session.workingSpaceName,
                                                             target: target,
@@ -449,6 +453,8 @@ enum Exporter {
                                                                     into: convertedDestination)
         else { throw ExportError.noPixels }
         currentScratch?.giveBack()
+        clock.lap("output-transform")
+        session.log.debug(.export, "file_pixels stages", clock.stages + [.init("total_ms", clock.totalMs())])
         return Rendered(texture: converted.texture, stats: converted.stats, target: target,
                         pixels: (converted.texture.width, converted.texture.height),
                         appliedEV: appliedEV,
@@ -476,12 +482,19 @@ enum Exporter {
                                     quality: Double, recipe: ExportRecipe,
                                     sessionID: String,
                                     sourceMetadata: ExportMetadata) async throws -> Result {
+        let clock = Session.LoadClock()
         let r = try await filePixels(session: session, recipe: recipe, sessionID: sessionID)
+        clock.lap("file-pixels")
         guard let image = r.texture.makeCGImage(space: r.target) else { throw ExportError.noPixels }
         let preview = writesPreviewPage(recipe) ? preview(of: image) : nil
+        clock.lap("cgimage-preview")
         _ = try await Task.detached(priority: .userInitiated) {
-            try write(image, to: out, format: format, quality: quality, preview: preview, sourceMetadata: sourceMetadata)
+            try write(image, to: out, format: format, quality: quality, preview: preview,
+                      tiffCompression: recipe.tiffCompression, sourceMetadata: sourceMetadata)
         }.value
+        clock.lap("encode-atomic-write")
+        session.log.debug(.export, "file_write stages", clock.stages + [.init("total_ms", clock.totalMs()),
+                                                                       .init("format", format.rawValue)])
         return Result(urls: [out], note: nil, appliedEV: r.appliedEV, pixels: r.pixels)
     }
 
@@ -545,7 +558,7 @@ enum Exporter {
     /// untagged.
     @discardableResult
     nonisolated static func write(_ image: CGImage, to url: URL, format: ExportFormat,
-                      quality: Double = 0.95, preview: CGImage? = nil,
+                      quality: Double = 0.95, preview: CGImage? = nil, tiffCompression: TIFFCompression = .lzw,
                       sourceEXIF: [CFString: Any]? = nil, sourceMetadata: ExportMetadata? = nil) throws -> URL {
         var cg = image
         let needsEight = format.isEightBit
@@ -575,7 +588,7 @@ enum Exporter {
         }
         var props: [CFString: Any] = [:]
         if format == .jpeg { props[kCGImageDestinationLossyCompressionQuality] = quality.clamped(to: 0.1...1) }
-        if format == .tiff { props[kCGImagePropertyTIFFDictionary] = [kCGImagePropertyTIFFCompression: 5] }
+        if format == .tiff { props[kCGImagePropertyTIFFDictionary] = [kCGImagePropertyTIFFCompression: tiffCompression.imageIOValue] }
         // Keep descriptive source metadata separate from output geometry and colour.
         // Legacy EXIF-only callers remain supported for synthetic/preview writers.
         if let sourceMetadata {

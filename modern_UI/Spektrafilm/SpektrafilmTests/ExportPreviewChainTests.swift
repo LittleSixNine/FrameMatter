@@ -160,7 +160,9 @@ final class ExportPreviewChainTests: XCTestCase {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
 
-        let (session, recipe, url) = try await developedSession(folder: folder)
+        let (session, base, url) = try await developedSession(folder: folder)
+        var recipe = base
+        recipe.tiffCompression = .none
         XCTAssertFalse(recipe.embedsPreview, "off is the default and the point of the field")
 
         let context = NamingRule.Context(
@@ -174,6 +176,9 @@ final class ExportPreviewChainTests: XCTestCase {
             return XCTFail("the export wrote nothing: \(outcome)")
         }
 
+        let source = try XCTUnwrap(CGImageSourceCreateWithURL(file as CFURL, nil))
+        let props = try XCTUnwrap(CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any])
+        XCTAssertEqual((props[kCGImagePropertyTIFFDictionary] as? [String: Any])?["Compression"] as? Int, 1)
         XCTAssertEqual(pageCount(file), 1, "nothing was asked for and nothing should be there")
         XCTAssertNil(ExportPage.embeddedPreview(of: file),
                      "and the page therefore keeps the render it already had")

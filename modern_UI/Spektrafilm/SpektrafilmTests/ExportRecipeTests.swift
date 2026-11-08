@@ -535,4 +535,24 @@ final class ExportRecipeTests: XCTestCase {
         XCTAssertEqual(store.selected?.format, original.format)
         XCTAssertTrue(store.selected?.name.hasSuffix("copy") ?? false)
     }
+    @MainActor
+    func testTIFFCompressionDefaultsAndPersistsWithoutResettingOldRecipes() throws {
+        let old = try JSONDecoder().decode(ExportRecipe.self, from: Data("{\"name\":\"Old TIFF\",\"format\":\"TIFF 16-bit\"}".utf8))
+        XCTAssertEqual(old.name, "Old TIFF")
+        XCTAssertEqual(old.tiffCompression, .lzw)
+        XCTAssertEqual(ExportRecipe().tiffCompression, .lzw)
+        let root = FileManager.default.temporaryDirectory.appending(path: "tiff-recipe-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let url = root.appending(path: "recipes.json")
+        let store = ExportRecipeStore(url: url)
+        var recipe = try XCTUnwrap(store.selected)
+        recipe.format = .tiff
+        recipe.tiffCompression = .none
+        store.selected = recipe
+        let reloaded = ExportRecipeStore(url: url)
+        XCTAssertNil(reloaded.problem)
+        XCTAssertEqual(reloaded.selected?.tiffCompression, TIFFCompression.none)
+        XCTAssertEqual(reloaded.selected?.id, recipe.id)
+    }
+
 }
