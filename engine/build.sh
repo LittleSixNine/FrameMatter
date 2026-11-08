@@ -125,7 +125,7 @@ build_dylib() {
 build_tests() {
   collect_sources
   local driver
-  for driver in dump_setup dump_json gpu_smoke; do
+  for driver in dump_setup dump_json gpu_smoke device_lifetime_checks; do
     [[ -f "$here/tests/$driver.cpp" ]] || continue
     "$CXX" "${cxxflags[@]}" "${includes[@]}" -I"$here/tests" \
       "$here/tests/$driver.cpp" "${sources[@]}" "${frameworks[@]}" -o "$out/$driver"
