@@ -550,6 +550,7 @@
 		C6454FA299ABB90F982C453B /* make-smoke.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = "make-smoke.py"; sourceTree = "<group>"; };
 		5FD5A6F01E9E37CE817FE7D2 /* measure-layout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "measure-layout.swift"; sourceTree = "<group>"; };
 		CAC54B5D1A76CDDB8C5B1FC4 /* package.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "package.sh"; sourceTree = "<group>"; };
+		A5343D275FD68704D018E6F5 /* render-boot-title.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "render-boot-title.swift"; sourceTree = "<group>"; };
 		8F4A80183C0335C6FCC96A68 /* render-icon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "render-icon.swift"; sourceTree = "<group>"; };
 		1CF4EBBC105C01A3E15AAE22 /* snapshot.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "snapshot.sh"; sourceTree = "<group>"; };
 		B023CA8F0F68491740229B47 /* Tools */ = {
@@ -568,6 +569,7 @@
 				C6454FA299ABB90F982C453B /* make-smoke.py */,
 				5FD5A6F01E9E37CE817FE7D2 /* measure-layout.swift */,
 				CAC54B5D1A76CDDB8C5B1FC4 /* package.sh */,
+				A5343D275FD68704D018E6F5 /* render-boot-title.swift */,
 				8F4A80183C0335C6FCC96A68 /* render-icon.swift */,
 				1CF4EBBC105C01A3E15AAE22 /* snapshot.sh */
 			);
