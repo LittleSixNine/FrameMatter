@@ -52,9 +52,17 @@ patch(pipeline, '    out = exposure_evs_from(Y, sh, sw);', r'''    out = exposur
         error = "research meter offset must be 0, -0.5, -1 or -1.5 and cannot be combined with candidate v1";
         return false;
     }
+    const char* frozen_request = std::getenv("FRAMEMATTER_BALANCED_FROZEN_EV");
+    char* frozen_end = nullptr;
+    const double frozen_ev = frozen_request ? std::strtod(frozen_request, &frozen_end) : 0;
+    if (frozen_request && (!*frozen_request || *frozen_end || !std::isfinite(frozen_ev) ||
+                           std::abs(frozen_ev) > 32 || candidate_enabled || offset_request)) {
+        error = "research frozen EV must be finite within +/-32 and cannot be combined with candidate or offset";
+        return false;
+    }
     const double meter_offset = *parsed_offset;
     const char* trace_path = std::getenv("FRAMEMATTER_BALANCED_CANDIDATE_TRACE");
-    if (candidate_enabled || offset_request || trace_path) {
+    if (candidate_enabled || offset_request || frozen_request || trace_path) {
         const auto candidate = research::balanced_highlight_candidate(Y, out.balanced);
         const bool apply = candidate_enabled && candidate.valid && params_.camera.auto_exposure &&
                            params_.camera.auto_exposure_method == "balanced";
@@ -63,10 +71,17 @@ patch(pipeline, '    out = exposure_evs_from(Y, sh, sw);', r'''    out = exposur
         const bool apply_offset = offset_request && params_.camera.auto_exposure &&
                                   params_.camera.auto_exposure_method == "balanced";
         if (apply_offset) out.balanced = before_offset + meter_offset;
+        const bool apply_frozen = frozen_request && params_.camera.auto_exposure &&
+                                  params_.camera.auto_exposure_method == "balanced";
+        if (apply_frozen) out.balanced = frozen_ev;
         if (trace_path) {
             Json trace = Json::object();
             trace.set("event", Json(std::string("meter_candidate")));
             trace.set("equation", Json(std::string(offset_request ? "balanced-meter-offset-v1" : "balanced-highlight-v1")));
+            trace.set("frozen_requested", Json(frozen_request != nullptr));
+            trace.set("frozen_applied", Json(apply_frozen));
+            trace.set("frozen_ev", Json(frozen_ev));
+            trace.set("raw_shadow_bias_override", Json(std::string(std::getenv("FRAMEMATTER_RAW_SHADOW_BIAS") ? std::getenv("FRAMEMATTER_RAW_SHADOW_BIAS") : "unset")));
             trace.set("enabled", Json(candidate_enabled));
             trace.set("applied", Json(apply));
             trace.set("valid", Json(candidate.valid));
@@ -101,6 +116,7 @@ patch(pipeline, '    last_ae_ev_ = ev;', r'''    last_ae_ev_ = ev;
         trace.set("method", Json(params_.camera.auto_exposure_method));
         trace.set("auto_exposure_ev", Json(ev));
         trace.set("exposure_compensation_ev", Json(params_.camera.exposure_compensation_ev));
+        trace.set("print_exposure_compensation", Json(params_.enlarger.print_exposure_compensation));
         trace.set("width", Json(double(in.w)));
         trace.set("height", Json(double(in.h)));
         std::ofstream file(trace_path, std::ios::app);
@@ -113,11 +129,56 @@ patch(engine, '    for (const char* name : kMeterKeyFields) key += values.at(nam
     key += std::string("balanced-highlight-v1;") + ((mode && std::strcmp(mode, "1") == 0) ? "1" : "0");
     const char* offset = std::getenv("FRAMEMATTER_BALANCED_METER_OFFSET_EV");
     key += std::string(";meter-offset-v1=") + (offset ? offset : "unset");
+    for (const char* name : {"FRAMEMATTER_BALANCED_FROZEN_EV", "FRAMEMATTER_RAW_SHADOW_BIAS"}) {
+        const char* value = std::getenv(name);
+        key += std::string(";") + name + "=" + (value ? value : "unset");
+    }
     key += ";ae=" + values.at("auto_exposure").dump() + ";method=" + values.at("auto_exposure_method").dump();''')
 session = root / 'modern_UI/Spektrafilm/Spektrafilm/Model/Session.swift'
 patch(session, '        let stamp = p.wire.map { "\\($0.name)=\\($0.value)" }.joined(separator: ";")', r'''        let experimentMode = ProcessInfo.processInfo.environment["FRAMEMATTER_BALANCED_CANDIDATE"] == "1" ? "1" : "0"
         let meterOffset = ProcessInfo.processInfo.environment["FRAMEMATTER_BALANCED_METER_OFFSET_EV"] ?? "unset"
-        let stamp = "balanced-highlight-v1;mode=\(experimentMode);meter-offset-v1=\(meterOffset);" + p.wire.map { "\($0.name)=\($0.value)" }.joined(separator: ";")''')
+        let shadow = ProcessInfo.processInfo.environment["FRAMEMATTER_RAW_SHADOW_BIAS"] ?? "unset"
+        let frozen = ProcessInfo.processInfo.environment["FRAMEMATTER_BALANCED_FROZEN_EV"] ?? "unset"
+        let stamp = "raw-shadow-meter-v1;shadow=\(shadow);frozen=\(frozen);balanced-highlight-v1;mode=\(experimentMode);meter-offset-v1=\(meterOffset);" + p.wire.map { "\($0.name)=\($0.value)" }.joined(separator: ";")''')
+
+# Research-only RAW override, after ordinary settings and before either outputImage.
+decoder = root / 'modern_UI/Spektrafilm/Spektrafilm/Import/ImageDecoder.swift'
+patch(decoder, '        let asShotTemperature = Double(filter.neutralTemperature)', '        let initialShadowBias = filter.shadowBias\n        let asShotTemperature = Double(filter.neutralTemperature)')
+patch(decoder, '        return (filter, asShotTemperature, asShotTint)', r'''        let environment = ProcessInfo.processInfo.environment
+        let shadowRequest = environment["FRAMEMATTER_RAW_SHADOW_BIAS"]
+        if let shadowRequest {
+            guard shadowRequest == "0" else {
+                throw NSError(domain: "FrameMatterResearch", code: 1,
+                              userInfo: [NSLocalizedDescriptionKey: "research shadow override accepts only 0"])
+            }
+            filter.shadowBias = 0
+        }
+        if let tracePath = environment["FRAMEMATTER_RAW_DECODER_TRACE"] {
+            let facts: [String: Any] = [
+                "event": "raw_decoder", "source": url.path,
+                "look": look == .linear ? "linear" : "display",
+                "shadow_override": shadowRequest ?? "unset",
+                "initial_shadow_bias": initialShadowBias, "actual_shadow_bias": filter.shadowBias,
+                "baseline_exposure_ev": filter.baselineExposure, "decoder_exposure_ev": filter.exposure,
+                "as_shot_temperature": asShotTemperature, "as_shot_tint": asShotTint,
+                "actual_temperature": filter.neutralTemperature, "actual_tint": filter.neutralTint,
+                "decoder_version": filter.decoderVersion,
+                "boost_amount": filter.boostAmount, "boost_shadow_amount": filter.boostShadowAmount,
+                "gamut_mapping": filter.isGamutMappingEnabled, "local_tone_map": filter.localToneMapAmount,
+                "extended_dynamic_range": filter.extendedDynamicRangeAmount]
+            var data = try JSONSerialization.data(withJSONObject: facts, options: [.sortedKeys])
+            data.append(10)
+            if !FileManager.default.fileExists(atPath: tracePath) {
+                guard FileManager.default.createFile(atPath: tracePath, contents: nil) else {
+                    throw NSError(domain: "FrameMatterResearch", code: 2)
+                }
+            }
+            let file = try FileHandle(forWritingTo: URL(fileURLWithPath: tracePath))
+            defer { try? file.close() }
+            try file.seekToEnd()
+            try file.write(contentsOf: data)
+        }
+        return (filter, asShotTemperature, asShotTint)''')
 
 project = root / 'modern_UI/Spektrafilm'
 run(['clang++', '-std=c++20', '-O2', root / 'engine/tests/balanced_highlight_candidate.cpp', '-o', root / 'candidate-check'])
@@ -132,6 +193,7 @@ app = root / 'DerivedData/Build/Products/Debug/FrameMatter.app'
 binary = app / 'Contents/MacOS/FrameMatter'
 manifest = {
     'equation': 'balanced-highlight-v1', 'source_kind': 'current working tree',
+    'raw_shadow_meter_experiment': 'raw-shadow-meter-v1', 'supported_shadow_override': [0], 'frozen_meter_ev_range': [-32, 32],
     'meter_offset_experiment': 'balanced-meter-offset-v1', 'supported_meter_offsets_ev': [0, -0.5, -1, -1.5],
     'head': subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip(),
     'tracked_diff_sha256': hashlib.sha256(subprocess.check_output(['git', '-C', str(source), 'diff', 'HEAD', '--', 'engine', 'modern_UI'])).hexdigest(),
@@ -140,7 +202,8 @@ manifest = {
                                 source / 'engine/tools/balanced_highlight_candidate.hpp',
                                 source / 'engine/tools/build_balanced_highlight_experiment.py',
                                 source / 'engine/tests/balanced_highlight_candidate.cpp',
-                                source / 'modern_UI/Spektrafilm/Spektrafilm/Model/Session.swift']},
+                                source / 'modern_UI/Spektrafilm/Spektrafilm/Model/Session.swift',
+                                source / 'modern_UI/Spektrafilm/Spektrafilm/Import/ImageDecoder.swift']},
     'binary': str(binary), 'binary_sha256': hashlib.file_digest(binary.open('rb'), 'sha256').hexdigest(),
     'runtime_files_sha256': {str(f.relative_to(app)): hashlib.file_digest(f.open('rb'), 'sha256').hexdigest()
                              for f in [binary, binary.with_name('FrameMatter.debug.dylib'),
