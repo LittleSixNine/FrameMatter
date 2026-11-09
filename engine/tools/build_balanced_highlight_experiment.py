@@ -46,16 +46,27 @@ patch(pipeline, '#include <chrono>', '#include <chrono>\n#include <cstdlib>\n#in
 patch(pipeline, '    out = exposure_evs_from(Y, sh, sw);', r'''    out = exposure_evs_from(Y, sh, sw);
     const char* candidate_mode = std::getenv("FRAMEMATTER_BALANCED_CANDIDATE");
     const bool candidate_enabled = candidate_mode && std::strcmp(candidate_mode, "1") == 0;
+    const char* offset_request = std::getenv("FRAMEMATTER_BALANCED_METER_OFFSET_EV");
+    const auto parsed_offset = research::balanced_meter_offset(offset_request);
+    if (!parsed_offset || (candidate_enabled && offset_request)) {
+        error = "research meter offset must be 0, -0.5, -1 or -1.5 and cannot be combined with candidate v1";
+        return false;
+    }
+    const double meter_offset = *parsed_offset;
     const char* trace_path = std::getenv("FRAMEMATTER_BALANCED_CANDIDATE_TRACE");
-    if (candidate_enabled || trace_path) {
+    if (candidate_enabled || offset_request || trace_path) {
         const auto candidate = research::balanced_highlight_candidate(Y, out.balanced);
         const bool apply = candidate_enabled && candidate.valid && params_.camera.auto_exposure &&
                            params_.camera.auto_exposure_method == "balanced";
         if (apply) out.balanced = candidate.candidate_ev;
+        const double before_offset = out.balanced;
+        const bool apply_offset = offset_request && params_.camera.auto_exposure &&
+                                  params_.camera.auto_exposure_method == "balanced";
+        if (apply_offset) out.balanced = before_offset + meter_offset;
         if (trace_path) {
             Json trace = Json::object();
             trace.set("event", Json(std::string("meter_candidate")));
-            trace.set("equation", Json(std::string("balanced-highlight-v1")));
+            trace.set("equation", Json(std::string(offset_request ? "balanced-meter-offset-v1" : "balanced-highlight-v1")));
             trace.set("enabled", Json(candidate_enabled));
             trace.set("applied", Json(apply));
             trace.set("valid", Json(candidate.valid));
@@ -64,6 +75,11 @@ patch(pipeline, '    out = exposure_evs_from(Y, sh, sw);', r'''    out = exposur
             trace.set("original_balanced_ev", Json(candidate.original_ev));
             trace.set("candidate_ev", Json(candidate.candidate_ev));
             trace.set("selected_balanced_ev", Json(out.balanced));
+            trace.set("offset_requested", Json(offset_request != nullptr));
+            trace.set("offset_applied", Json(apply_offset));
+            trace.set("meter_offset_ev", Json(meter_offset));
+            trace.set("before_offset_ev", Json(before_offset));
+            trace.set("after_offset_ev", Json(out.balanced));
             trace.set("highlight_area", Json(candidate.highlight_area));
             trace.set("lift_weight", Json(candidate.lift_weight));
             trace.set("area_weight", Json(candidate.area_weight));
@@ -95,10 +111,13 @@ engine = root / 'engine/src/pipeline/engine.cpp'
 patch(engine, '    for (const char* name : kMeterKeyFields) key += values.at(name).dump() + ";";', r'''    for (const char* name : kMeterKeyFields) key += values.at(name).dump() + ";";
     const char* mode = std::getenv("FRAMEMATTER_BALANCED_CANDIDATE");
     key += std::string("balanced-highlight-v1;") + ((mode && std::strcmp(mode, "1") == 0) ? "1" : "0");
+    const char* offset = std::getenv("FRAMEMATTER_BALANCED_METER_OFFSET_EV");
+    key += std::string(";meter-offset-v1=") + (offset ? offset : "unset");
     key += ";ae=" + values.at("auto_exposure").dump() + ";method=" + values.at("auto_exposure_method").dump();''')
 session = root / 'modern_UI/Spektrafilm/Spektrafilm/Model/Session.swift'
 patch(session, '        let stamp = p.wire.map { "\\($0.name)=\\($0.value)" }.joined(separator: ";")', r'''        let experimentMode = ProcessInfo.processInfo.environment["FRAMEMATTER_BALANCED_CANDIDATE"] == "1" ? "1" : "0"
-        let stamp = "balanced-highlight-v1;mode=\(experimentMode);" + p.wire.map { "\($0.name)=\($0.value)" }.joined(separator: ";")''')
+        let meterOffset = ProcessInfo.processInfo.environment["FRAMEMATTER_BALANCED_METER_OFFSET_EV"] ?? "unset"
+        let stamp = "balanced-highlight-v1;mode=\(experimentMode);meter-offset-v1=\(meterOffset);" + p.wire.map { "\($0.name)=\($0.value)" }.joined(separator: ";")''')
 
 project = root / 'modern_UI/Spektrafilm'
 run(['clang++', '-std=c++20', '-O2', root / 'engine/tests/balanced_highlight_candidate.cpp', '-o', root / 'candidate-check'])
@@ -113,6 +132,7 @@ app = root / 'DerivedData/Build/Products/Debug/FrameMatter.app'
 binary = app / 'Contents/MacOS/FrameMatter'
 manifest = {
     'equation': 'balanced-highlight-v1', 'source_kind': 'current working tree',
+    'meter_offset_experiment': 'balanced-meter-offset-v1', 'supported_meter_offsets_ev': [0, -0.5, -1, -1.5],
     'head': subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip(),
     'tracked_diff_sha256': hashlib.sha256(subprocess.check_output(['git', '-C', str(source), 'diff', 'HEAD', '--', 'engine', 'modern_UI'])).hexdigest(),
     'source_sha256': {str(f.relative_to(source)): hashlib.file_digest(f.open('rb'), 'sha256').hexdigest()

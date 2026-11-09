@@ -4,10 +4,21 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
+#include <optional>
 #include <vector>
 
 // Research v1 only. The ordinary engine does not include this header.
 namespace spk::research {
+// The separate fixed-offset experiment has exactly four preregistered arms.
+inline std::optional<double> balanced_meter_offset(const char* value) {
+    if (!value || std::strcmp(value, "0") == 0) return 0.0;
+    if (std::strcmp(value, "-0.5") == 0) return -0.5;
+    if (std::strcmp(value, "-1") == 0) return -1.0;
+    if (std::strcmp(value, "-1.5") == 0) return -1.5;
+    return std::nullopt;
+}
+
 struct BalancedHighlightCandidate {
     bool valid = false;
     double original_ev = 0;

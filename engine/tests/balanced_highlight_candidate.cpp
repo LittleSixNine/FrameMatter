@@ -7,6 +7,14 @@
 
 using spk::research::balanced_highlight_candidate;
 int main() {
+    using spk::research::balanced_meter_offset;
+    assert(balanced_meter_offset(nullptr) == 0.0);
+    assert(balanced_meter_offset("0") == 0.0);
+    assert(balanced_meter_offset("-0.5") == -0.5);
+    assert(balanced_meter_offset("-1") == -1.0);
+    assert(balanced_meter_offset("-1.5") == -1.5);
+    for (const char* value : {"", "+1", "-0.7", "nan", "-1.5junk"})
+        assert(!balanced_meter_offset(value));
     const std::vector<double> dark(10000, 0.184 / 64.0);
     auto uniform = balanced_highlight_candidate(dark, 6.0);
     assert(uniform.valid && uniform.highlight_area == 0 && uniform.candidate_ev == 6.0);
