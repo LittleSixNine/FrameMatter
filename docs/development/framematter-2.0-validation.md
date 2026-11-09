@@ -60,3 +60,9 @@ Using a separately identified copy of the current built application and an isola
 The independent [RAW perspective geometry acceptance](raw-perspective-geometry-validation.md) closes the date/perforation geometry gap for the measured RAW and settings: perforation positions and the actual date coverage mask remain fixed. Faint date-fringe output changes with the underlying photograph; this does not claim every exported date-adjacent pixel is identical.
 
 This supplement changes documentation only. No new full test run, cross-machine acceptance, main-branch merge, push or release is claimed.
+
+## Three-RAW comparison against SpektraLab 2.2.0
+
+FrameMatter’s development executable and the official SpektraLab 2.2.0 application each exported three fresh RAW edits and three edits with matched Gold 200 / Portra Endura optical controls. Image readback confirmed full-size 16-bit Display P3 TIFFs in both orientations. A single-setting experiment in FrameMatter showed that its balanced meter, which measured +6.55 EV on the night scene, substantially brightened the illuminated signs and reduced highlight detail relative to manual 0 EV.
+
+With identical scene-linear inputs, the two optical engines matched at all 15 directly comparable float boundaries and in the final 16-bit output for both tested stock pairs. Within the upstream Portra 400 / Portra Endura experiment, enabling minilab first changed the paper CMY densities. Doubling print exposure and changing the magenta filter affected the optical control but yielded identical minilab output in the tested scene. The upstream new-source decoder and the two applications’ post-processing spaces also produced measurable differences. These observations apply to the three samples and settings tested on one camera model. Private inputs, TIFFs, pixel comparisons and GUI evidence are kept outside public source.
