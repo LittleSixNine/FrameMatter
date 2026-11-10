@@ -83,6 +83,10 @@ struct FilmEdgeSection: View {
                                 parse: { Int($0).map(Double.init) ?? ($0.isEmpty ? 0 : nil) })
                 }
 
+                ToggleRow(label: L("Independent lettering halo", zh: "独立片边字光晕"),
+                          isOn: bind(\.independentLetteringHalation),
+                          help: L("Separate the factory lettering exposure from the camera optics; the date back keeps its normal exposure path.",
+                                  zh: "将工厂片边字作为独立曝光；日期后背仍沿相机曝光路径处理。"))
                 RailSubhead(L(.edgeLight))
                 RailSubgroup {
                     ScrubSlider(label: L(.edgeFog), value: bind(\.fog), range: FilmEdgeSettings.fogRange,

@@ -683,7 +683,7 @@ really puts the extreme, because the Fit solves the curve for the lift that
 
 **With the Digital Intermediate** (RFC-028): `film_present` runs before the DI node, so the film's edge and the gate are in the DI, but the scan's view of the holes (`spk_overscan_light`) has no DI counterpart and the perforations do not show. Open.
 
-Twenty-one native-only fields, all **shoot layer** and **not live**. Every mark
+Native-only fields below are all **shoot layer** and **not live**. Every mark
 (gate shadow, fog, leaks, edge print, DX code, date) is exposure on the
 negative, so an edit re-develops it (`negative_was_cached` is 0 on the next
 render). The fields sit before `preview_long_edge` with the other native
@@ -693,6 +693,7 @@ fields. Design and measurements: RFC-032 §26–§29 and RFC-031 (the date back)
 
 | field | path | type | default | range | meaning |
 |---|---|---|---|---|---|
+| `overscan_factory_separate_halation` | `film_render.overscan.factory_separate_halation` | bool | `false` | — | explicit independent factory-lettering exposure; missing/off keeps the original optical path. Date-back exposure stays with the scene. SHOOT, not live; see below. |
 | `overscan_active` | `film_render.overscan.active` | bool | `false` | — | the switch; `false` dispatches nothing (byte-identical to the pre-RFC build) |
 | `overscan_format` | `…overscan.format` | str | `"135"` | `135` \| `135_half` \| `120_645` \| `120_6x6` \| `120_6x7` \| `120_6x8` \| `120_6x9` \| `135_xpan` \| `135_full_67` \| `120_6x12` \| `120_6x17` | the film and its gate (`135_half`: 18 × 24 mm half frame, below). The panoramic long formats (2026-10-03, reversing "nothing larger than 6×9"): `135_xpan` 24 × 65 on 14 perforations, `120_6x12` 56 × 112, `120_6x17` 56 × 168; their gates are `square` until real strips are measured, and none carries a date |
 | `overscan_mode` | `…overscan.mode` | str | `"strip"` | `strip` \| `filed` | the whole film width, or a filed-out carrier's sliver of rebate |
@@ -973,6 +974,29 @@ and penumbra are inside a few tenths of a millimetre of it.
 3. `overscan_holes` acts only in the print stages and could become
    `print`-layer (a reprint, not a re-develop). It stays `shoot` until a
    reprint is shown to keep the overscan layout across a pipeline rebuild.
+
+**Independent factory-lettering exposure (optional, 2026-11-10).**
+`overscan_factory_separate_halation=false` (including a missing field) uses the
+original shared scene/lettering optical path; the app also defaults new photos
+to false. True keeps factory mark groups in a separate linear exposure plane.
+The scene and date-back groups retain normal lens blur and halation. Factory
+marks skip the camera lens blur, use the existing halation model with its four
+amount/spatial controls at 1 and per-channel return strengths multiplied by
+0.02, then add back before the common log exposure, development, DIR and grain.
+The master halation switch, back-reflection model and stock data are retained.
+The 0.02 is upstream look policy, not measured calibration. This ports
+[SpektraLab 2.2.0 commit 243d3a3](https://github.com/JamesQiu2005/SpektraLab/commit/243d3a362a6443db34109a93b622230699596d68)
+without its experimental environment toggle.
+
+The temporary plane belongs to the local film-stage chain and is released after
+`film_blurs`, including on errors/cancellation. It is not checkpoint/session
+state. Overscan with `striped=true` retains its existing explicit rejection for
+both switch values; no whole-frame fallback is introduced. Vulkan retains its
+existing explicit overscan rejection. With overscan disabled this setting has
+no effect, including on a date-only render. Host sidecars use
+`params.filmEdge.independentLetteringHalation`; only this leaf joins the Film
+Effects clipboard group. Other film-edge settings retain their prior ownership.
+
 
 ## 14. `filter_shift_scale` — what a unit of the two filter shifts is (2026-10-04)
 
@@ -1261,6 +1285,8 @@ user grading may change its displayed appearance. A narrow, seeded absorptive
 edge-colour variation uses the existing spectral base transmittance, with
 falloff 0.018 mm and support within 0.06 mm of the outline. It multiplies
 transmission rather than adding glow; it does not invent cyan/yellow wear.
+
+
 
 ### 18.1 Perforation light leaks
 

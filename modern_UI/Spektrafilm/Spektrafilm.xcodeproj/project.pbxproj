@@ -401,6 +401,7 @@
 		0000D1F88420E2B68811F65C /* ExportProgressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExportProgressTests.swift"; sourceTree = "<group>"; };
 		824997C1D857995E47EB764F /* ExportRecipeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExportRecipeTests.swift"; sourceTree = "<group>"; };
 		1920F483AE58DDBD5EF17E71 /* ExportUserMetadataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExportUserMetadataTests.swift"; sourceTree = "<group>"; };
+		1AB7E7C55B43414411D9AA7A /* FactoryLetteringTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FactoryLetteringTests.swift"; sourceTree = "<group>"; };
 		A2A814FBE11E6DDDF9B2D859 /* FilmEdgeSectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FilmEdgeSectionTests.swift"; sourceTree = "<group>"; };
 		6AC63F4336C3AEFE6BB7B4B9 /* FilmEdgeSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FilmEdgeSessionTests.swift"; sourceTree = "<group>"; };
 		E6C239066E0480AD5221C860 /* FilmEdgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FilmEdgeTests.swift"; sourceTree = "<group>"; };
@@ -481,6 +482,7 @@
 				0000D1F88420E2B68811F65C /* ExportProgressTests.swift */,
 				824997C1D857995E47EB764F /* ExportRecipeTests.swift */,
 				1920F483AE58DDBD5EF17E71 /* ExportUserMetadataTests.swift */,
+				1AB7E7C55B43414411D9AA7A /* FactoryLetteringTests.swift */,
 				A2A814FBE11E6DDDF9B2D859 /* FilmEdgeSectionTests.swift */,
 				6AC63F4336C3AEFE6BB7B4B9 /* FilmEdgeSessionTests.swift */,
 				E6C239066E0480AD5221C860 /* FilmEdgeTests.swift */,
@@ -1006,6 +1008,7 @@
 		E6205923562A7CEB202CC296 /* ExportProgressTests.swift */ = {isa = PBXBuildFile; fileRef = 0000D1F88420E2B68811F65C; };
 		9BFFB230A984011249109B04 /* ExportRecipeTests.swift */ = {isa = PBXBuildFile; fileRef = 824997C1D857995E47EB764F; };
 		BBA867C9B6E07FAA33BA2F36 /* ExportUserMetadataTests.swift */ = {isa = PBXBuildFile; fileRef = 1920F483AE58DDBD5EF17E71; };
+		F8CB16B4E77074A023ADD8C5 /* FactoryLetteringTests.swift */ = {isa = PBXBuildFile; fileRef = 1AB7E7C55B43414411D9AA7A; };
 		7A004520735087D47A8D4124 /* FilmEdgeSectionTests.swift */ = {isa = PBXBuildFile; fileRef = A2A814FBE11E6DDDF9B2D859; };
 		0DE470F90581B57C9AE4F659 /* FilmEdgeSessionTests.swift */ = {isa = PBXBuildFile; fileRef = 6AC63F4336C3AEFE6BB7B4B9; };
 		731231102EBB9262A19B894C /* FilmEdgeTests.swift */ = {isa = PBXBuildFile; fileRef = E6C239066E0480AD5221C860; };
@@ -1227,6 +1230,7 @@
 				E6205923562A7CEB202CC296 /* ExportProgressTests.swift */,
 				9BFFB230A984011249109B04 /* ExportRecipeTests.swift */,
 				BBA867C9B6E07FAA33BA2F36 /* ExportUserMetadataTests.swift */,
+				F8CB16B4E77074A023ADD8C5 /* FactoryLetteringTests.swift */,
 				7A004520735087D47A8D4124 /* FilmEdgeSectionTests.swift */,
 				0DE470F90581B57C9AE4F659 /* FilmEdgeSessionTests.swift */,
 				731231102EBB9262A19B894C /* FilmEdgeTests.swift */,

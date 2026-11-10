@@ -1967,8 +1967,10 @@ bool Pipeline::film_overscan(const Chain& in, Chain& out, std::string& error) {
     // is its own stage -- metering and the highlight lift are statistics of
     // the *frame*, so they are taken before the canvas exists.
     Image cur = in.cur, next;
-    SPK_NODE(node_overscan(cur, next, error)); cur = next;
+    Image factory;
+    SPK_NODE(node_overscan(cur, next, error, &factory)); cur = next;
     out = in;
+    out.factory_exposure = factory;
     out.cur = cur;
     return true;
 }
@@ -1980,7 +1982,25 @@ bool Pipeline::film_blurs(const Chain& in, Chain& out, std::string& error) {
     Image cur = in.cur, next;
     SPK_NODE(node_lens_blur(cur, next, error)); cur = next;
     SPK_NODE(node_halation(cur, next, error)); cur = next;
+    if (in.factory_exposure.buf) {
+        auto& halation = params_.film_render.halation;
+        struct Restore {
+            HalationParams& value;
+            HalationParams saved;
+            ~Restore() { value = saved; }
+        } restore{halation, halation};
+        // Upstream 2.2.0 look policy, not measured material calibration.
+        halation.halation_amount = halation.scatter_amount = 1.0;
+        halation.halation_spatial_scale = halation.scatter_spatial_scale = 1.0;
+        for (int c = 0; c < 3; ++c) halation.halation_strength[c] *= 0.02;
+        Image factory;
+        if (!node_halation(in.factory_exposure, factory, error)) return false;
+        const double one[3] = {1, 1, 1};
+        if (!blur_.lincomb(cur, factory, one, one, next, error)) return false;
+        cur = next;
+    }
     out = in;
+    out.factory_exposure = Image{};
     out.cur = cur;
     return true;
 }

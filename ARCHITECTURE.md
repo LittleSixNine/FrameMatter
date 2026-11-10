@@ -123,7 +123,7 @@ the identity is skipped.
 ```
 preprocess  decode_input · input_cast · geometry · crop_rescale · auto_exposure
 filming     expose.scene_latitude (RFC-023) · expose.upsample · expose.exposure
-            · expose.boost · expose.lens_blur · expose.overscan (RFC-032)
+            · expose.boost · expose.overscan (RFC-032) · expose.lens_blur
             · expose.halation · expose.log
             · develop.curves · develop.dir_couplers · develop.grain
 printing    expose.enlarger_spectral · expose.contrast_mask (RFC-024)
@@ -555,6 +555,16 @@ inside a field. `TypingKeyGuard` is a local key monitor that sends typing keys
   so it is not put over a film canvas a develop is about to replace
   (`Session.holdsFilmCanvas`). Without a film edge the new decode is shown at
   once, as before.
+- **Independent lettering halo** is an explicit Film Edge switch, off for
+  missing fields and new photos. It separates only the factory mark exposure
+  from camera lens blur and scene halo controls; dates remain in the scene.
+  Both exposures share development, DIR and grain. See API-SPEC §13 for the
+  upstream 2.2.0 look constant and retained striped/Vulkan rejection. Only the
+  new boolean is copied with Film Effects; seeds, format and framing stay local.
+  The temporary RGB float32 plane lives from overscan to `film_blurs` and is
+  absent when disabled or no factory marks rasterise. Its retained storage is
+  12 bytes per canvas pixel (plus transient halation working images), released
+  before development; it is never added to a long-lived cache/checkpoint.
 - **The print stamp carries the framing** (`Session.printStamp`), because the
   same parameters with another framing is another picture.
 

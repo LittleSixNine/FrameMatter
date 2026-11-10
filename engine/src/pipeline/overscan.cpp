@@ -270,6 +270,7 @@ struct Op {
 };
 
 struct Group {
+    bool factory = true;
     std::vector<Op> ops;
     double exposure[3] = {0, 0, 0};   // raw exposure at full coverage, per layer
     double blur_mm = 0.0;
@@ -2194,6 +2195,7 @@ void imprint_groups(const OverscanLayout& L, const Params& params, double frame_
     const bool is120 = fmt == "120_645" || fmt == "120_6x6" || fmt == "120_6x7" || fmt == "120_6x8" || fmt == "120_6x9";
     if (!is135 && !is120) return;
     Group g;
+    g.factory = false;
     const double e = kMidGrey * std::pow(2.0, d.exposure_ev);
     for (int c = 0; c < 3; ++c) g.exposure[c] = L.date_rgb[c] * e;
     g.blur_mm = 0.015;
@@ -2439,7 +2441,9 @@ std::string Pipeline::overscan_geometry_json() const {
 // ---------------------------------------------------------------------------
 // The nodes.
 // ---------------------------------------------------------------------------
-bool Pipeline::node_overscan(const Image& in, Image& out, std::string& error) {
+bool Pipeline::node_overscan(const Image& in, Image& out, std::string& error, Image* factory) {
+    if (factory) *factory = Image{};
+    Image factory_exposure;
     const DateImprintParams& di = params_.film_render.date_imprint;
     if (di.active) {
         const char* font_name = date_font(di.style);
@@ -2561,6 +2565,11 @@ bool Pipeline::node_overscan(const Image& in, Image& out, std::string& error) {
         std::vector<float> cov;
         int x0, y0, w, h;
         if (!rasterise(gi < placed.size() ? placed[gi] : overscan_, gg, cov, x0, y0, w, h)) continue;
+        const bool separate = factory && gg.factory && params_.film_render.overscan.factory_separate_halation;
+        if (separate && !factory_exposure.buf) {
+            const double zero[3] = {0, 0, 0};
+            if (!blur_.affine(canvas, zero, zero, factory_exposure, error)) return false;
+        }
         gpu::BufferRef mb = gpu_->upload(cov.data(), cov.size() * sizeof(float), error);
         if (!mb) return false;
         const float M[9] = {float(x0), float(y0), float(w), float(h), float(canvas.w), float(canvas.h),
@@ -2568,10 +2577,11 @@ bool Pipeline::node_overscan(const Image& in, Image& out, std::string& error) {
         const uint32_t n[1] = {uint32_t(size_t(w) * size_t(h))};
         if (!gpu_->dispatch("spk_overscan_add_mask",
                             {gpu::Arg::buf(mb), gpu::Arg::inline_bytes(M, 9), gpu::Arg::inline_bytes(n, 1),
-                             gpu::Arg::buf(canvas.buf)},
+                             gpu::Arg::buf(separate ? factory_exposure.buf : canvas.buf)},
                             size_t(w) * size_t(h), error)) return false;
     }
     out = canvas;
+    if (factory) *factory = factory_exposure;
     return true;
 }
 

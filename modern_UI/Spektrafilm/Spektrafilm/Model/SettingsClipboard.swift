@@ -56,7 +56,8 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
         case .filmEffects:
             // The film format sets the physical scale of grain and halation.
             ["params.filmFormatMM", "params.filmFrame", "params.filmSide", "params.sideLengthMM",
-             "params.grainActive", "params.halationActive", "params.glareActive", "params.effects"]
+             "params.grainActive", "params.halationActive", "params.glareActive", "params.effects",
+             "params.filmEdge.independentLetteringHalation"]
         case .printEffects:
             // Pre-flash is gated by the Print Effects switch already.
             ["params.printEffects", "params.preflashExposure"]
@@ -80,9 +81,23 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
         "heldCrop": "the photograph's own crop, kept while Film Edge frames it",
         "noFilm": "Don't Apply Film Simulation is the frame's own choice, like its crop",
         // Undecided (answer sheet F10 is open): whether Film Edge and Date Back
-        // become a group of their own. Until then neither is copied, and the
-        // seeds and the resolved text would be the source photograph's anyway.
-        "params.filmEdge": "Film Edge: not copied until a group is decided (F10)",
+        // become a group of their own. Only the independent-lettering look is
+        // copied with Film Effects; seeds, format and resolved text remain local.
+        "params.filmEdge.active": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.format": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.view": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.gate": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.holes": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.cameraSeed": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.frameSeed": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.frameNumber": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.fog": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.leaks": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.edgeText": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.fNumber": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.framing": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.pair": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.seeded": "Film Edge: photograph-specific settings are not copied (F10)",
         "params.agingTextures": "Saved whole-frame aging texture belongs to the photograph",
         "params.lightLeaks": "Perforation light and its saved patterns belong to the photograph",
         "params.scratches": "Film-border wear belongs to the photograph, like Film Edge and Date Back",
@@ -185,6 +200,7 @@ struct SettingsClip: Equatable, Sendable {
             out.params.halationActive = s.params.halationActive
             out.params.glareActive = s.params.glareActive
             out.params.effects = s.params.effects
+            out.params.filmEdge.independentLetteringHalation = s.params.filmEdge.independentLetteringHalation
         }
         if groups.contains(.printEffects) {
             out.params.printEffects = s.params.printEffects

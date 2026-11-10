@@ -5,7 +5,7 @@
 import Foundation
 
 /// RFC-032's **Film Edge** (overscan) and RFC-031's **Date Back**, as the app
-/// keeps them: the wire's twenty fields (API-SPEC §13) plus what the host
+/// keeps them: the wire fields (API-SPEC §13) plus what the host
 /// resolves for the engine. Both are shoot layer and not live: every mark is
 /// exposure on the negative, so an edit re-develops it.
 
@@ -103,6 +103,8 @@ enum FilmEdgeHoles: String, CaseIterable, Identifiable, Codable, Sendable {
 
 struct FilmEdgeSettings: Codable, Equatable, Sendable {
     var active = false
+    /// Explicit optional upstream factory-exposure look; old and new frames keep the legacy path.
+    var independentLetteringHalation = false
     var format = FilmEdgeFormat.f135
     var view = FilmEdgeView.strip
     var gate = FilmEdgeGate.auto
@@ -153,6 +155,7 @@ struct FilmEdgeSettings: Codable, Equatable, Sendable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let d = FilmEdgeSettings()
         active = try c.decodeIfPresent(Bool.self, forKey: .active) ?? d.active
+        independentLetteringHalation = try c.decodeIfPresent(Bool.self, forKey: .independentLetteringHalation) ?? false
         format = (try? c.decodeIfPresent(FilmEdgeFormat.self, forKey: .format)) ?? d.format
         view = (try? c.decodeIfPresent(FilmEdgeView.self, forKey: .view)) ?? d.view
         gate = (try? c.decodeIfPresent(FilmEdgeGate.self, forKey: .gate)) ?? d.gate
@@ -203,6 +206,7 @@ struct FilmEdgeSettings: Codable, Equatable, Sendable {
         ]
         guard effective else { return fields }
         fields += [
+            ("overscan_factory_separate_halation", .bool(independentLetteringHalation), .shoot),
             ("overscan_format", .string(format.rawValue), .shoot),
             ("overscan_mode", .string(view.rawValue), .shoot),
             ("overscan_gate", .string(gate.rawValue), .shoot),

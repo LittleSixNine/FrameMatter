@@ -155,6 +155,7 @@ const SchemaField kFields[] = {
     // RFC-032/031: overscan and the date back. Native-only, placed
     // before `preview_long_edge` like every native field. SHOOT layer: both
     // are exposure on the negative, so an edit re-develops it.
+    {"overscan_factory_separate_halation", "film_render.overscan.factory_separate_halation", B, SHOOT, false, 0, 0, false},
     {"overscan_active",          "film_render.overscan.active",           B, SHOOT, false, 0, 0, false},
     {"overscan_format",          "film_render.overscan.format",           S, SHOOT, false, 0, 0, false},
     {"overscan_mode",            "film_render.overscan.mode",             S, SHOOT, false, 0, 0, false},
@@ -374,6 +375,7 @@ bool* bool_slot(Params& p, const std::string& path) {
     if (path == "print_render.contrast_mask.active") return &p.print_render.contrast_mask.active;
     if (path == "camera.scene_latitude.active") return &p.camera.scene_latitude.active;
     if (path == "camera.scene_latitude.b_active") return &p.camera.scene_latitude.b_active;
+    if (path == "film_render.overscan.factory_separate_halation") return &p.film_render.overscan.factory_separate_halation;
     if (path == "film_render.overscan.active") return &p.film_render.overscan.active;
     if (path == "film_render.overscan.pair") return &p.film_render.overscan.pair;
     if (path == "film_render.date_imprint.active") return &p.film_render.date_imprint.active;

@@ -187,6 +187,7 @@ struct PrintCurvesMorphParams {
 // per stock and format and needs no seed.
 struct OverscanParams {
     bool active = false;
+    bool factory_separate_halation = false; // opt-in independent factory exposure; missing = legacy
     std::string format = "135";      // 135 | 135_half | 120_645 | 120_6x6 | 120_6x7 | 120_6x8 | 120_6x9
     std::string mode = "strip";      // strip (the whole film width) | filed (a sliver of rebate)
     int camera_seed = 1;

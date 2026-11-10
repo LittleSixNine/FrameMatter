@@ -144,6 +144,7 @@ enum AgentSchema {
         // engine is listed and cannot be written.
         let resolved = "Resolved by the app from the frame, its EXIF and its stock."
         f += [
+            .init("params.filmEdge.independentLetteringHalation", .bool, "Opt-in independent factory-lettering exposure and halation. Off preserves the original optical path. Dates remain in the scene path."),
             .init("params.filmEdge.active", .bool, "Film Edge: the film around the frame. On, the crop is held at the gate's aspect and the result is the film canvas, larger than the picture."),
             .init("params.filmEdge.format", .choice(FilmEdgeFormat.allCases.filter(\.isAvailable).map(\.rawValue)), "The film and its gate."),
             .init("params.filmEdge.view", .choice(FilmEdgeView.allCases.map(\.rawValue)), "The whole film width, or a filed carrier's sliver of rebate."),

@@ -25,7 +25,8 @@ bool Pipeline::set_overscan_frame(uint32_t, uint32_t, std::string& error) {
 // not link. Overscan is refused here, so there is never a layout to report.
 std::string Pipeline::overscan_geometry_json() const { return "{\"valid\":false}"; }
 
-bool Pipeline::node_overscan(const Image& in, Image& out, std::string& error) {
+bool Pipeline::node_overscan(const Image& in, Image& out, std::string& error, Image* factory) {
+    if (factory) *factory = Image{};
     if (params_.film_render.overscan.active || params_.film_render.date_imprint.active) {
         error = windows_unported_error(false, false, false, params_.film_render.overscan.active,
                                         params_.film_render.date_imprint.active);

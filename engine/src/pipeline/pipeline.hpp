@@ -406,6 +406,7 @@ public:
     /// function. Threading the struct also means a crossing between a band run
     /// and a whole-frame stage has to copy every *live* field, not just `cur`.
     struct Chain {
+        Image factory_exposure; // overscan -> blurs only; whole-frame only; never retained on Pipeline
         Image cur;         // the running image: each stage's input and output
         Image log_e_film;  // film only: live from `log_and_curves` to `couplers`
     };
@@ -659,7 +660,7 @@ private:
     double overscan_gate_long_mm() const;
     bool overscan_layout(uint32_t frame_w, uint32_t frame_h, std::string& error);
     void overscan_params_block(std::vector<float>& P) const;
-    bool node_overscan(const Image& in, Image& out, std::string& error);
+    bool node_overscan(const Image& in, Image& out, std::string& error, Image* factory = nullptr);
     bool node_overscan_film_present(const Image& in, Image& out, std::string& error);
     bool node_overscan_light(const Image& in, Image& out, std::string& error);
     bool node_lens_blur(const Image& in, Image& out, std::string& error);
