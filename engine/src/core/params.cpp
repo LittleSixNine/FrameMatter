@@ -443,7 +443,7 @@ const char* type_name(FieldType t) {
 bool is_known_exposure_method(const std::string& method) {
     // The three legacy meters are the Python reference's own and their
     // arithmetic does not change (RFC-015 §3); the four intents are §2.3.
-    return method == "center_weighted" || method == "average" || method == "median" ||
+    return method == "adaptive" || method == "center_weighted" || method == "average" || method == "median" ||
            method == "balanced" || method == "center" ||
            method == "protect_highlights" || method == "protect_shadows";
 }
@@ -543,7 +543,7 @@ bool validate_delta(const Json& delta, std::string& error, std::string& param) {
         if (kv.first == "auto_exposure_method" && !is_known_exposure_method(v.as_string())) {
             error = "'auto_exposure_method' = '" + v.as_string() +
                     "' is not an exposure method (balanced, center, protect_highlights, "
-                    "protect_shadows, center_weighted, average, median)";
+                    "protect_shadows, center_weighted, average, median, adaptive)";
             param = kv.first;
             return false;
         }

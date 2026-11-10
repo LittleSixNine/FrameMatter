@@ -33,6 +33,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "adaptive_meter.hpp"
 #include "blob.hpp"
 #include "blur.hpp"
 #include "cam16.hpp"
@@ -220,6 +221,7 @@ struct Progress {
 // because the trim and the percentiles are shared.
 struct ExposureEvs {
     double balanced = 0.0;
+    std::optional<meter::AdaptiveResult> adaptive;
     double center = 0.0;
     double protect_highlights = 0.0;
     double protect_shadows = 0.0;
@@ -356,8 +358,9 @@ public:
     // RFC-015 P.1: the session's one meter of the frame. `in` is the frame at
     // the meter's own resolution; this runs the node's own upstream nodes on
     // it (input_cast, decode_input, geometry), reads the whole image back and
-    // returns all seven methods' EVs. Leaves the pipeline's pitch as it was.
-    bool measure_meter_evs(const Image& in, ExposureEvs& out, std::string& error);
+    // returns the seven existing EVs and, with evidence, adaptive. Leaves the pitch unchanged.
+    bool measure_meter_evs(const Image& in, ExposureEvs& out, std::string& error,
+                           const std::vector<meter::FaceBox>* faces = nullptr);
 
     // RFC-024: the mask this print would apply, as the delta in stops at each
     // cell of its analysis grid (`gw` x `gh`, row-major, the frame's own

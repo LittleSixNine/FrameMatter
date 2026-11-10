@@ -1640,3 +1640,98 @@ normalisation, black-floor removal or preprocessing blur occurs. The source,
 checksums and original mapping remain in the private development record. The
 renamed release derivatives are tracked and validated before bundling. Original-source redistribution
 and commercial permission have not been established.
+
+## 21. Adaptive subject exposure and derived face input (FrameMatter 2.0)
+
+`auto_exposure_method="adaptive"` is an additive native product intent. The
+seven existing methods, the C++ schema/default (`center_weighted`), old native
+opens and absent-field semantics retain their arithmetic and behaviour. The app
+selects adaptive for new photographs; a separate versioned RAW input
+interpretation owns shadow-neutral decode, never the meter selector. Neither
+film/paper profiles nor encoded/linear input conversion changes here.
+
+The frozen algorithm is the stage-C combination: balanced-relative grey+2.5..3
+highlight area and exact-rank P99.5, area smoothstep .005..03, at most 2EV scene
+reduction; the largest eligible face (confidence≥.6, clipped width/height≥16
+actual framed-meter pixels; equal area uses x then y) uses its central60%
+integer-rank median, grey+.5EV target and balanced+1EV ceiling. After a successful
+face measurement only, add `min(.5,max(0,Eb-Eold))`; no-face follows the scene
+rule. Detector fallback remains the host's revision3/1600 full image followed by
+four fixed60% crops only when the successful raw full-image array is empty.
+
+Precisely, with `g=.184`, `S(t)=clamp(t,0,1)^2*(3-2*clamp(t,0,1))` and
+`Y'=max(Y,g/4096)`: `T=log2(Y'/g)+Eb`, `A=mean(S((T-2.5)/.5))`,
+`wA=S((A-.005)/.025)`, `H=log2(P99.5(Y')/g)+Eb-2.5`,
+`Escene=Eb-wA*clamp(H,0,2)`. P99.5 uses integer rank `995*(N-1)/1000`.
+For a measured face median `F`, `Eold=max(Escene,min(log2(g*sqrt(2)/F),Eb+1))`
+and `E=Eold+min(.5,max(0,Eb-Eold))`; otherwise `E=Escene`.
+Central60% bounds are ceil-rounded, clipped, half-open pixel ranges in the
+meter's top-row-first Y plane; the median uses integer rank `(n-1)/2`.
+
+### 21.1 Atomic native face-evidence opens
+
+The existing `spk_open` and `spk_open_device` signatures remain unchanged. New
+`spk_open_with_faces(engine,image,faces_json,params_delta,out_json)` and
+`spk_open_device_with_faces(...)` borrow/copy exactly like the old entries and
+bind the supplied derived evidence to that same immutable source in one call.
+This is an in-memory input, not a file, parameter, sidecar, clipboard recipe or
+user-editable agent field. Their JSON has this independent version1 shape:
+
+```json
+{"version":1,"width":1600,"height":1067,"detector":"vision-face-v3-tile-v1",
+ "faces":[{"x":0.1,"y":0.2,"width":0.3,"height":0.4,"confidence":0.9}]}
+```
+
+Width/height must equal the actual `EngineFrame` input dimensions, after any
+app-owned crop/turn/perspective operation. Coordinates are normalized
+bottom-left within those exact input pixels. Each box requires finite numeric
+fields; x/y and confidence are in[0,1], width/height in(0,1], right/top may exceed1
+by at most1e-6 for floating-point rounding. Maximum4096 boxes and2MiB JSON;
+version and detector must match the above. Malformed evidence fails before a
+session is registered. All entries/frames are copied, so callers may release
+their memory when open returns. `faces:[]` means a successful detection of no
+faces. Missing evidence is distinct: old methods/manual rendering remain valid,
+but selecting adaptive for a solve or active auto-exposed render requires a
+reopen with evidence and returns an explicit error otherwise. Detection failure
+must propagate from the host rather than masquerade as a successful empty array.
+
+`auto_exposure=false` with a retained `adaptive` method is dormant-adaptive
+manual mode. Its `solve(exposure|both)` does not require faces and returns the
+all seven old-method diagnostics, but omits `exposure_compensation_ev` from `solved_params`
+(no zero or substitute meter is written). `both` still solves the print filter
+pack. Callers retain the manual compensation and refresh diagnostics even when
+that exposure key is absent. Existing seven-method solve semantics are unchanged.
+
+### 21.2 Geometry, tiers, identity and cache
+
+The host detects in the same display domain as the linear pixels it hands the
+engine, including its own framing. Engine `io.geometry` still runs before the
+meter; the engine maps every source-box corner through the inverse of the same
+continuous pixel-edge crop/angle/quarter-turn/flip mapping as `node_geometry`,
+then takes the axis-aligned enclosure and clips it to the framed unit square.
+Faces cropped out have zero size and are ineligible. Rotation can expand the
+axis-aligned box: this is the defined rectangle approximation, not segmentation.
+Qualification and median bounds use the actual post-geometry meter dimensions,
+not source/display dimensions. The host does not double-apply engine geometry.
+
+The session's source and face evidence are immutable. Meter cache identity
+already includes all upstream colour/geometry fields; the new adaptive result
+has an independent optional slot alongside the seven unchanged results. A
+method change reuses that complete reading only when evidence exists. The
+missing-evidence guard precedes cache hits, so an old legacy open cannot silently
+select adaptive from a previously cached seven-method reading. Every render
+resolution uses the same1600-long-edge session meter; preview tier does not
+alter qualification/exposure. Host persistent cache identity additionally owns
+source/decode version, app framing and detector version.
+
+### 21.3 Additive capabilities and responses
+
+Capabilities adds `meter_face_input:{version:1,detector:"vision-face-v3-tile-v1",
+method:"adaptive"}`; transport/schema versions remain1. The existing
+`exposure_ev_by_method` retains all old keys. When adaptive is selected it also
+reports the three legacy readings (center_weighted/average/median), and adds
+`adaptive` only when valid
+face evidence (including a successful empty array) produced its reading. No NaN
+placeholder is serialized. The parameter field/table itself is unchanged:
+`auto_exposure_method` remains a string; this is a native-product accepted value,
+not a new Python-reference field or a modification of the external oracle.

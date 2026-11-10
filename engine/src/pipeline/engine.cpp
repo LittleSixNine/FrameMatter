@@ -194,6 +194,7 @@ struct spk_session {
     Image source;
 
     Params params;
+    std::optional<std::vector<meter::FaceBox>> faces;
     std::unique_ptr<Pipeline> pipeline;
 
     // SpektraLab deliberately does not expose the reference GUI's
@@ -368,6 +369,11 @@ struct spk_engine {
         out.set("tiers", std::move(tiers));
         out.set("transport_version", Json(double(SPK_TRANSPORT_VERSION)));
         out.set("schema_version", Json(double(SPK_SCHEMA_VERSION)));
+        Json face_input = Json::object();
+        face_input.set("version", Json(1.0));
+        face_input.set("detector", Json(std::string("vision-face-v3-tile-v1")));
+        face_input.set("method", Json(std::string("adaptive")));
+        out.set("meter_face_input", std::move(face_input));
         out.set("backend", std::move(backend));
         return out;
     }
@@ -766,8 +772,40 @@ struct FrameIn {
 // reaches the device, and that is one branch below -- not two copies of the
 // params and pipeline setup that could drift apart, which is the shape of
 // the `spk_render`/`spk_reprint` bug the session harness now pins.
+bool parse_meter_faces(const char* text, uint32_t width, uint32_t height,
+                       std::vector<meter::FaceBox>& faces, std::string& error) {
+    if (!text || !*text || std::strlen(text)>2*1024*1024) {
+        error = "face evidence must be a nonempty JSON object no larger than 2 MiB"; return false;
+    }
+    Json value;
+    if (!Json::parse(text,value,error)) { error = "face evidence: " + error; return false; }
+    if (!value.is_object() || !value.at("version").is_number() || value.at("version").as_double()!=1 ||
+        !value.at("width").is_number() || value.at("width").as_double()!=width ||
+        !value.at("height").is_number() || value.at("height").as_double()!=height ||
+        !value.at("detector").is_string() || value.at("detector").as_string()!="vision-face-v3-tile-v1" ||
+        !value.at("faces").is_array() || value.at("faces").items().size()>4096) {
+        error = "face evidence requires version 1, matching dimensions, supported detector and at most 4096 boxes";
+        return false;
+    }
+    for (const auto& box:value.at("faces").items()) {
+        for (const char* key:{"x","y","width","height","confidence"}) {
+            if (!box.at(key).is_number() || !std::isfinite(box.at(key).as_double())) {
+                error = "face box fields must be finite numbers"; return false;
+            }
+        }
+        meter::FaceBox f{box.at("x").as_double(),box.at("y").as_double(),box.at("width").as_double(),
+                         box.at("height").as_double(),box.at("confidence").as_double()};
+        if (f.x<0 || f.x>1 || f.y<0 || f.y>1 || f.width<=0 || f.width>1 || f.height<=0 || f.height>1 ||
+            f.x+f.width>1+1e-6 || f.y+f.height>1+1e-6 || f.confidence<0 || f.confidence>1) {
+            error = "face boxes must be normalized unit-image rectangles with confidence in [0,1]"; return false;
+        }
+        faces.push_back(f);
+    }
+    return true;
+}
+
 spk_session* open_frame(spk_engine* engine, const FrameIn& frame, const char* params_delta_json,
-                        char** out_json) {
+                        char** out_json, const char* faces_json = nullptr) {
     g_error.clear();
     if (frame.channels != 3 && frame.channels != 4) {
         g_error = "input image must have 3 or 4 channels";
@@ -793,6 +831,12 @@ spk_session* open_frame(spk_engine* engine, const FrameIn& frame, const char* pa
                   " px long edge is above the device's " + std::to_string(max_edge) +
                   " px texture limit";
         return nullptr;
+    }
+
+    std::optional<std::vector<meter::FaceBox>> faces;
+    if (faces_json) {
+        faces.emplace();
+        if (!parse_meter_faces(faces_json,frame.width,frame.height,*faces,g_error)) return nullptr;
     }
 
     // RFC-020 §3.1: the frame switch, which is one of the only two occasions
@@ -859,6 +903,7 @@ spk_session* open_frame(spk_engine* engine, const FrameIn& frame, const char* pa
 
     auto session = std::make_unique<spk_session>();
     session->engine = engine;
+    session->faces = std::move(faces);
     session->session_id = "s" + std::to_string(next_id());
 
     std::string film = "kodak_portra_400", print = "kodak_portra_endura";
@@ -1004,6 +1049,22 @@ spk_session* spk_open_device(spk_engine* engine, const spk_device_image* input,
     return open_frame(engine, frame, params_delta_json, out_json);
 }
 
+spk_session* spk_open_with_faces(spk_engine* engine, const spk_image* input,
+                                 const char* faces_json, const char* params_delta_json, char** out_json) {
+    if (!engine || !input || !input->data || !faces_json) { g_error = "engine, image or face evidence is null"; return nullptr; }
+    FrameIn frame;
+    frame.host=input->data; frame.width=input->width; frame.height=input->height; frame.channels=input->channels;
+    return open_frame(engine,frame,params_delta_json,out_json,faces_json);
+}
+
+spk_session* spk_open_device_with_faces(spk_engine* engine, const spk_device_image* input,
+                                        const char* faces_json, const char* params_delta_json, char** out_json) {
+    if (!engine || !input || !input->buffer || !faces_json) { g_error = "engine, buffer or face evidence is null"; return nullptr; }
+    FrameIn frame;
+    frame.device=input->buffer; frame.width=input->width; frame.height=input->height; frame.channels=input->channels;
+    return open_frame(engine,frame,params_delta_json,out_json,faces_json);
+}
+
 namespace {
 
 // The source at a tier's resolution, built on first use. `open` needs the live
@@ -1068,13 +1129,18 @@ bool meter_frame(spk_session* session, Image& small, std::string& error) {
 
 // The session's meter, computed on demand -- whichever render or solve needs
 // it first -- and kept until an upstream field changes. Needs an open frame.
-bool ensure_meter(spk_session* session, std::string& error) {
+bool ensure_meter(spk_session* session, std::string& error, bool require_adaptive = true) {
+    // This precedes the cache hit: a legacy open can cache all seven old methods.
+    if (require_adaptive && session->params.camera.auto_exposure_method=="adaptive" && !session->faces) {
+        error = "adaptive exposure requires face evidence; reopen this frame with faces";
+        return false;
+    }
     const std::string key = meter_key(session->params);
     if (session->meter.valid && session->meter.key == key) return true;
     Image small;
     ExposureEvs evs;
     if (!meter_frame(session, small, error) ||
-        !session->pipeline->measure_meter_evs(small, evs, error)) return false;
+        !session->pipeline->measure_meter_evs(small, evs, error, session->faces ? &*session->faces : nullptr)) return false;
     session->meter.valid = true;
     session->meter.key = key;
     session->meter.evs = evs;
@@ -1112,8 +1178,8 @@ bool negative_for(spk_session* session, const Tier& tier, Progress* progress, Im
     Image source;
     if (!tier_image(session, tier, source, error)) return false;
     // Every tier's node applies the frame's one EV (RFC-015 P.1).
-    if (!ensure_meter(session, error)) return false;
     const CameraParams& camera = session->params.camera;
+    if (!ensure_meter(session, error, camera.auto_exposure)) return false;
     session->pipeline->set_auto_exposure_ev(
         camera.auto_exposure ? std::optional<double>(session->meter.evs.of(camera.auto_exposure_method))
                              : std::nullopt);
@@ -2040,7 +2106,7 @@ spk_status spk_scene_latitude(spk_session* session, const char* request_json, ch
 
     // The scene: the meter's frame, through the node's upstream nodes and the
     // session's one auto-exposure EV, on the requested norm.
-    if (ok) ok = ensure_meter(session, error);
+    if (ok) ok = ensure_meter(session, error, session->params.camera.auto_exposure);
     if (ok) {
         const CameraParams& cam = session->params.camera;
         const double ev = cam.auto_exposure ? session->meter.evs.of(cam.auto_exposure_method) : 0.0;
@@ -2209,15 +2275,24 @@ spk_status spk_solve(spk_session* session, const char* target, char** out_json) 
         gpu::Gpu* gpu = session->engine->gpu;
         gpu->begin_frame();
         std::string error;
-        const bool ok = ensure_meter(session, error);
+        const bool dormant_adaptive = !session->params.camera.auto_exposure &&
+                                      session->params.camera.auto_exposure_method=="adaptive";
+        const bool ok = ensure_meter(session, error, !dormant_adaptive);
         gpu->end_frame();
         if (!ok) { g_error = error; return SPK_ERR_GPU; }
         const ExposureEvs& evs = session->meter.evs;
-        solved.set("exposure_compensation_ev", Json(evs.of(session->params.camera.auto_exposure_method)));
+        if (!dormant_adaptive)
+            solved.set("exposure_compensation_ev", Json(evs.of(session->params.camera.auto_exposure_method)));
         ev_by_method.set("balanced", Json(evs.balanced));
+        if (evs.adaptive) ev_by_method.set("adaptive", Json(evs.adaptive->exposure_ev));
         ev_by_method.set("center", Json(evs.center));
         ev_by_method.set("protect_highlights", Json(evs.protect_highlights));
         ev_by_method.set("protect_shadows", Json(evs.protect_shadows));
+        if (session->params.camera.auto_exposure_method=="adaptive") {
+            ev_by_method.set("center_weighted", Json(evs.center_weighted));
+            ev_by_method.set("average", Json(evs.average));
+            ev_by_method.set("median", Json(evs.median));
+        }
         metered = true;
     }
     if (want == "filter_pack" || want == "both") {

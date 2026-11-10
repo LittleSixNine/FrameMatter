@@ -803,10 +803,14 @@ bool Pipeline::measure_exposure_ev(const Image& in, double& ev, std::string& err
     if (!is_known_exposure_method(method)) {
         error = "auto_exposure_method '" + method + "' is not implemented by the native engine "
                 "(balanced, center, protect_highlights, protect_shadows, center_weighted, "
-                "average and median are)";
+                "average, median and adaptive are)";
         return false;
     }
 
+    if (method == "adaptive") {
+        error = "adaptive exposure requires a session opened with face evidence";
+        return false;
+    }
     std::vector<double> Y;
     uint32_t sh = 0, sw = 0;
     if (!exposure_sample_y(in, stride, Y, sh, sw, error)) return false;
@@ -825,6 +829,7 @@ bool Pipeline::measure_exposure_ev(const Image& in, double& ev, std::string& err
 }
 
 double ExposureEvs::of(const std::string& method) const {
+    if (method == "adaptive" && adaptive) return adaptive->exposure_ev;
     if (method == "balanced") return balanced;
     if (method == "center") return center;
     if (method == "protect_highlights") return protect_highlights;
@@ -834,7 +839,8 @@ double ExposureEvs::of(const std::string& method) const {
     return center_weighted;
 }
 
-bool Pipeline::measure_meter_evs(const Image& in, ExposureEvs& out, std::string& error) {
+bool Pipeline::measure_meter_evs(const Image& in, ExposureEvs& out, std::string& error,
+                                 const std::vector<meter::FaceBox>* faces) {
     // The node's own upstream nodes, so the meter sees what the node would:
     // decoded, cropped and turned. `node_geometry` records the frame's long
     // edge for the film's pitch, and this is not the frame being rendered,
@@ -856,6 +862,11 @@ bool Pipeline::measure_meter_evs(const Image& in, ExposureEvs& out, std::string&
     uint32_t sh = 0, sw = 0;
     if (!exposure_sample_y(framed, /*stride=*/false, Y, sh, sw, error)) return false;
     out = exposure_evs_from(Y, sh, sw);
+    if (faces) {
+        const auto framed = meter::framed_faces(*faces, in.w, in.h, params_.io.geometry);
+        out.adaptive = meter::adaptive_exposure(Y, sw, sh, out.balanced, framed);
+        if (!out.adaptive->valid) { error = "adaptive meter received an invalid luminance sample"; return false; }
+    }
     return legacy_exposure_ev(Y, sh, sw, "center_weighted", out.center_weighted, error) &&
            legacy_exposure_ev(Y, sh, sw, "average", out.average, error) &&
            legacy_exposure_ev(Y, sh, sw, "median", out.median, error);

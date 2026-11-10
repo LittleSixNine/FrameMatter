@@ -102,6 +102,11 @@ class Engine:
         lib.spk_open.restype = ctypes.c_void_p
         lib.spk_open.argtypes = [ctypes.c_void_p, ctypes.POINTER(SpkImage), ctypes.c_char_p,
                                  ctypes.POINTER(ctypes.c_char_p)]
+        if hasattr(lib, "spk_open_with_faces"):
+            lib.spk_open_with_faces.restype = ctypes.c_void_p
+            lib.spk_open_with_faces.argtypes = [ctypes.c_void_p, ctypes.POINTER(SpkImage),
+                                               ctypes.c_char_p, ctypes.c_char_p,
+                                               ctypes.POINTER(ctypes.c_char_p)]
         lib.spk_set_params.restype = ctypes.c_int32
         lib.spk_set_params.argtypes = [ctypes.c_void_p, ctypes.c_char_p,
                                        ctypes.POINTER(ctypes.c_char_p)]
@@ -196,15 +201,21 @@ class Engine:
         flat = np.ctypeslib.as_array(table, shape=(n,))
         return np.array(flat.reshape(size.value, size.value, size.value, 3), copy=True)
 
-    def open(self, image: np.ndarray, delta: dict | None = None) -> "Session":
+    def open(self, image: np.ndarray, delta: dict | None = None, *,
+             faces: dict | None = None) -> "Session":
         array = np.ascontiguousarray(np.asarray(image, dtype=np.float32))
         if array.ndim != 3 or array.shape[2] not in (3, 4):
             raise ValueError(f"expected (H, W, 3 or 4), got {array.shape}")
         spk_image = SpkImage(array.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
                              array.shape[1], array.shape[0], array.shape[2])
         out = ctypes.c_char_p()
-        handle = self._lib.spk_open(self._handle, ctypes.byref(spk_image),
-                                    json.dumps(delta or {}).encode(), ctypes.byref(out))
+        if faces is None:
+            handle = self._lib.spk_open(self._handle, ctypes.byref(spk_image),
+                                        json.dumps(delta or {}).encode(), ctypes.byref(out))
+        else:
+            handle = self._lib.spk_open_with_faces(self._handle, ctypes.byref(spk_image),
+                                                   json.dumps(faces).encode(),
+                                                   json.dumps(delta or {}).encode(), ctypes.byref(out))
         if not handle:
             raise EngineError(self._last_error())
         return Session(self, handle, self._take_json(out), array)

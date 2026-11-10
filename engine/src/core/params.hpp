@@ -573,8 +573,8 @@ Json transport_schema();
 // the user-facing one; `param` names the offending field.
 bool validate_delta(const Json& delta, std::string& error, std::string& param);
 
-// The seven accepted `auto_exposure_method` names: RFC-015 §2.3's four intents
-// plus the three legacy meters. The names are checked here rather than at
+// The seven existing `auto_exposure_method` names plus native adaptive:
+// RFC-015 §2.3's four intents, three legacy meters, and derived face exposure. The names are checked here rather than at
 // render time because `set_params`/`open` is where a user error can still be
 // reported as one — the meter used to be the first thing to notice, which
 // meant an unknown name surfaced as a failed render long after the edit.
