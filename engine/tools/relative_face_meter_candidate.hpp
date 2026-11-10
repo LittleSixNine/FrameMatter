@@ -14,6 +14,8 @@ struct RelativeFaceMeter {
     double p995_y=0, highlight_excess=0, reduction_ev=0;
     double face_median_y=0, face_target_ev=0, face_bound_ev=0;
     int selected_face=-1;
+    std::vector<int> eligible_faces;
+    double scene_reduction_ev=0;
     uint32_t x0=0, y0=0, x1=0, y1=0;
 };
 inline RelativeFaceMeter relative_face_meter_candidate(
@@ -80,6 +82,28 @@ inline RelativeFaceMeter relative_face_meter_candidate(
         }
     }
     r.valid=true;
+    return r;
+}
+// Research-only v2.1: faces limit loss; their luminance never sets exposure.
+inline RelativeFaceMeter conservative_relative_meter_candidate(
+        const std::vector<double>& raw, uint32_t width, uint32_t height,
+        double balanced_ev, const std::vector<MeterFaceBox>& faces) {
+    auto r=relative_face_meter_candidate(raw,width,height,balanced_ev,{});
+    if (!r.valid) return r;
+    const double h=std::max(r.highlight_excess,0.0);
+    r.scene_reduction_ev=r.area_weight*std::min({6.0,h,h*h/2.0});
+    r.scene_ev=balanced_ev-r.scene_reduction_ev;
+    for (size_t i=0;i<faces.size();++i) {
+        const auto& f=faces[i];
+        if (!std::isfinite(f.x)||!std::isfinite(f.y)||!std::isfinite(f.w)||!std::isfinite(f.h)||
+            !std::isfinite(f.confidence)||f.confidence<.6||f.w<=0||f.h<=0) continue;
+        const double w=std::clamp(f.x+f.w,0.0,1.0)-std::clamp(f.x,0.0,1.0);
+        const double h=std::clamp(f.y+f.h,0.0,1.0)-std::clamp(f.y,0.0,1.0);
+        if (w*width>=16 && h*height>=16) r.eligible_faces.push_back(int(i));
+    }
+    r.face_applied=!r.eligible_faces.empty();
+    r.reduction_ev=r.face_applied ? std::min(r.scene_reduction_ev,.25) : r.scene_reduction_ev;
+    r.candidate_ev=balanced_ev-r.reduction_ev;
     return r;
 }
 } // namespace spk::research
