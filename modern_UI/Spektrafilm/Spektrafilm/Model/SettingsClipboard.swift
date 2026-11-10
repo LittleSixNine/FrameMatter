@@ -57,7 +57,7 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
             // The film format sets the physical scale of grain and halation.
             ["params.filmFormatMM", "params.filmFrame", "params.filmSide", "params.sideLengthMM",
              "params.grainActive", "params.halationActive", "params.glareActive", "params.effects",
-             "params.filmEdge.independentLetteringHalation"]
+             "params.filmEdge.independentLetteringHalation", "params.filmEdge.baseFog"]
         case .printEffects:
             // Pre-flash is gated by the Print Effects switch already.
             ["params.printEffects", "params.preflashExposure"]
@@ -201,6 +201,7 @@ struct SettingsClip: Equatable, Sendable {
             out.params.glareActive = s.params.glareActive
             out.params.effects = s.params.effects
             out.params.filmEdge.independentLetteringHalation = s.params.filmEdge.independentLetteringHalation
+            out.params.filmEdge.baseFog = s.params.filmEdge.baseFog
         }
         if groups.contains(.printEffects) {
             out.params.printEffects = s.params.printEffects

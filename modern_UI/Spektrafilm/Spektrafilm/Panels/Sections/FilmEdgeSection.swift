@@ -89,6 +89,16 @@ struct FilmEdgeSection: View {
                                   zh: "将工厂片边字作为独立曝光；日期后背仍沿相机曝光路径处理。"))
                 RailSubhead(L(.edgeLight))
                 RailSubgroup {
+                    ScrubSlider(label: L("Film Base Fog", zh: "片基雾化"), value: bind(\.baseFog),
+                                range: FilmEdgeSettings.baseFogRange, zero: 0, snap: 0.05,
+                                format: { String(format: "%.0f%%", $0 * 100) },
+                                parse: {
+                                    guard let percent = Double($0.replacingOccurrences(of: "%", with: "").replacingOccurrences(of: ",", with: ".")),
+                                          percent.isFinite else { return nil }
+                                    return percent / 100
+                                })
+                        .help(L("Brighten and warm the film outside the picture; shared optics can affect the picture edge and lettering tone.",
+                                zh: "提亮并暖化画面外的片基；共享光学处理也可能改变画面边缘和字样色调。"))
                     ScrubSlider(label: L(.edgeFog), value: bind(\.fog), range: FilmEdgeSettings.fogRange,
                                 zero: FilmEdgeSettings.default.fog, snap: 0.25,
                                 format: { String(format: "%.1f", $0) })

@@ -155,6 +155,7 @@ const SchemaField kFields[] = {
     // RFC-032/031: overscan and the date back. Native-only, placed
     // before `preview_long_edge` like every native field. SHOOT layer: both
     // are exposure on the negative, so an edit re-develops it.
+    {"overscan_base_fog",        "film_render.overscan.base_fog",        F, SHOOT, true, 0.0, 1.0, false},
     {"overscan_factory_separate_halation", "film_render.overscan.factory_separate_halation", B, SHOOT, false, 0, 0, false},
     {"overscan_active",          "film_render.overscan.active",           B, SHOOT, false, 0, 0, false},
     {"overscan_format",          "film_render.overscan.format",           S, SHOOT, false, 0, 0, false},
@@ -333,6 +334,7 @@ double* float_slot(Params& p, const std::string& path) {
     if (path == "film_render.grain.amount") return &p.film_render.grain.amount;
     if (path == "film_render.grain.particle_area_um2") return &p.film_render.grain.particle_area_um2;
     if (path == "film_render.grain.blur") return &p.film_render.grain.blur;
+    if (path == "film_render.overscan.base_fog") return &p.film_render.overscan.base_fog;
     if (path == "film_render.overscan.fog") return &p.film_render.overscan.fog;
     if (path == "film_render.overscan.leaks") return &p.film_render.overscan.leaks;
     if (path == "film_render.overscan.f_number") return &p.film_render.overscan.f_number;

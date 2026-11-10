@@ -192,6 +192,7 @@ struct OverscanParams {
     std::string mode = "strip";      // strip (the whole film width) | filed (a sliver of rebate)
     int camera_seed = 1;
     int frame_seed = 1;
+    double base_fog = 0.0;           // optional uniform rebate exposure strength, 0 = legacy
     double fog = 1.0;                // edge fog from the spool, 0 = none
     double leaks = 0.0;              // spool light leaks, 0 = none
     std::string edge_text;           // the manufacturer's edge print; the app decides real vs display names

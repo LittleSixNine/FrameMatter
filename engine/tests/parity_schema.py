@@ -189,6 +189,10 @@ NATIVE_ONLY = {
     # RFC-032's overscan and RFC-031's date back (API-SPEC §13).
     # Shoot layer and not live: every mark is exposure
     # on the negative. `overscan_active = false` dispatches nothing.
+    "overscan_base_fog": {
+        "path": "film_render.overscan.base_fog", "type": "float", "layer": "shoot",
+        "default": 0.0, "live": False, "range": [0.0, 1.0],
+    },
     "overscan_factory_separate_halation": {
         "path": "film_render.overscan.factory_separate_halation", "type": "bool", "layer": "shoot",
         "default": False, "live": False, "range": None,

@@ -3768,7 +3768,10 @@ final class Session: CanvasHost {
     /// still the truth is a question about *data* rather than about which
     /// callback happened to run last.
     nonisolated static func printStamp(_ p: FilmParams) -> String {
-        let stamp = p.wire.filter { $0.name != "overscan_factory_separate_halation" || $0.value != .bool(false) }.map { "\($0.name)=\($0.value)" }.joined(separator: ";")
+        let stamp = p.wire.filter {
+            ($0.name != "overscan_factory_separate_halation" || $0.value != .bool(false))
+                && ($0.name != "overscan_base_fog" || $0.value != .double(0))
+        }.map { "\($0.name)=\($0.value)" }.joined(separator: ";")
         // With a film edge the crop is in the negative (`Session+FilmEdge`),
         // so the print is a different picture for every framing. Off, the
         // stamp is exactly what it always was.

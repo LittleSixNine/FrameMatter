@@ -68,7 +68,8 @@ enum OsP : int {
     P_PERF_LEAK_COVERAGE = 274,
     P_PERF_LEAK_SOFTNESS = 275,
     P_PERF_LEAK_SEED = 276,
-    P_COUNT = 277
+    P_BASE_EXPOSURE = 277,
+    P_COUNT = 278
 };
 constexpr int kMaxLeaks = 12;
 // How far past each long edge of the film a strip scan reaches, mm.
@@ -932,6 +933,8 @@ bool Pipeline::overscan_layout(uint32_t frame_w, uint32_t frame_h, std::string& 
 void Pipeline::overscan_params_block(std::vector<float>& P) const {
     const OverscanLayout& L = overscan_;
     P.assign(P_COUNT, 0.0f);
+    // Optional appearance policy, not a changed material response.
+    P[P_BASE_EXPOSURE] = float(0.18 * params_.film_render.overscan.base_fog);
     const auto& scratches = params_.film_render.scratches;
     if (scratches.active && (L.format == "135" || L.format == "135_half" || L.format == "135_full_67")) {
         P[P_DUST_FIBER_RATIO] = float(scratches.dust_fiber_ratio);
