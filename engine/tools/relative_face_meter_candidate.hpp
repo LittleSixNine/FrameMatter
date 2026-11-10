@@ -16,6 +16,7 @@ struct RelativeFaceMeter {
     int selected_face=-1;
     std::vector<int> eligible_faces;
     double scene_reduction_ev=0;
+    double before_restore_ev=0, face_restore_ev=0;
     uint32_t x0=0, y0=0, x1=0, y1=0;
 };
 inline RelativeFaceMeter relative_face_meter_candidate(
@@ -82,6 +83,17 @@ inline RelativeFaceMeter relative_face_meter_candidate(
         }
     }
     r.valid=true;
+    return r;
+}
+// Research-only v2.2-face: retain the complete old meter, then restore at most .5 EV toward balanced.
+inline RelativeFaceMeter face_restored_relative_meter_candidate(
+        const std::vector<double>& raw, uint32_t width, uint32_t height,
+        double balanced_ev, const std::vector<MeterFaceBox>& faces) {
+    auto r=relative_face_meter_candidate(raw,width,height,balanced_ev,faces);
+    r.before_restore_ev=r.candidate_ev;
+    if (r.valid && r.face_applied)
+        r.face_restore_ev=std::min(.5,std::max(0.0,balanced_ev-r.candidate_ev));
+    r.candidate_ev+=r.face_restore_ev;
     return r;
 }
 // Research-only v2.1: faces limit loss; their luminance never sets exposure.

@@ -54,7 +54,10 @@ patch(pipeline, '    out = exposure_evs_from(Y, sh, sw);', r'''    out = exposur
     const char* conservative_mode = std::getenv("FRAMEMATTER_CONSERVATIVE_RELATIVE_CANDIDATE");
     const bool conservative_enabled = conservative_mode && std::strcmp(conservative_mode, "1") == 0;
     if (conservative_enabled && (relative_enabled || scene_enabled)) { error = "conservative, scene and face candidates are mutually exclusive"; return false; }
-    const bool relative_apply = (relative_enabled || scene_enabled || conservative_enabled) && params_.camera.auto_exposure && params_.camera.auto_exposure_method == "balanced";
+    const char* restore_mode = std::getenv("FRAMEMATTER_FACE_RESTORE_CANDIDATE");
+    const bool restore_enabled = restore_mode && std::strcmp(restore_mode, "1") == 0;
+    if (restore_enabled && (relative_enabled || scene_enabled || conservative_enabled)) { error = "face restore and other research candidates are mutually exclusive"; return false; }
+    const bool relative_apply = (relative_enabled || scene_enabled || conservative_enabled || restore_enabled) && params_.camera.auto_exposure && params_.camera.auto_exposure_method == "balanced";
     const char* offset_request = std::getenv("FRAMEMATTER_BALANCED_METER_OFFSET_EV");
     const auto parsed_offset = research::balanced_meter_offset(offset_request);
     if (!parsed_offset || (candidate_enabled && offset_request)) {
@@ -69,13 +72,13 @@ patch(pipeline, '    out = exposure_evs_from(Y, sh, sw);', r'''    out = exposur
         error = "research frozen EV must be finite within +/-32 and cannot be combined with candidate or offset";
         return false;
     }
-    if ((relative_enabled || scene_enabled || conservative_enabled) && (candidate_enabled || offset_request || frozen_request)) {
+    if ((relative_enabled || scene_enabled || conservative_enabled || restore_enabled) && (candidate_enabled || offset_request || frozen_request)) {
         error = "relative face candidate cannot be combined with v1, offset or frozen EV";
         return false;
     }
     const double meter_offset = *parsed_offset;
     const char* trace_path = std::getenv("FRAMEMATTER_BALANCED_CANDIDATE_TRACE");
-    if (candidate_enabled || relative_enabled || scene_enabled || conservative_enabled || offset_request || frozen_request || trace_path) {
+    if (candidate_enabled || relative_enabled || scene_enabled || conservative_enabled || restore_enabled || offset_request || frozen_request || trace_path) {
         const auto candidate = research::balanced_highlight_candidate(Y, out.balanced);
         const bool apply = candidate_enabled && candidate.valid && params_.camera.auto_exposure &&
                            params_.camera.auto_exposure_method == "balanced";
@@ -121,7 +124,8 @@ patch(pipeline, '    out = exposure_evs_from(Y, sh, sw);', r'''    out = exposur
                 faces.push_back({face.at("x").as_double(), face.at("y").as_double(),
                                  face.at("width").as_double(),face.at("height").as_double(),face.at("confidence").as_double()});
             }
-            relative = conservative_enabled ? research::conservative_relative_meter_candidate(Y,sw,sh,candidate.original_ev,faces) :
+            relative = restore_enabled ? research::face_restored_relative_meter_candidate(Y,sw,sh,candidate.original_ev,faces) :
+                conservative_enabled ? research::conservative_relative_meter_candidate(Y,sw,sh,candidate.original_ev,faces) :
                 research::relative_face_meter_candidate(Y,sw,sh,candidate.original_ev,faces);
             }
             if (!relative.valid) { error = "relative face meter received invalid sample"; return false; }
@@ -130,14 +134,15 @@ patch(pipeline, '    out = exposure_evs_from(Y, sh, sw);', r'''    out = exposur
         if (trace_path) {
             Json trace = Json::object();
             trace.set("event", Json(std::string("meter_candidate")));
-            trace.set("equation", Json(std::string(conservative_enabled ? "conservative-relative-v2.1" : scene_enabled ? "relative-scene-v2" : relative_enabled ? "relative-face-v2" : (offset_request ? "balanced-meter-offset-v1" : "balanced-highlight-v1"))));
+            trace.set("equation", Json(std::string(restore_enabled ? "relative-face-v2.2-restore" : conservative_enabled ? "conservative-relative-v2.1" : scene_enabled ? "relative-scene-v2" : relative_enabled ? "relative-face-v2" : (offset_request ? "balanced-meter-offset-v1" : "balanced-highlight-v1"))));
+            trace.set("face_restore_enabled", Json(restore_enabled));
             trace.set("conservative_relative_enabled", Json(conservative_enabled));
             trace.set("relative_scene_enabled", Json(scene_enabled));
             trace.set("relative_face_enabled", Json(relative_enabled));
             trace.set("relative_face_applied", Json(relative_apply));
             if (relative_apply) {
                 Json stats=Json::object();
-                stats.set("equation", Json(std::string(conservative_enabled ? "conservative-relative-v2.1" : scene_enabled ? "relative-scene-v2" : "relative-face-v2")));
+                stats.set("equation", Json(std::string(restore_enabled ? "relative-face-v2.2-restore" : conservative_enabled ? "conservative-relative-v2.1" : scene_enabled ? "relative-scene-v2" : "relative-face-v2")));
                 stats.set("original_balanced_ev", Json(relative.original_ev));
                 stats.set("candidate_ev", Json(relative.candidate_ev));
                 stats.set("scene_ev", Json(relative.scene_ev));
@@ -146,6 +151,10 @@ patch(pipeline, '    out = exposure_evs_from(Y, sh, sw);', r'''    out = exposur
                 stats.set("p995_y", Json(relative.p995_y));
                 stats.set("highlight_excess_ev", Json(relative.highlight_excess));
                 stats.set("reduction_ev", Json(relative.reduction_ev));
+                if (restore_enabled) {
+                    stats.set("before_restore_ev",Json(relative.before_restore_ev));
+                    stats.set("face_restore_ev",Json(relative.face_restore_ev));
+                }
                 if (conservative_enabled) {
                     Json eligible=Json::array();
                     for (int index:relative.eligible_faces) eligible.push(Json(double(index)));
@@ -227,7 +236,7 @@ patch(engine, '    for (const char* name : kMeterKeyFields) key += values.at(nam
     key += std::string("balanced-highlight-v1;") + ((mode && std::strcmp(mode, "1") == 0) ? "1" : "0");
     const char* offset = std::getenv("FRAMEMATTER_BALANCED_METER_OFFSET_EV");
     key += std::string(";meter-offset-v1=") + (offset ? offset : "unset");
-    for (const char* name : {"FRAMEMATTER_BALANCED_FROZEN_EV", "FRAMEMATTER_RAW_SHADOW_BIAS", "FRAMEMATTER_RELATIVE_FACE_CANDIDATE", "FRAMEMATTER_RELATIVE_SCENE_CANDIDATE", "FRAMEMATTER_CONSERVATIVE_RELATIVE_CANDIDATE", "FRAMEMATTER_BALANCED_FACE_INFO", "FRAMEMATTER_BALANCED_FACE_SOURCE"}) {
+    for (const char* name : {"FRAMEMATTER_BALANCED_FROZEN_EV", "FRAMEMATTER_RAW_SHADOW_BIAS", "FRAMEMATTER_RELATIVE_FACE_CANDIDATE", "FRAMEMATTER_RELATIVE_SCENE_CANDIDATE", "FRAMEMATTER_CONSERVATIVE_RELATIVE_CANDIDATE", "FRAMEMATTER_FACE_RESTORE_CANDIDATE", "FRAMEMATTER_BALANCED_FACE_INFO", "FRAMEMATTER_BALANCED_FACE_SOURCE"}) {
         const char* value = std::getenv(name);
         key += std::string(";") + name + "=" + (value ? value : "unset");
     }
@@ -240,8 +249,9 @@ patch(session, '        let stamp = p.wire.map { "\\($0.name)=\\($0.value)" }.jo
         let relative = ProcessInfo.processInfo.environment["FRAMEMATTER_RELATIVE_FACE_CANDIDATE"] ?? "unset"
         let scene = ProcessInfo.processInfo.environment["FRAMEMATTER_RELATIVE_SCENE_CANDIDATE"] ?? "unset"
         let conservative = ProcessInfo.processInfo.environment["FRAMEMATTER_CONSERVATIVE_RELATIVE_CANDIDATE"] ?? "unset"
+        let restore = ProcessInfo.processInfo.environment["FRAMEMATTER_FACE_RESTORE_CANDIDATE"] ?? "unset"
         let faceInfo = ProcessInfo.processInfo.environment["FRAMEMATTER_BALANCED_FACE_INFO"] ?? "unset"
-        let stamp = "conservative-relative-v2.1=\(conservative);relative-scene-v2=\(scene);relative-face-v2=\(relative);face-info=\(faceInfo);raw-shadow-meter-v1;shadow=\(shadow);frozen=\(frozen);balanced-highlight-v1;mode=\(experimentMode);meter-offset-v1=\(meterOffset);" + p.wire.map { "\($0.name)=\($0.value)" }.joined(separator: ";")''')
+        let stamp = "relative-face-v2.2-restore=\(restore);conservative-relative-v2.1=\(conservative);relative-scene-v2=\(scene);relative-face-v2=\(relative);face-info=\(faceInfo);raw-shadow-meter-v1;shadow=\(shadow);frozen=\(frozen);balanced-highlight-v1;mode=\(experimentMode);meter-offset-v1=\(meterOffset);" + p.wire.map { "\($0.name)=\($0.value)" }.joined(separator: ";")''')
 
 # Research-only RAW override, after ordinary settings and before either outputImage.
 decoder = root / 'modern_UI/Spektrafilm/Spektrafilm/Import/ImageDecoder.swift'
@@ -284,7 +294,7 @@ patch(decoder, '        return (filter, asShotTemperature, asShotTint)', r'''   
 
 # Vision supplies only normalized boxes; luminance statistics stay in the engine.
 patch(decoder, 'import CoreImage\n', 'import CoreImage\nimport Vision\n')
-patch(decoder, '        return DecodedImage(linear: try settings.perspective.applying(to: linear),', r'''        if ProcessInfo.processInfo.environment["FRAMEMATTER_RELATIVE_FACE_CANDIDATE"] == "1" || ProcessInfo.processInfo.environment["FRAMEMATTER_CONSERVATIVE_RELATIVE_CANDIDATE"] == "1" {
+patch(decoder, '        return DecodedImage(linear: try settings.perspective.applying(to: linear),', r'''        if ProcessInfo.processInfo.environment["FRAMEMATTER_RELATIVE_FACE_CANDIDATE"] == "1" || ProcessInfo.processInfo.environment["FRAMEMATTER_CONSERVATIVE_RELATIVE_CANDIDATE"] == "1" || ProcessInfo.processInfo.environment["FRAMEMATTER_FACE_RESTORE_CANDIDATE"] == "1" {
             let environment = ProcessInfo.processInfo.environment
             guard let facePath = environment["FRAMEMATTER_BALANCED_FACE_INFO"],
                   environment["FRAMEMATTER_BALANCED_FACE_SOURCE"] == url.path else {
@@ -337,6 +347,8 @@ run(['clang++', '-std=c++20', '-O2', root / 'engine/tests/relative_face_meter_ca
 run([root / 'relative-face-check'])
 run(['clang++', '-std=c++20', '-O2', root / 'engine/tests/conservative_relative_meter_candidate.cpp', '-o', root / 'conservative-check'])
 run([root / 'conservative-check'])
+run(['clang++', '-std=c++20', '-O2', root / 'engine/tests/face_restore_meter_candidate.cpp', '-o', root / 'face-restore-check'])
+run([root / 'face-restore-check'])
 run(['bash', root / 'engine/build.sh', 'bundle'])
 run([sys.executable, project / 'Tools/gen-project.py'])
 with (root / 'app-build.log').open('w') as log:
@@ -347,7 +359,7 @@ app = root / 'DerivedData/Build/Products/Debug/FrameMatter.app'
 binary = app / 'Contents/MacOS/FrameMatter'
 manifest = {
     'equation': 'balanced-highlight-v1', 'source_kind': 'current working tree',
-    'relative_face_experiment': 'relative-face-v2', 'relative_scene_experiment': 'relative-scene-v2', 'conservative_relative_experiment': 'conservative-relative-v2.1',
+    'relative_face_experiment': 'relative-face-v2', 'relative_scene_experiment': 'relative-scene-v2', 'conservative_relative_experiment': 'conservative-relative-v2.1', 'face_restore_experiment': 'relative-face-v2.2-restore',
     'raw_shadow_meter_experiment': 'raw-shadow-meter-v1', 'supported_shadow_override': [0], 'frozen_meter_ev_range': [-32, 32],
     'meter_offset_experiment': 'balanced-meter-offset-v1', 'supported_meter_offsets_ev': [0, -0.5, -1, -1.5],
     'head': subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip(),
@@ -358,6 +370,7 @@ manifest = {
                                 source / 'engine/tools/relative_face_meter_candidate.hpp',
                                 source / 'engine/tests/relative_face_meter_candidate.cpp',
                                 source / 'engine/tests/conservative_relative_meter_candidate.cpp',
+                                source / 'engine/tests/face_restore_meter_candidate.cpp',
                                 source / 'engine/tools/build_balanced_highlight_experiment.py',
                                 source / 'engine/tests/balanced_highlight_candidate.cpp',
                                 source / 'modern_UI/Spektrafilm/Spektrafilm/Model/Session.swift',
