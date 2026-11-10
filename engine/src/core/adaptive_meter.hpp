@@ -34,6 +34,10 @@ inline std::vector<FaceBox> framed_faces(const std::vector<FaceBox>& faces, uint
     std::vector<FaceBox> mapped;
     mapped.reserve(faces.size());
     for (const auto& face:faces) {
+        if (face.width<=0 || face.height<=0) {
+            mapped.push_back({face.x,face.y,0,0,face.confidence});
+            continue;
+        }
         double left=1, right=0, bottom=1, top=0;
         for (double x:{face.x,face.x+face.width}) for (double y:{face.y,face.y+face.height}) {
             const double dx=(x-g.crop_x-g.crop_w/2)*width;

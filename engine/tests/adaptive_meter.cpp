@@ -44,9 +44,14 @@ int main() {
     f=framed_faces({source},100,100,geometry)[0];
     assert(equal(f.x,0) && equal(f.y,0) && equal(f.width,.4) && equal(f.height,.5));
     assert(framed_faces({{.9,.9,.05,.05,.9}},100,100,geometry)[0].width==0);
+    geometry={};geometry.crop_x=.2;geometry.crop_w=.4;
+    f=framed_faces({source},100,100,geometry)[0];
+    assert(equal(f.x,0) && equal(f.width,.25) && equal(f.height,.3));
     geometry={}; geometry.rotation_deg=45;
     f=framed_faces({{.4,.4,.2,.2,.9}},100,100,geometry)[0];
     assert(equal(f.width,std::sqrt(.08)) && equal(f.height,std::sqrt(.08)));
+    f=framed_faces({{.5,.2,0,.5,.9}},100,100,geometry)[0];
+    assert(f.width==0 && f.height==0); // A zero-area placeholder must not rotate into a face.
     assert(!adaptive_exposure({},100,100,6,{}).valid);
     y[0]=std::numeric_limits<double>::quiet_NaN();assert(!adaptive_exposure(y,100,100,6,{}).valid);
     std::cout<<"PASS adaptive frozen scene, face/lift/restore, eligibility, primary face, covariance, invalid input\n";

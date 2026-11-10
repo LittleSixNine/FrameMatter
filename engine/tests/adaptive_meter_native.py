@@ -58,7 +58,7 @@ def main():
         valid=metadata(a,[face]);bad=[]
         for key,value in [('version',2),('width',255),('height',0),('detector','wrong'),('faces',[face]*4097)]:
             v=copy.deepcopy(valid);v[key]=value;bad.append(v)
-        for key,value in [('x',-.1),('width',0),('confidence',1.1),('height',float('nan'))]:
+        for key,value in [('x',float('inf')),('y',float('-inf')),('width',0),('width',-.1),('height',0),('height',-.1),('confidence',1.1),('confidence',-.1),('height',float('nan'))]:
             v=copy.deepcopy(valid);v['faces'][0][key]=value;bad.append(v)
         v=copy.deepcopy(valid);del v['faces'][0]['y'];bad.append(v)
         entries=e.capabilities()['backend']['session_cache']['entries']
@@ -69,6 +69,21 @@ def main():
             else:raise AssertionError('invalid face evidence accepted')
             assert e.capabilities()['backend']['session_cache']['entries']==entries
         rows.append(dict(case='invalid evidence leaves no registered half-session',cases=len(bad)))
+        # Vision boxes may cross an edge; raw and pre-clipped evidence must agree.
+        for raw,clipped in [
+            (dict(face,x=.9,width=.2),dict(face,x=.9,width=1-.9)),
+            (dict(face,x=-.1,width=.3),dict(face,x=0,width=-.1+.3)),
+            (dict(face,y=.9,height=.2),dict(face,y=.9,height=1-.9)),
+            (dict(face,y=-.1,height=.3),dict(face,y=0,height=-.1+.3)),
+            (dict(face,x=1.1),None),
+            (dict(face,x=-1e308,width=1e308),None),
+            (dict(face,x=1e308,width=1e308),None),
+        ]:
+            for geom in [{},dict(geometry_rotation_deg=45),dict(geometry_crop_x=.2,geometry_crop_w=.6)]:
+                with e.open(a,dict(P,auto_exposure_method='adaptive',**geom),faces=metadata(a,[raw]))as s:got=s.solve('exposure')['solved_params']['exposure_compensation_ev'];pixels=s.render('full')[0]
+                with e.open(a,dict(P,auto_exposure_method='adaptive',**geom),faces=metadata(a,[clipped]if clipped else[]))as s:expected=s.solve('exposure')['solved_params']['exposure_compensation_ev'];reference=s.render('full')[0]
+                assert got==expected and np.array_equal(pixels,reference),(raw,geom,got,expected)
+        rows.append(dict(case='four partial edges and fully outside boxes, identity/45deg/crop, preserved invalid slots',cases=21))
         # Independently pre-cropped/turned pixels and boxes agree with engine-owned geometry.
         for geom,physical,boxes in [
             (dict(geometry_quarter_turns=1),np.rot90(a,-1).copy(),[dict(face,x=.25,y=.5)]),

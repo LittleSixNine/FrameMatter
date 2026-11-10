@@ -795,9 +795,22 @@ bool parse_meter_faces(const char* text, uint32_t width, uint32_t height,
         }
         meter::FaceBox f{box.at("x").as_double(),box.at("y").as_double(),box.at("width").as_double(),
                          box.at("height").as_double(),box.at("confidence").as_double()};
-        if (f.x<0 || f.x>1 || f.y<0 || f.y>1 || f.width<=0 || f.width>1 || f.height<=0 || f.height>1 ||
-            f.x+f.width>1+1e-6 || f.y+f.height>1+1e-6 || f.confidence<0 || f.confidence>1) {
-            error = "face boxes must be normalized unit-image rectangles with confidence in [0,1]"; return false;
+        if (f.width<=0 || f.height<=0 || f.confidence<0 || f.confidence>1) {
+            error = "face boxes require positive dimensions and confidence in [0,1]"; return false;
+        }
+        const bool inside=f.x>=0 && f.x<=1 && f.y>=0 && f.y<=1 && f.width<=1 && f.height<=1 &&
+                          f.x+f.width<=1 && f.y+f.height<=1;
+        if (!inside) {
+            // Clip only boundary boxes; retain interior values exactly as Vision supplied them.
+            const auto end=[](double position,double extent) {
+                if (position>=1) return 1.0;
+                if (position>=0) return std::min(1.0,position+std::min(extent,1.0));
+                return extent<=-position ? 0.0 : std::min(1.0,position+extent);
+            };
+            const double right=end(f.x,f.width), top=end(f.y,f.height);
+            f.x=std::clamp(f.x,0.0,1.0); f.y=std::clamp(f.y,0.0,1.0);
+            f.width=std::max(0.0,right-f.x); f.height=std::max(0.0,top-f.y);
+            if (f.width==0 || f.height==0) f.width=f.height=0;
         }
         faces.push_back(f);
     }

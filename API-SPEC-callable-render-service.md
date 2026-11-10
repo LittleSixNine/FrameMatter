@@ -1685,8 +1685,13 @@ user-editable agent field. Their JSON has this independent version1 shape:
 Width/height must equal the actual `EngineFrame` input dimensions, after any
 app-owned crop/turn/perspective operation. Coordinates are normalized
 bottom-left within those exact input pixels. Each box requires finite numeric
-fields; x/y and confidence are in[0,1], width/height in(0,1], right/top may exceed1
-by at most1e-6 for floating-point rounding. Maximum4096 boxes and2MiB JSON;
+fields and positive width/height, with confidence in[0,1]. Vision rectangles may
+cross any image edge. Interior rectangles are retained exactly; only out-of-image
+rectangles are clipped to the unit image before geometry. Fully outside rectangles
+retain their original list index as zero-width/zero-height placeholders, ignored
+before rotation as well as sampling (a zero-area line cannot become a rotated
+face enclosure). Clipping is bounded even for very large finite coordinates.
+Maximum4096 boxes and2MiB JSON;
 version and detector must match the above. Malformed evidence fails before a
 session is registered. All entries/frames are copied, so callers may release
 their memory when open returns. `faces:[]` means a successful detection of no
