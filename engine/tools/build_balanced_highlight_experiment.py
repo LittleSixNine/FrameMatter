@@ -48,7 +48,10 @@ patch(pipeline, '    out = exposure_evs_from(Y, sh, sw);', r'''    out = exposur
     const bool candidate_enabled = candidate_mode && std::strcmp(candidate_mode, "1") == 0;
     const char* relative_mode = std::getenv("FRAMEMATTER_RELATIVE_FACE_CANDIDATE");
     const bool relative_enabled = relative_mode && std::strcmp(relative_mode, "1") == 0;
-    const bool relative_apply = relative_enabled && params_.camera.auto_exposure && params_.camera.auto_exposure_method == "balanced";
+    const char* scene_mode = std::getenv("FRAMEMATTER_RELATIVE_SCENE_CANDIDATE");
+    const bool scene_enabled = scene_mode && std::strcmp(scene_mode, "1") == 0;
+    if (scene_enabled && relative_enabled) { error = "scene and face candidates are mutually exclusive"; return false; }
+    const bool relative_apply = (relative_enabled || scene_enabled) && params_.camera.auto_exposure && params_.camera.auto_exposure_method == "balanced";
     const char* offset_request = std::getenv("FRAMEMATTER_BALANCED_METER_OFFSET_EV");
     const auto parsed_offset = research::balanced_meter_offset(offset_request);
     if (!parsed_offset || (candidate_enabled && offset_request)) {
@@ -63,13 +66,13 @@ patch(pipeline, '    out = exposure_evs_from(Y, sh, sw);', r'''    out = exposur
         error = "research frozen EV must be finite within +/-32 and cannot be combined with candidate or offset";
         return false;
     }
-    if (relative_enabled && (candidate_enabled || offset_request || frozen_request)) {
+    if ((relative_enabled || scene_enabled) && (candidate_enabled || offset_request || frozen_request)) {
         error = "relative face candidate cannot be combined with v1, offset or frozen EV";
         return false;
     }
     const double meter_offset = *parsed_offset;
     const char* trace_path = std::getenv("FRAMEMATTER_BALANCED_CANDIDATE_TRACE");
-    if (candidate_enabled || relative_enabled || offset_request || frozen_request || trace_path) {
+    if (candidate_enabled || relative_enabled || scene_enabled || offset_request || frozen_request || trace_path) {
         const auto candidate = research::balanced_highlight_candidate(Y, out.balanced);
         const bool apply = candidate_enabled && candidate.valid && params_.camera.auto_exposure &&
                            params_.camera.auto_exposure_method == "balanced";
@@ -87,6 +90,9 @@ patch(pipeline, '    out = exposure_evs_from(Y, sh, sw);', r'''    out = exposur
             if (!params_.io.geometry.is_identity()) {
                 error = "relative face experiment requires full-frame neutral geometry"; return false;
             }
+            if (scene_enabled) {
+                relative = research::relative_face_meter_candidate(Y,sw,sh,candidate.original_ev,{});
+            } else {
             const char* face_path = std::getenv("FRAMEMATTER_BALANCED_FACE_INFO");
             const char* face_source = std::getenv("FRAMEMATTER_BALANCED_FACE_SOURCE");
             if (!face_path || !face_source) { error = "relative face experiment requires face info and source identity"; return false; }
@@ -113,18 +119,20 @@ patch(pipeline, '    out = exposure_evs_from(Y, sh, sw);', r'''    out = exposur
                                  face.at("width").as_double(),face.at("height").as_double(),face.at("confidence").as_double()});
             }
             relative = research::relative_face_meter_candidate(Y,sw,sh,candidate.original_ev,faces);
+            }
             if (!relative.valid) { error = "relative face meter received invalid sample"; return false; }
             if (params_.camera.auto_exposure && params_.camera.auto_exposure_method == "balanced") out.balanced=relative.candidate_ev;
         }
         if (trace_path) {
             Json trace = Json::object();
             trace.set("event", Json(std::string("meter_candidate")));
-            trace.set("equation", Json(std::string(relative_enabled ? "relative-face-v2" : (offset_request ? "balanced-meter-offset-v1" : "balanced-highlight-v1"))));
+            trace.set("equation", Json(std::string(scene_enabled ? "relative-scene-v2" : relative_enabled ? "relative-face-v2" : (offset_request ? "balanced-meter-offset-v1" : "balanced-highlight-v1"))));
+            trace.set("relative_scene_enabled", Json(scene_enabled));
             trace.set("relative_face_enabled", Json(relative_enabled));
             trace.set("relative_face_applied", Json(relative_apply));
             if (relative_apply) {
                 Json stats=Json::object();
-                stats.set("equation", Json(std::string("relative-face-v2")));
+                stats.set("equation", Json(std::string(scene_enabled ? "relative-scene-v2" : "relative-face-v2")));
                 stats.set("original_balanced_ev", Json(relative.original_ev));
                 stats.set("candidate_ev", Json(relative.candidate_ev));
                 stats.set("scene_ev", Json(relative.scene_ev));
@@ -143,6 +151,15 @@ patch(pipeline, '    out = exposure_evs_from(Y, sh, sw);', r'''    out = exposur
                 stats.set("face_y0",Json(double(relative.y0)));stats.set("face_y1",Json(double(relative.y1)));
                 stats.set("face_info",face_info);
                 trace.set("relative_face",stats);
+            }
+            if (const char* sample_dir = std::getenv("FRAMEMATTER_METER_SAMPLE_DIR")) {
+                const std::string sample_path = std::string(sample_dir) + "/Y-" +
+                    std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) + ".f64";
+                std::ofstream sample(sample_path, std::ios::binary);
+                sample.write(reinterpret_cast<const char*>(Y.data()), std::streamsize(Y.size()*sizeof(double)));
+                if (!sample) { error = "meter Y sample could not be written"; return false; }
+                trace.set("sample_path", Json(sample_path));
+                trace.set("sample_encoding", Json(std::string("native little-endian IEEE754 float64, row-major Y")));
             }
             trace.set("frozen_requested", Json(frozen_request != nullptr));
             trace.set("frozen_applied", Json(apply_frozen));
@@ -195,7 +212,7 @@ patch(engine, '    for (const char* name : kMeterKeyFields) key += values.at(nam
     key += std::string("balanced-highlight-v1;") + ((mode && std::strcmp(mode, "1") == 0) ? "1" : "0");
     const char* offset = std::getenv("FRAMEMATTER_BALANCED_METER_OFFSET_EV");
     key += std::string(";meter-offset-v1=") + (offset ? offset : "unset");
-    for (const char* name : {"FRAMEMATTER_BALANCED_FROZEN_EV", "FRAMEMATTER_RAW_SHADOW_BIAS", "FRAMEMATTER_RELATIVE_FACE_CANDIDATE", "FRAMEMATTER_BALANCED_FACE_INFO", "FRAMEMATTER_BALANCED_FACE_SOURCE"}) {
+    for (const char* name : {"FRAMEMATTER_BALANCED_FROZEN_EV", "FRAMEMATTER_RAW_SHADOW_BIAS", "FRAMEMATTER_RELATIVE_FACE_CANDIDATE", "FRAMEMATTER_RELATIVE_SCENE_CANDIDATE", "FRAMEMATTER_BALANCED_FACE_INFO", "FRAMEMATTER_BALANCED_FACE_SOURCE"}) {
         const char* value = std::getenv(name);
         key += std::string(";") + name + "=" + (value ? value : "unset");
     }
@@ -206,8 +223,9 @@ patch(session, '        let stamp = p.wire.map { "\\($0.name)=\\($0.value)" }.jo
         let shadow = ProcessInfo.processInfo.environment["FRAMEMATTER_RAW_SHADOW_BIAS"] ?? "unset"
         let frozen = ProcessInfo.processInfo.environment["FRAMEMATTER_BALANCED_FROZEN_EV"] ?? "unset"
         let relative = ProcessInfo.processInfo.environment["FRAMEMATTER_RELATIVE_FACE_CANDIDATE"] ?? "unset"
+        let scene = ProcessInfo.processInfo.environment["FRAMEMATTER_RELATIVE_SCENE_CANDIDATE"] ?? "unset"
         let faceInfo = ProcessInfo.processInfo.environment["FRAMEMATTER_BALANCED_FACE_INFO"] ?? "unset"
-        let stamp = "relative-face-v2=\(relative);face-info=\(faceInfo);raw-shadow-meter-v1;shadow=\(shadow);frozen=\(frozen);balanced-highlight-v1;mode=\(experimentMode);meter-offset-v1=\(meterOffset);" + p.wire.map { "\($0.name)=\($0.value)" }.joined(separator: ";")''')
+        let stamp = "relative-scene-v2=\(scene);relative-face-v2=\(relative);face-info=\(faceInfo);raw-shadow-meter-v1;shadow=\(shadow);frozen=\(frozen);balanced-highlight-v1;mode=\(experimentMode);meter-offset-v1=\(meterOffset);" + p.wire.map { "\($0.name)=\($0.value)" }.joined(separator: ";")''')
 
 # Research-only RAW override, after ordinary settings and before either outputImage.
 decoder = root / 'modern_UI/Spektrafilm/Spektrafilm/Import/ImageDecoder.swift'
@@ -311,7 +329,7 @@ app = root / 'DerivedData/Build/Products/Debug/FrameMatter.app'
 binary = app / 'Contents/MacOS/FrameMatter'
 manifest = {
     'equation': 'balanced-highlight-v1', 'source_kind': 'current working tree',
-    'relative_face_experiment': 'relative-face-v2',
+    'relative_face_experiment': 'relative-face-v2', 'relative_scene_experiment': 'relative-scene-v2',
     'raw_shadow_meter_experiment': 'raw-shadow-meter-v1', 'supported_shadow_override': [0], 'frozen_meter_ev_range': [-32, 32],
     'meter_offset_experiment': 'balanced-meter-offset-v1', 'supported_meter_offsets_ev': [0, -0.5, -1, -1.5],
     'head': subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip(),
