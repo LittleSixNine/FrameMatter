@@ -17,9 +17,11 @@ release.
   canonical pair exposure and invalidation, and undecodable pair holes.
 - New RAW shadow behavior, valid Agent decode edits and the asynchronous EV-label
   regression were demonstrated red before their fixes and green afterwards.
-- The final real application reproduced all 16 stage-C applied EVs. After the
-  edge-box clip correction, 14/10/16 also reproduced their reference JPEG decoded
-  RGB pixels exactly. Existing balanced output matched the original product
+- The first frozen production build reproduced 15 of the 16 stage-C applied EVs
+  and reference JPEG decoded RGB pixels exactly; photo 14 was initially rejected.
+  After the edge-box clip correction, the final frozen build reproduced 14/10/16
+  with identical EVs and decoded RGB pixels. Together these checks cover all 16;
+  the final build was not rerun over every image. Existing balanced output matched the original product
   control. Valid decode edits before develop and after Custom +1.25 EV survived
   separate-process reopen, including switching both interpretation versions.
 - A real window displayed the adaptive/neutral choices and a working canvas.
