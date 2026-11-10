@@ -395,6 +395,40 @@ RFC-018. One working space, exactly one conversion per destination.
   before grading starts. Choose ProPhoto in the recipe for a file you will
   grade further.
 
+**Versioned input and adaptive metering (2.0 branch).** A photograph without an
+existing sidecar starts with `adaptive` metering and
+`decode.rawInterpretation = shadowNeutralV1`. The latter sets only CIRAWFilter's
+shadow bias to zero, in both linear and display decodes; baseline, exposure and
+white balance keep their existing meanings. These are independent edits: switching
+meter does not change decode. Old sidecars and recipes missing the new decode
+field retain `legacy`; the low-level `FilmParams.default` stays unchanged for
+compatibility. Reset Film Settings selects the current product meter while
+preserving decode, as before.
+
+Adaptive uses the frozen relative highlight/primary-face equation and a maximum
+0.5 EV restoration toward balanced after measuring a valid face. Vision revision 3
+locates faces on the corresponding upright display decode at a 1600-pixel long
+edge, using four fixed overlapping tiles only after a successful empty full-frame
+request. Detection errors fail the develop; successful `[]` is legitimate no-face
+evidence. Face brightness, eligibility and primary selection remain in the engine.
+
+The host detects in the same source domain as its actual linear `EngineFrame`,
+after RAW perspective and any crop/turn/flip baked into a film/date frame.
+Ordinary post-print crop/rotation remains downstream. Adaptive pair meters use each independently framed source's linear/display
+recipes before pair placement, at the source's framed dimensions. The ordinary
+engine meter performs its own 1600-pixel downscale, independently of Vision's
+rounded display preview dimensions. Moving/scaling
+a frame in its hole reuses its measured EV, so exposure cannot pump; source
+white balance, input version or geometry changes invalidate it. The legacy
+meters retain their composed-hole 1024 input and cache keys. Embedded previews
+are never used as face evidence. Retaining the canonical CI recipes avoids a
+second filter construction, but their first render can still trigger demosaicing. Derived boxes are cached only for a
+decoded lifetime/framing, passed atomically through the face-aware open C ABI,
+and shared by live/full/export renders of that engine session. They are absent
+from sidecars, undo snapshots, clipboard and Agent edits. Adaptive finished-print
+and pair-meter identities include the detector/equation version; legacy decode
+cache configuration omits the new field and retains its historical bytes.
+
 ### 7.6 State: what lives where
 
 | what | where | survives |

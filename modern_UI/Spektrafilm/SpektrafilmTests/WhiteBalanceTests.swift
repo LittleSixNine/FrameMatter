@@ -229,7 +229,7 @@ final class WhiteBalanceTests: XCTestCase {
             session.serviceSessionIDForExport != nil && session.frameStates[url] == .processed && !session.busy
         }
 
-        XCTAssertEqual(session.params.autoExposureMethod, "balanced", "a new frame starts balanced")
+        XCTAssertEqual(session.params.autoExposureMethod, "balanced", "a legacy sidecar stays balanced")
         let sid = try XCTUnwrap(session.serviceSessionIDForExport)
         let solved = try await session.client.call(.solve, SolveRequest(sessionID: sid, target: "exposure"),
                                                    as: SolveResponse.self)
@@ -321,6 +321,8 @@ final class WhiteBalanceTests: XCTestCase {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let url = dir.appending(path: source.lastPathComponent)
         try FileManager.default.copyItem(at: source, to: url)
+        // These tests pin legacy metering/cache behavior; new-photo defaults have separate coverage.
+        try Sidecar().save(for: url)
         addTeardownBlock { try? FileManager.default.removeItem(at: dir) }
         return url
     }

@@ -30,7 +30,7 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
         allCases.filter { $0 != .masks || FeatureFlags.masks || FeatureFlags.toneMask }
     }
 
-    case filmAndPaper, exposure, whiteBalance, filmEffects, printEffects, scenePlacement, masks, postDev, perspective
+    case filmAndPaper, exposure, whiteBalance, filmEffects, printEffects, scenePlacement, masks, postDev, perspective, rawInterpretation
 
     var id: String { rawValue }
 
@@ -62,6 +62,8 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
             ["params.printEffects", "params.preflashExposure"]
         case .scenePlacement:
             ["params.sceneLatitude", "placementNeedsFit"]
+        case .rawInterpretation:
+            ["decode.rawInterpretation"]
         case .perspective:
             ["decode.perspective"]
         case .postDev:
@@ -106,6 +108,7 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
         case .printEffects: L(.clipPrintEffects)
         case .scenePlacement: L(.clipScenePlacement)
         case .masks: L(.clipMasks)
+        case .rawInterpretation: L("RAW Interpretation", zh: "RAW 解释")
         case .perspective: L("RAW Perspective", zh: "RAW 透视")
         case .postDev: L("Post-Dev", zh: "后期调色")
         }
@@ -120,6 +123,7 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
         case .printEffects: L(.clipPrintEffectsHelp)
         case .scenePlacement: L(.clipScenePlacementHelp)
         case .masks: L(.clipMasksHelp)
+        case .rawInterpretation: L("Copy the RAW shadow interpretation to RAW targets only.", zh: "仅向 RAW 目标复制阴影解释版本。")
         case .perspective: L("Copy both perspective axes to single RAW targets only.", zh: "仅向单张 RAW 复制两个透视轴。")
         case .postDev: L("Copy the complete post-print grade, including HSL.", zh: "复制完整的成片后调色，包括 HSL。")
         }
@@ -137,6 +141,7 @@ struct SettingsClip: Equatable, Sendable {
     func applied(to target: Sidecar, perspectiveAllowed: Bool = true) -> Sidecar {
         var out = target
         let s = settings
+        if perspectiveAllowed && groups.contains(.rawInterpretation) { out.decode.rawInterpretation = s.decode.rawInterpretation }
         if perspectiveAllowed && groups.contains(.perspective) { out.decode.perspective = s.decode.perspective }
         if groups.contains(.postDev) { out.adjustments = s.adjustments }
         if groups.contains(.filmAndPaper) {

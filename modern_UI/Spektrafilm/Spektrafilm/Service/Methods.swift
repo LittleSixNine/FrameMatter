@@ -157,7 +157,7 @@ struct SolveRequest: Encodable, Sendable {
 
 struct SolveResponse: Decodable, Sendable {
     let solvedParams: [String: Double]
-    /// RFC-015 §3: what each of the four exposure intents would choose, all
+    /// What the available exposure intents would choose, all
     /// from the one sample `solve` already took, keyed by wire name.
     ///
     /// A **sibling** of `solved_params`, never a member of it: that dictionary

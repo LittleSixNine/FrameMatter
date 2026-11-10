@@ -71,6 +71,7 @@ final class SettingsClipboardTests: XCTestCase {
     /// A frame whose every setting differs from a new frame's.
     private func source() -> Sidecar {
         var s = Sidecar()
+        s.decode.rawInterpretation = .shadowNeutralV1
         s.decode.whiteBalance = .custom
         s.decode.temperature = 3400
         s.decode.tint = 12

@@ -306,6 +306,8 @@ enum AgentSchema {
         f += [
             .init("decode.perspective.vertical", .number(-30...30), "RAW-only perspective before film: vertical, degrees."),
             .init("decode.perspective.horizontal", .number(-30...30), "RAW-only perspective before film: horizontal, degrees."),
+            .init("decode.rawInterpretation", .choice(DecodeSettings.RAWInterpretation.allCases.map(\.rawValue)),
+                  "Versioned RAW shadow interpretation; independent of metering. Legacy preserves the original decoder behavior."),
             .init("decode.whiteBalance", .choice(DecodeSettings.WhiteBalance.allCases.map(\.rawValue)),
                   "Decode white balance. A preset sets temperature itself."),
             .init("decode.temperature", .number(2000...12000), "Decode Kelvin (makes whiteBalance Custom)."),

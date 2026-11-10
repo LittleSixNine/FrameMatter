@@ -630,6 +630,7 @@ actor EngineClient {
     /// One session at a time, matching the engine's own shape and the
     /// frontend's: `open` on a new frame replaces the old one.
     func open(_ frame: EngineFrame, paramsDelta: [String: ParamValue]?) throws -> OpenResponse {
+        try Task.checkCancellation()
         if state != .running { try start() }
         guard let engine else { throw ClientError.notRunning }
         releaseSession()
@@ -642,7 +643,12 @@ actor EngineClient {
                                      height: UInt32(frame.height),
                                      channels: UInt32(frame.channels))
         let handle: OpaquePointer? = delta.withCString { deltaPtr in
-            withUnsafePointer(to: &image) { spk_open_device(engine, $0, deltaPtr, &reply) }
+            withUnsafePointer(to: &image) { imagePtr in
+                if let faces = frame.facesJSON {
+                    return faces.withCString { spk_open_device_with_faces(engine, imagePtr, $0, deltaPtr, &reply) }
+                }
+                return spk_open_device(engine, imagePtr, deltaPtr, &reply)
+            }
         }
         // What the engine does with the buffer: one kernel to its own
         // three-channel source, and the pipeline for the stock pair. There is

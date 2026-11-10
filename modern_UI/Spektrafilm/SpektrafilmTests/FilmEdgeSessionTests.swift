@@ -135,7 +135,7 @@ final class FilmEdgeSessionTests: XCTestCase {
         let url = try copied("tests/Test_image/_smoke_1mp.tif")
         let session = try await developedSession(url)
         let measured = await session.measureLatitude()
-        let bare = try XCTUnwrap(measured)
+        let bare = try XCTUnwrap(measured, session.latitude.failure ?? session.status)
         let before = session.renderer.live
         edit(session) { $0.filmEdge.active = true }
         try await waitForPrint(session, after: before) { session.engineFraming != nil }

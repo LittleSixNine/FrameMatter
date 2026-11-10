@@ -297,6 +297,9 @@ struct HalfFramePair: Codable, Equatable, Sendable {
         return [hole.path, d.whiteBalance.rawValue, String(d.temperature), String(d.tint),
                 String(d.lensCorrection), method,
                 "\(g.crop.x),\(g.crop.y),\(g.crop.width),\(g.crop.height),\(g.quarterTurns)"].joined(separator: "|")
+            + (d.rawInterpretation == .legacy ? "" : "|" + d.rawInterpretation.rawValue)
+            + (method == "adaptive" ? "|adaptive-meter-v1|canonical-source-v1|" + FrameFaceDetector.identity
+               + "|" + CacheKey.sourceIdentity(for: hole.url) + "|\(g.angle)|\(g.flipH)|\(g.flipV)" : "")
     }
 }
 

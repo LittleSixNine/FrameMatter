@@ -238,6 +238,37 @@ top-left origin. `RendererTests.testOffscreenRenderOrientation` and
 
 ---
 
+### 3.1 Versioned RAW input and adaptive defaults (2.0 branch)
+
+New photographs use **Adaptive** metering and **Neutral Shadows** RAW input.
+Existing sidecars retain their saved meter and missing RAW input versions decode
+as **Legacy**. Input / Camera exposes both choices independently; changing the
+meter does not change the RAW interpretation. Neutral Shadows changes only
+`CIRAWFilter.shadowBias = 0`; it does not add exposure or change baseline/WB.
+Reset Film Settings selects Adaptive and preserves RAW input. To reproduce a
+previous photograph, retain its saved meter and Legacy interpretation.
+
+Vision revision 3 sees the actual display decode corresponding to the linear
+engine input. It detects full-frame at a 1600-pixel long edge; only a successful
+empty full-frame result triggers four overlapping 60% tiles. The engine owns
+face eligibility, face brightness and the global exposure decision. No local
+retouching or material-profile edits are involved. A detected face can trade
+highlight detail for subject brightness; missing faces remain a limitation.
+
+Detection evidence is derived in memory and tied to its decoded frame/framing;
+it is not a copied setting or an editable Agent field. Crop/rotation baked into
+film/date framing and pair holes is applied to display and linear input together.
+Adaptive pair exposure is measured once from each independently framed source,
+before pair placement. Moving/scaling the frame reuses its EV; source WB, RAW
+interpretation and source geometry invalidate it. The legacy meters retain their
+previous composed-hole path. Canonical linear/display CI recipes reuse source
+filters, but their first render can still trigger demosaicing.
+The independent **RAW Interpretation** clipboard group starts unchecked; copying
+Exposure alone copies the meter while retaining the target's decode version.
+Agent clients use `params.autoExposureMethod = "adaptive"` and the separate
+`decode.rawInterpretation = "shadowNeutralV1" | "legacy"` field. Other meter
+methods and legacy cache identities retain their previous behavior.
+
 ## 4. White balance at decode (the redesign)
 
 The drawing's two rows ("Color Temp. / As Shot ☐") became one block:

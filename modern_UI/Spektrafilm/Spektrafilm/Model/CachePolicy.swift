@@ -65,10 +65,12 @@ struct CacheKey: Codable, Hashable, Sendable {
             let tint: Double
             let lensCorrection: Bool
             let perspective: RawPerspective?
+            let rawInterpretation: DecodeSettings.RAWInterpretation?
         }
         return encodedConfiguration(Identity(whiteBalance: settings.whiteBalance,
             temperature: settings.temperature, tint: settings.tint, lensCorrection: settings.lensCorrection,
-            perspective: settings.perspective.isNeutral ? nil : settings.perspective))
+            perspective: settings.perspective.isNeutral ? nil : settings.perspective,
+            rawInterpretation: settings.rawInterpretation == .legacy ? nil : settings.rawInterpretation))
     }
 
     static func encodedConfiguration<T: Encodable>(_ value: T) -> String {

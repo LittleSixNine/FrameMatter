@@ -52,6 +52,8 @@ enum PairComposer {
         let full = CGRect(origin: .zero, size: layout.size)
         var linear = CIImage(color: .black).cropped(to: full)
         var display = CIImage(color: .black).cropped(to: full)
+        var faceDisplay = CIImage(color: .black).cropped(to: full)
+        var meterInputs: [HalfFramePair.Side: PairMeterInput] = [:]
         for side in HalfFramePair.Side.allCases {
             guard let s = sources[side] else { continue }
             try checkpoint()
@@ -70,6 +72,13 @@ enum PairComposer {
                 rendered.keep(picture, for: key)
             }
             linear = picture.transformed(by: .init(translationX: rectCI.minX, y: rectCI.minY)).composited(over: linear)
+            let faceFramed = Session.engineImage(s.decoded.faceDisplay, size: s.decoded.pixelSize, cut: s.hole.geometry)
+            meterInputs[side] = PairMeterInput(
+                linear: Session.engineImage(s.decoded.linear, size: s.decoded.pixelSize, cut: s.hole.geometry),
+                display: faceFramed, lifetime: s.decoded.lifetime)
+            faceDisplay = place(faceFramed, size: s.framed, placement: s.hole.placement,
+                                into: rect, pieceHeight: layout.size.height, aspect: pair.holeAspect)
+                .composited(over: faceDisplay)
             // The preview: the file's own embedded picture, framed and placed
             // the same way. The decode's display rendering is the fallback.
             let shown = embeddedPreview(s.hole.url, maxPixel: 2560)
@@ -82,7 +91,8 @@ enum PairComposer {
         return DecodedImage(linear: linear.cropped(to: full), display: display.cropped(to: full),
                             pixelSize: layout.size, isRAW: false, sourceURL: url,
                             sourceEXIF: (sources[.left] ?? sources[.right])?.decoded.sourceEXIF,
-                            asShotTemperature: nil, asShotTint: nil)
+                            asShotTemperature: nil, asShotTint: nil, faceDisplay: faceDisplay.cropped(to: full),
+                            pairMeterInputs: meterInputs)
     }
 
     /// The piece's pixel layout. The holes are as large as the smaller of the
@@ -179,6 +189,7 @@ enum PairComposer {
                 "\(p.scale),\(p.x),\(p.y),\(p.quarterTurns)",
                 "\(Int(size.width))x\(Int(size.height))", "\(Int(target.width))x\(Int(target.height))",
                 String(aspect)].joined(separator: "|")
+            + (d.rawInterpretation == .legacy ? "" : "|" + d.rawInterpretation.rawValue)
     }
 
     /// `image` (extent at the origin, `size` large) as pixels: half-float,

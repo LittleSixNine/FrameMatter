@@ -54,7 +54,7 @@ enum S: String, CaseIterable, Sendable {
     case cameraTemperature, cameraTint, cameraVignetting, cameraLensCorrection
 
     // MARK: the metering pill's options
-    case meteringCustom, meteringBalanced, meteringCenter
+    case meteringAdaptive, meteringCustom, meteringBalanced, meteringCenter
     case meteringProtectHighlights, meteringProtectShadows
     case meteringCenterWeightedLegacy
 
@@ -263,6 +263,7 @@ extension S {
 
         // metering
         case .meteringCustom: "Custom"
+        case .meteringAdaptive: "Adaptive"
         case .meteringBalanced: "Balanced"
         case .meteringCenter: "Center"
         case .meteringProtectHighlights: "Protect highlights"
@@ -590,6 +591,7 @@ extension S {
 
         // metering
         case .meteringCustom: "自定义"
+        case .meteringAdaptive: "自适应"
         case .meteringBalanced: "均衡"
         case .meteringCenter: "中央主体"
         case .meteringProtectHighlights: "保护高光"
@@ -838,6 +840,7 @@ extension AEMethod {
     var key: S {
         switch self {
         case .custom: .meteringCustom
+        case .metered(.adaptive): .meteringAdaptive
         case .metered(.balanced): .meteringBalanced
         case .metered(.center): .meteringCenter
         case .metered(.protectHighlights): .meteringProtectHighlights
