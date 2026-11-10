@@ -12,6 +12,52 @@ import sys
 if sys.version_info < (3, 11):
     raise SystemExit('this research build tool requires Python 3.11 or newer')
 
+TILE_FALLBACK_SWIFT = r'''
+func researchFaceTileFallback(_ image: CGImage, original: [[String: Any]], enabled: Bool,
+                              detect: (CGImage) throws -> (Int, [[String: Any]])) throws
+    -> (faces: [[String: Any]], triggered: Bool, tiles: [[String: Any]]) {
+    guard enabled && original.isEmpty else { return (original, false, []) }
+    let width = Double(image.width), height = Double(image.height)
+    var faces: [[String: Any]] = [], tiles: [[String: Any]] = []
+    for (j, y) in [0.0, 0.4].enumerated() {
+        for (i, x) in [0.0, 0.4].enumerated() {
+            let rect = CGRect(x: x * width, y: (1 - y - 0.6) * height,
+                              width: 0.6 * width, height: 0.6 * height).integral
+                .intersection(CGRect(x: 0, y: 0, width: width, height: height))
+            guard let crop = image.cropping(to: rect) else {
+                throw NSError(domain: "FrameMatterResearch", code: 5,
+                              userInfo: [NSLocalizedDescriptionKey: "face tile crop failed"])
+            }
+            let roi = CGRect(x: rect.minX / width, y: 1 - rect.maxY / height,
+                             width: rect.width / width, height: rect.height / height)
+            let (revision, localFaces) = try detect(crop)
+            let mapped = try localFaces.map { box -> [String: Any] in
+                func number(_ key: String) throws -> Double {
+                    guard let value = (box[key] as? NSNumber)?.doubleValue, value.isFinite else {
+                        throw NSError(domain: "FrameMatterResearch", code: 6,
+                                      userInfo: [NSLocalizedDescriptionKey: "invalid local face box"])
+                    }
+                    return value
+                }
+                return ["x": roi.minX + (try number("x")) * roi.width,
+                        "y": roi.minY + (try number("y")) * roi.height,
+                        "width": (try number("width")) * roi.width,
+                        "height": (try number("height")) * roi.height,
+                        "confidence": try number("confidence")]
+            }
+            tiles.append(["grid_i": i, "grid_j": j,
+                          "pixel_rect": [rect.minX, rect.minY, rect.width, rect.height],
+                          "bottom_left_roi": [roi.minX, roi.minY, roi.width, roi.height],
+                          "input_width": crop.width, "input_height": crop.height,
+                          "request_revision": revision, "orientation": "up",
+                          "local_faces": localFaces, "mapped_faces": mapped])
+            faces.append(contentsOf: mapped)
+        }
+    }
+    return (faces, true, tiles)
+}
+'''
+
 source = Path(__file__).resolve().parents[2]
 requested = Path(sys.argv[1] if len(sys.argv) > 1 else '/private/tmp/framematter-meter-candidate').expanduser()
 if requested.is_symlink():
@@ -57,6 +103,9 @@ patch(pipeline, '    out = exposure_evs_from(Y, sh, sw);', r'''    out = exposur
     const char* restore_mode = std::getenv("FRAMEMATTER_FACE_RESTORE_CANDIDATE");
     const bool restore_enabled = restore_mode && std::strcmp(restore_mode, "1") == 0;
     if (restore_enabled && (relative_enabled || scene_enabled || conservative_enabled)) { error = "face restore and other research candidates are mutually exclusive"; return false; }
+    const char* tile_mode = std::getenv("FRAMEMATTER_FACE_TILE_FALLBACK");
+    const bool tile_enabled = tile_mode && std::strcmp(tile_mode, "1") == 0;
+    if (tile_enabled && !restore_enabled) { error = "face tile fallback requires v2.2 restore mode"; return false; }
     const bool relative_apply = (relative_enabled || scene_enabled || conservative_enabled || restore_enabled) && params_.camera.auto_exposure && params_.camera.auto_exposure_method == "balanced";
     const char* offset_request = std::getenv("FRAMEMATTER_BALANCED_METER_OFFSET_EV");
     const auto parsed_offset = research::balanced_meter_offset(offset_request);
@@ -107,6 +156,9 @@ patch(pipeline, '    out = exposure_evs_from(Y, sh, sw);', r'''    out = exposur
             if (!face_file || !Json::parse(contents, face_info, error)) {
                 error = "relative face info missing, unreadable or invalid: " + error; return false;
             }
+            if (face_info.at("tile_fallback_requested").as_bool() != tile_enabled) {
+                error = "face tile mode and detector metadata disagree"; return false;
+            }
             const auto& boxes = face_info.at("faces");
             const double dw = face_info.at("linear_width").as_double(), dh = face_info.at("linear_height").as_double();
             if (face_info.at("source_path").as_string() != face_source || !boxes.is_array() ||
@@ -135,6 +187,7 @@ patch(pipeline, '    out = exposure_evs_from(Y, sh, sw);', r'''    out = exposur
             Json trace = Json::object();
             trace.set("event", Json(std::string("meter_candidate")));
             trace.set("equation", Json(std::string(restore_enabled ? "relative-face-v2.2-restore" : conservative_enabled ? "conservative-relative-v2.1" : scene_enabled ? "relative-scene-v2" : relative_enabled ? "relative-face-v2" : (offset_request ? "balanced-meter-offset-v1" : "balanced-highlight-v1"))));
+            trace.set("face_tile_fallback_enabled", Json(tile_enabled));
             trace.set("face_restore_enabled", Json(restore_enabled));
             trace.set("conservative_relative_enabled", Json(conservative_enabled));
             trace.set("relative_scene_enabled", Json(scene_enabled));
@@ -236,7 +289,7 @@ patch(engine, '    for (const char* name : kMeterKeyFields) key += values.at(nam
     key += std::string("balanced-highlight-v1;") + ((mode && std::strcmp(mode, "1") == 0) ? "1" : "0");
     const char* offset = std::getenv("FRAMEMATTER_BALANCED_METER_OFFSET_EV");
     key += std::string(";meter-offset-v1=") + (offset ? offset : "unset");
-    for (const char* name : {"FRAMEMATTER_BALANCED_FROZEN_EV", "FRAMEMATTER_RAW_SHADOW_BIAS", "FRAMEMATTER_RELATIVE_FACE_CANDIDATE", "FRAMEMATTER_RELATIVE_SCENE_CANDIDATE", "FRAMEMATTER_CONSERVATIVE_RELATIVE_CANDIDATE", "FRAMEMATTER_FACE_RESTORE_CANDIDATE", "FRAMEMATTER_BALANCED_FACE_INFO", "FRAMEMATTER_BALANCED_FACE_SOURCE"}) {
+    for (const char* name : {"FRAMEMATTER_BALANCED_FROZEN_EV", "FRAMEMATTER_RAW_SHADOW_BIAS", "FRAMEMATTER_RELATIVE_FACE_CANDIDATE", "FRAMEMATTER_RELATIVE_SCENE_CANDIDATE", "FRAMEMATTER_CONSERVATIVE_RELATIVE_CANDIDATE", "FRAMEMATTER_FACE_RESTORE_CANDIDATE", "FRAMEMATTER_FACE_TILE_FALLBACK", "FRAMEMATTER_BALANCED_FACE_INFO", "FRAMEMATTER_BALANCED_FACE_SOURCE"}) {
         const char* value = std::getenv(name);
         key += std::string(";") + name + "=" + (value ? value : "unset");
     }
@@ -250,8 +303,9 @@ patch(session, '        let stamp = p.wire.map { "\\($0.name)=\\($0.value)" }.jo
         let scene = ProcessInfo.processInfo.environment["FRAMEMATTER_RELATIVE_SCENE_CANDIDATE"] ?? "unset"
         let conservative = ProcessInfo.processInfo.environment["FRAMEMATTER_CONSERVATIVE_RELATIVE_CANDIDATE"] ?? "unset"
         let restore = ProcessInfo.processInfo.environment["FRAMEMATTER_FACE_RESTORE_CANDIDATE"] ?? "unset"
+        let tileFallback = ProcessInfo.processInfo.environment["FRAMEMATTER_FACE_TILE_FALLBACK"] ?? "unset"
         let faceInfo = ProcessInfo.processInfo.environment["FRAMEMATTER_BALANCED_FACE_INFO"] ?? "unset"
-        let stamp = "relative-face-v2.2-restore=\(restore);conservative-relative-v2.1=\(conservative);relative-scene-v2=\(scene);relative-face-v2=\(relative);face-info=\(faceInfo);raw-shadow-meter-v1;shadow=\(shadow);frozen=\(frozen);balanced-highlight-v1;mode=\(experimentMode);meter-offset-v1=\(meterOffset);" + p.wire.map { "\($0.name)=\($0.value)" }.joined(separator: ";")''')
+        let stamp = "face-tile-fallback=\(tileFallback);relative-face-v2.2-restore=\(restore);conservative-relative-v2.1=\(conservative);relative-scene-v2=\(scene);relative-face-v2=\(relative);face-info=\(faceInfo);raw-shadow-meter-v1;shadow=\(shadow);frozen=\(frozen);balanced-highlight-v1;mode=\(experimentMode);meter-offset-v1=\(meterOffset);" + p.wire.map { "\($0.name)=\($0.value)" }.joined(separator: ";")''')
 
 # Research-only RAW override, after ordinary settings and before either outputImage.
 decoder = root / 'modern_UI/Spektrafilm/Spektrafilm/Import/ImageDecoder.swift'
@@ -294,7 +348,11 @@ patch(decoder, '        return (filter, asShotTemperature, asShotTint)', r'''   
 
 # Vision supplies only normalized boxes; luminance statistics stay in the engine.
 patch(decoder, 'import CoreImage\n', 'import CoreImage\nimport Vision\n')
-patch(decoder, '        return DecodedImage(linear: try settings.perspective.applying(to: linear),', r'''        if ProcessInfo.processInfo.environment["FRAMEMATTER_RELATIVE_FACE_CANDIDATE"] == "1" || ProcessInfo.processInfo.environment["FRAMEMATTER_CONSERVATIVE_RELATIVE_CANDIDATE"] == "1" || ProcessInfo.processInfo.environment["FRAMEMATTER_FACE_RESTORE_CANDIDATE"] == "1" {
+patch(decoder, '        return DecodedImage(linear: try settings.perspective.applying(to: linear),', r'''        let tileRequested = ProcessInfo.processInfo.environment["FRAMEMATTER_FACE_TILE_FALLBACK"] == "1"
+        if tileRequested && ProcessInfo.processInfo.environment["FRAMEMATTER_FACE_RESTORE_CANDIDATE"] != "1" {
+            throw NSError(domain: "FrameMatterResearch", code: 7, userInfo: [NSLocalizedDescriptionKey: "face tile fallback requires v2.2 restore mode"])
+        }
+        if ProcessInfo.processInfo.environment["FRAMEMATTER_RELATIVE_FACE_CANDIDATE"] == "1" || ProcessInfo.processInfo.environment["FRAMEMATTER_CONSERVATIVE_RELATIVE_CANDIDATE"] == "1" || ProcessInfo.processInfo.environment["FRAMEMATTER_FACE_RESTORE_CANDIDATE"] == "1" {
             let environment = ProcessInfo.processInfo.environment
             guard let facePath = environment["FRAMEMATTER_BALANCED_FACE_INFO"],
                   environment["FRAMEMATTER_BALANCED_FACE_SOURCE"] == url.path else {
@@ -314,13 +372,24 @@ patch(decoder, '        return DecodedImage(linear: try settings.perspective.app
                   let cg = context.createCGImage(preview, from: CGRect(x: 0, y: 0, width: width, height: height),
                                                format: .RGBA8, colorSpace: space) else { throw Failure.unsupported(url) }
             let request = VNDetectFaceRectanglesRequest()
+            if tileRequested { request.revision = 3 }
             let start = Date()
             try VNImageRequestHandler(cgImage: cg, orientation: .up).perform([request])
             let duration = Date().timeIntervalSince(start)
-            let faces = (request.results ?? []).map { face -> [String: Any] in
+            let originalFaces = (request.results ?? []).map { face -> [String: Any] in
                 let box = face.boundingBox
                 return ["x": box.minX, "y": box.minY, "width": box.width, "height": box.height,
                         "confidence": face.confidence]
+            }
+            let tileResult = try researchFaceTileFallback(cg, original: originalFaces, enabled: tileRequested) { crop in
+                let tileRequest = VNDetectFaceRectanglesRequest()
+                tileRequest.revision = 3
+                try VNImageRequestHandler(cgImage: crop, orientation: .up).perform([tileRequest])
+                return (tileRequest.revision, (tileRequest.results ?? []).map { face -> [String: Any] in
+                    let box = face.boundingBox
+                    return ["x": box.minX, "y": box.minY, "width": box.width, "height": box.height,
+                            "confidence": face.confidence]
+                })
             }
             let previewPath = facePath + ".png"
             guard let destination = CGImageDestinationCreateWithURL(URL(fileURLWithPath: previewPath) as CFURL,
@@ -335,10 +404,14 @@ patch(decoder, '        return DecodedImage(linear: try settings.perspective.app
                 "preview_width": width, "preview_height": height, "preview_path": previewPath,
                 "vision_revision": request.revision, "vision_duration_seconds": duration,
                 "box_coordinates": "normalized bottom-left, upright CGImage orientation up",
-                "faces": faces]
+                "tile_fallback_requested": tileRequested, "tile_fallback_triggered": tileResult.triggered,
+                "original_full_faces": originalFaces, "tiles": tileResult.tiles,
+                "faces": tileResult.faces]
             try JSONSerialization.data(withJSONObject: info, options: [.sortedKeys]).write(to: URL(fileURLWithPath: facePath), options: .atomic)
         }
         return DecodedImage(linear: try settings.perspective.applying(to: linear),''')
+
+decoder.write_text(decoder.read_text() + '\n' + TILE_FALLBACK_SWIFT)
 
 project = root / 'modern_UI/Spektrafilm'
 run(['clang++', '-std=c++20', '-O2', root / 'engine/tests/balanced_highlight_candidate.cpp', '-o', root / 'candidate-check'])
@@ -359,7 +432,7 @@ app = root / 'DerivedData/Build/Products/Debug/FrameMatter.app'
 binary = app / 'Contents/MacOS/FrameMatter'
 manifest = {
     'equation': 'balanced-highlight-v1', 'source_kind': 'current working tree',
-    'relative_face_experiment': 'relative-face-v2', 'relative_scene_experiment': 'relative-scene-v2', 'conservative_relative_experiment': 'conservative-relative-v2.1', 'face_restore_experiment': 'relative-face-v2.2-restore',
+    'relative_face_experiment': 'relative-face-v2', 'relative_scene_experiment': 'relative-scene-v2', 'conservative_relative_experiment': 'conservative-relative-v2.1', 'face_restore_experiment': 'relative-face-v2.2-restore', 'face_tile_fallback': 'empty-full-only-four-60-percent-crops-v1',
     'raw_shadow_meter_experiment': 'raw-shadow-meter-v1', 'supported_shadow_override': [0], 'frozen_meter_ev_range': [-32, 32],
     'meter_offset_experiment': 'balanced-meter-offset-v1', 'supported_meter_offsets_ev': [0, -0.5, -1, -1.5],
     'head': subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip(),
