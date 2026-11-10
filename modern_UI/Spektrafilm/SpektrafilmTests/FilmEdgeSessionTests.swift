@@ -247,6 +247,8 @@ final class FilmEdgeSessionTests: XCTestCase {
     func testTheDateAloneFollowsTheCropTheTurnAndTheFlip() async throws {
         let url = try copied("tests/Test_image/A7m3/DSC03710.ARW")
         let session = try await developedSession(url)
+        // Isolate date geometry: stochastic background pixels can widen the difference box.
+        edit(session) { $0.glareActive = false; $0.grainActive = false }
 
         // The date's place on the canvas: where a print with it differs from
         // one whose date back is on with nothing to print (the same frame in

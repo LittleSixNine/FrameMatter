@@ -45,7 +45,7 @@ adaptive latitude with/without film border, both pair decode checks, and zoom
 using the source's actual aspect ratio. Thus the initial latitude failure did
 not establish a missing-face or material-probe regression.
 
-Three checks remain unresolved:
+Two checks remain unresolved:
 
 - Immediate restoration of a resident film-border print failed with both new
   defaults and explicit balanced/legacy controls. The nil-key invalidation branch
@@ -53,11 +53,21 @@ Three checks remain unresolved:
 - The native-WB/cache test failed with both defaults and the same legacy control;
   the available substitute RAW/cache environment does not establish an original
   baseline. This is not reported as a passing native-cache check.
-- **The date image-difference check failed under the new defaults, while its
-  explicit legacy control passed.** A manual-exposure isolation attempt also
-  failed and was reverted. Its cause is undetermined; no date geometry or
-  exposure parameter was changed to hide it. The candidate retains this known
-  validation gap.
+
+The date image-difference failure was subsequently reproduced and resolved as a
+measurement error. One background pixel outside the date exceeded the existing
+threshold and widened the crop's measured box. A glare-off/grain-on control
+still failed on the same pixel; the native engine uses a fresh film seed for its
+stochastic grain sampler. With glare/grain disabled only in
+this geometry test, the unchanged assertions passed; metering, RAW input and
+production effects remain unchanged. The compared on/off frames had matching EV,
+session, framing and sent parameters. An independent live-window check using the
+same RAW copy confirmed the date remained upright at the lower right after a
+half-width/half-height crop and horizontal flip, with comparable visible size.
+The window check used the normal EXIF date at +3.5 EV; the regression test retained
+its own custom text at +8 EV. This resolves the observed date failure on the
+explicit ILCE-7CM2 substitute, without claiming missing original-fixture coverage
+or a full-suite pass. Details are in the private date-diagnosis record.
 
 Private evidence, logs and fixture manifests are under
 `pravite/04-开发与故障记录/自适应测光正式接入-20261110/`, including `宿主验证/`,
