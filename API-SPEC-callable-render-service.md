@@ -693,7 +693,6 @@ fields. Design and measurements: RFC-032 §26–§29 and RFC-031 (the date back)
 
 | field | path | type | default | range | meaning |
 |---|---|---|---|---|---|
-| `overscan_base_fog` | `film_render.overscan.base_fog` | float | `0.0` | 0–1 | opt-in uniform film-base fog; full strength adds 0.18 normalized exposure outside the gate on physical film, in the existing warm fog colour. SHOOT, not live. |
 | `overscan_factory_separate_halation` | `film_render.overscan.factory_separate_halation` | bool | `false` | — | explicit independent factory-lettering exposure; missing/off keeps the original optical path. Date-back exposure stays with the scene. SHOOT, not live; see below. |
 | `overscan_active` | `film_render.overscan.active` | bool | `false` | — | the switch; `false` dispatches nothing (byte-identical to the pre-RFC build) |
 | `overscan_format` | `…overscan.format` | str | `"135"` | `135` \| `135_half` \| `120_645` \| `120_6x6` \| `120_6x7` \| `120_6x8` \| `120_6x9` \| `135_xpan` \| `135_full_67` \| `120_6x12` \| `120_6x17` | the film and its gate (`135_half`: 18 × 24 mm half frame, below). The panoramic long formats (2026-10-03, reversing "nothing larger than 6×9"): `135_xpan` 24 × 65 on 14 perforations, `120_6x12` 56 × 112, `120_6x17` 56 × 168; their gates are `square` until real strips are measured, and none carries a date |
@@ -997,24 +996,6 @@ existing explicit overscan rejection. With overscan disabled this setting has
 no effect, including on a date-only render. Host sidecars use
 `params.filmEdge.independentLetteringHalation`; only this leaf joins the Film
 Effects clipboard group. Other film-edge settings retain their prior ownership.
-
-
-**Film-base fog (optional, 2026-11-11).** `overscan_base_fog=0` (including a
-missing field) retains the original path. Positive strength adds
-`0.18 * strength * film_alpha * (1 - gate_coverage)` in the existing edge-fog
-RGB light to the overscan exposure canvas. This is an appearance choice, not
-material calibration or synthetic noise. The exposure then shares the normal
-lens/halation, development, DIR, grain and printing stages; those neighbourhoods
-can affect the picture boundary and the tone of factory lettering/date marks.
-Gate, hole and imprint geometry are unchanged. Bare/date-only renders ignore it;
-full-width source exposure has no separate rebate where its gate fills the film.
-Existing overscan striped/Vulkan limitations remain explicit.
-
-The host field is `params.filmEdge.baseFog`, default 0 for old sidecars and new
-photos. It is copied with Film Effects, participates in undo/redo and SHOOT
-invalidation, and is exposed by the common Agent schema. A neutral zero is omitted
-from the host print stamp to retain the previous cache identity; the wire still
-sends zero when resetting a nonzero setting. Preview/full/export share the model.
 
 
 ## 14. `filter_shift_scale` — what a unit of the two filter shifts is (2026-10-04)

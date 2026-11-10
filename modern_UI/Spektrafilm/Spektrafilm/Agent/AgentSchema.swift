@@ -153,7 +153,6 @@ enum AgentSchema {
             .init("params.filmEdge.cameraSeed", .integer(FilmEdgeSettings.seedRange), "The camera body: gate, margins, holes, fog."),
             .init("params.filmEdge.frameSeed", .integer(FilmEdgeSettings.seedRange), "This frame's advance and scan: weave, leaks."),
             .init("params.filmEdge.frameNumber", .integer(FilmEdgeSettings.frameNumberRange), "The frame number the edge print carries; 0 is the seed's draw. A new frame takes its place in the session."),
-            .init("params.filmEdge.baseFog", .number(FilmEdgeSettings.baseFogRange), "Optional uniform film-base fog. Zero preserves the original appearance; higher values brighten and warm the rebate."),
             .init("params.filmEdge.fog", .number(FilmEdgeSettings.fogRange), "Edge fog strength; 0 is none."),
             .init("params.filmEdge.leaks", .number(FilmEdgeSettings.leaksRange), "Spool light leaks; 0 is none."),
             .init("params.filmEdge.edgeText", .choice([]), "The stock's edge print.", readOnly: resolved),

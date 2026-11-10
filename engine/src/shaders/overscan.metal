@@ -41,8 +41,7 @@ enum : uint {
     P_PERF_LEAK_COVERAGE = 274,
     P_PERF_LEAK_SOFTNESS = 275,
     P_PERF_LEAK_SEED = 276,
-    P_BASE_EXPOSURE = 277,
-    P_COUNT = 278
+    P_COUNT = 277
 };
 constant uint kQStride = 10u;
 
@@ -157,7 +156,6 @@ static float3 sample_frame(device const float* f, float fx, float fy, uint fw, u
 }
 
 static float perf_sdf(float2 st, device const float* P, thread uint& hole);
-static float film_alpha(float2 st, device const float* P);
 
 // One perforation's seeded light events: rim weight, soft halo and local thickness.
 // shortcut: visual light placement, not calibrated propagation through a specific film base.
@@ -378,10 +376,6 @@ kernel void spk_overscan_canvas(device const float* frame [[buffer(0)]],
         if (int(P[P_PERF_LEAK_STYLE]) == 2) e *= exp2(-appearance);
         else fog += appearance;
         e += fog * float3(P[P_FOG_R], P[P_FOG_G], P[P_FOG_B]);
-        if (P[P_BASE_EXPOSURE] > 0.0f) {
-            const float base = P[P_BASE_EXPOSURE] * film_alpha(st, P) * (1.0f - cov);
-            e += base * float3(P[P_FOG_R], P[P_FOG_G], P[P_FOG_B]);
-        }
     }
     out[3u * i] = e.x;
     out[3u * i + 1u] = e.y;

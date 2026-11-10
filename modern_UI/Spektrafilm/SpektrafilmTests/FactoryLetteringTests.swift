@@ -18,7 +18,7 @@ final class FactoryLetteringTests: XCTestCase {
     func testShootDeltaResetsAndOffKeepsLegacyStamp() {
         var p = FilmParams.default
         p.filmEdge.active = true
-        let legacyWire = p.wire.filter { !["overscan_factory_separate_halation", "overscan_base_fog"].contains($0.name) }
+        let legacyWire = p.wire.filter { $0.name != "overscan_factory_separate_halation" }
         let legacy = legacyWire.map { "\($0.name)=\($0.value)" }.joined(separator: ";") + ";overscan_framing="
         XCTAssertEqual(Session.printStamp(p), legacy)
         var on = p
@@ -71,18 +71,12 @@ final class FactoryLetteringTests: XCTestCase {
         try await wait("initial decode: \(s.status)") { s.decoded != nil }
         let initial = await s.ensureDeveloped()
         _ = try XCTUnwrap(initial, s.status)
-        _ = try s.applyAgentEdit(["params": ["filmEdge": ["independentLetteringHalation": true, "baseFog": 0.75]]])
+        _ = try s.applyAgentEdit(["params": ["filmEdge": ["independentLetteringHalation": true]]])
         XCTAssertTrue(s.params.filmEdge.independentLetteringHalation)
-        XCTAssertEqual(s.params.filmEdge.baseFog, 0.75)
-        let beforeInvalid = s.params
-        XCTAssertThrowsError(try s.applyAgentEdit(["params": ["exposureCompensationEV": 2, "filmEdge": ["baseFog": 1.01]]]))
-        XCTAssertEqual(s.params, beforeInvalid)
         s.undo()
         XCTAssertFalse(s.params.filmEdge.independentLetteringHalation)
-        XCTAssertEqual(s.params.filmEdge.baseFog, 0)
         s.redo()
         XCTAssertTrue(s.params.filmEdge.independentLetteringHalation)
-        XCTAssertEqual(s.params.filmEdge.baseFog, 0.75)
         let edited = await s.ensureDeveloped()
         _ = try XCTUnwrap(edited, s.status)
         try await wait("edit: status=\(s.status), sent=\(s.scheduler.sent.filmEdge.independentLetteringHalation), wanted=\(s.params.filmEdge.independentLetteringHalation), busy=\(s.busy), pending=\(s.scheduler.pending)") { !s.busy && !s.scheduler.pending && s.scheduler.sent.filmEdge.independentLetteringHalation }
@@ -94,7 +88,6 @@ final class FactoryLetteringTests: XCTestCase {
         let reopened = Session()
         reopened.open(urls: [url])
         XCTAssertTrue(reopened.params.filmEdge.independentLetteringHalation)
-        XCTAssertEqual(reopened.params.filmEdge.baseFog, 0.75)
         let restored = await reopened.ensureDeveloped()
         _ = try XCTUnwrap(restored, reopened.status)
         await reopened.client.stop()
@@ -105,52 +98,6 @@ final class FactoryLetteringTests: XCTestCase {
         while !condition() {
             if Date() > end { throw NSError(domain: "FactoryLetteringTests timeout: " + reason(), code: 1) }
             try await Task.sleep(for: .milliseconds(20))
-        }
-    }
-}
-
-@MainActor
-final class FilmBaseFogTests: XCTestCase {
-    func testLegacyAndNewDefaultsAreNeutralAndRoundTrip() throws {
-        XCTAssertEqual(try JSONDecoder().decode(FilmEdgeSettings.self, from: Data("{}".utf8)).baseFog, 0)
-        XCTAssertEqual(Sidecar.newPhoto.params.filmEdge.baseFog, 0)
-        var edge = FilmEdgeSettings()
-        edge.baseFog = 0.7
-        XCTAssertEqual(try JSONDecoder().decode(FilmEdgeSettings.self, from: JSONEncoder().encode(edge)), edge)
-    }
-
-    func testShootResetAndNeutralCacheIdentity() {
-        var zero = FilmParams.default
-        zero.filmEdge.active = true
-        let old = zero.wire.filter { !["overscan_base_fog", "overscan_factory_separate_halation"].contains($0.name) }
-            .map { "\($0.name)=\($0.value)" }.joined(separator: ";") + ";overscan_framing="
-        XCTAssertEqual(Session.printStamp(zero), old)
-        var on = zero
-        on.filmEdge.baseFog = 0.75
-        XCTAssertNotEqual(Session.printStamp(on), old)
-        XCTAssertEqual(on.delta(from: zero).delta["overscan_base_fog"], .double(0.75))
-        XCTAssertEqual(zero.delta(from: on).delta["overscan_base_fog"], .double(0))
-        XCTAssertEqual(on.delta(from: zero).layers, [.shoot])
-        zero.filmEdge.active = false
-        on.filmEdge.active = false
-        XCTAssertEqual(Session.printStamp(zero), Session.printStamp(on))
-    }
-
-    func testFilmEffectsClipboardAndAgentBounds() throws {
-        var source = Sidecar()
-        source.params.filmEdge.baseFog = 0.7
-        source.params.filmEdge.active = true
-        source.params.filmEdge.format = .f6x7
-        let target = Sidecar()
-        let out = SettingsClip(groups: [.filmEffects], settings: source, sourceName: "source").applied(to: target)
-        var expected = target.params.filmEdge
-        expected.baseFog = 0.7
-        XCTAssertEqual(out.params.filmEdge, expected)
-        XCTAssertEqual(SettingsClip(groups: [.exposure], settings: source, sourceName: "source").applied(to: target).params.filmEdge, target.params.filmEdge)
-        XCTAssertEqual(try AgentDocument.validate(["params": ["filmEdge": ["baseFog": 0.7]]]), ["params.filmEdge.baseFog"])
-        let invalid: [JSONValue] = [.number(-0.01), .number(1.01), .string("1"), .bool(true), .number(.nan)]
-        for bad in invalid {
-            XCTAssertThrowsError(try AgentDocument.validate(["params": ["filmEdge": ["baseFog": bad]]]))
         }
     }
 }

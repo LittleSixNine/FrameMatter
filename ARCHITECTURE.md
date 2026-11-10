@@ -568,12 +568,6 @@ inside a field. `TypingKeyGuard` is a local key monitor that sends typing keys
 - **The print stamp carries the framing** (`Session.printStamp`), because the
   same parameters with another framing is another picture.
 
-The Film Edge light group also offers **Film Base Fog / 片基雾化** (2026-11-11),
-`baseFog` 0–1, default 0. It adds a uniform warm exposure outside the gate on
-physical film, then follows normal optics/development/grain/printing. Zero keeps
-the old print stamp; nonzero is a SHOOT edit. See API-SPEC §13 and
-`docs/research/film-base-fog.md` for ownership and edge-effect limits.
-
 The left rail's **Light Leaks** card (2026-11-07, between Film Edge and
 Scratches & Dust) owns `FilmParams.lightLeaks`: independent activation, two
 approved appearances (`rim`/`halo`), and separate saved values/seeds per style.
