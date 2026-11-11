@@ -358,7 +358,12 @@ struct SceneLatitudeParams {
 bool is_known_scene_latitude_norm(const std::string& norm);
 bool is_known_camera_filter(const std::string& name);
 
+inline constexpr size_t kSceneCurveRows = 5;
+inline constexpr int kSceneCurveStops = 8;
+bool parse_scene_curve(const std::string& text, std::vector<float>& table, size_t& n, std::string& error);
+
 struct CameraParams {
+    std::string scene_curve; // Empty bypasses the pre-film scene curve exactly.
     double exposure_compensation_ev = 0.0;
     bool auto_exposure = true;
     /// Which exposure intent the meter follows (RFC-015 §2.3). The default is

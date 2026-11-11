@@ -328,7 +328,7 @@ struct spk_engine {
         // These upstream effects still require kernels or Apple services that
         // have not been ported. Defaults stay usable; explicit requests fail.
         Json unported = Json::array();
-        for (const char* feature : {"digital_intermediate", "scene_latitude_mapping",
+        for (const char* feature : {"digital_intermediate", "scene_latitude_mapping", "scene_curve",
                                     "contrast_mask", "overscan", "date_imprint"})
             unported.push(Json(std::string(feature)));
         backend.set("unsupported_features", std::move(unported));
@@ -1931,6 +1931,7 @@ constexpr double kRampLo = -12.0, kRampHi = 12.0;
 Params medium_probe_params(const Params& session) {
     Params p = session;
     p.camera.auto_exposure = false;
+    p.camera.scene_curve.clear();
     p.camera.scene_latitude.active = false;
     p.film_render.grain.active = false;
     p.film_render.grain.sublayers_active = false;

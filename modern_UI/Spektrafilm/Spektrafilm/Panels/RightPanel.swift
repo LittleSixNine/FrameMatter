@@ -46,12 +46,14 @@ struct RightPanel: View {
             s.append(("perspective", AnyView(PerspectiveSection(session: session))))
             s.append(("filmFormat", AnyView(FilmFormatSection(session: session))))
             s.append(("scenePlacement", AnyView(ScenePlacementSection(session: session))))
+            s.append(("sceneCurve", AnyView(SceneCurveSection(session: session))))
             // Withdrawn for the next version (`FeatureFlags.toneMask`).
             if FeatureFlags.toneMask { s.append(("toneMask", AnyView(ToneMaskSection(session: session)))) }
         } else {
             s.append(("wb2", AnyView(WhiteBalanceSection(session: session))))
             s.append(("exposure2", AnyView(ExposureSection(session: session))))
             s.append(("hsl", AnyView(HSLSection(session: session))))
+            s.append(("channelMixer", AnyView(ChannelMixerSection(session: session))))
             s.append(("curve", AnyView(CurveSection(session: session))))
             s.append(("colorbalance", AnyView(ColorBalanceSection(session: session))))
             // Withdrawn while the mask system is redesigned; the section

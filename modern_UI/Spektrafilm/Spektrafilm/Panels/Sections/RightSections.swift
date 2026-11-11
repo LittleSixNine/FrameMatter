@@ -60,7 +60,7 @@ struct ExposureSection: View {
     var body: some View {
         PanelSection(L(.sectionExposure), key: "exposure2", initiallyExpanded: false, menu: { AnyView(Button(L(.helpReset)) {
             var a = session.layerAdjustments
-            a.exposure = 0; a.contrast = 0; a.brightness = 0; a.saturation = 0
+            a.exposure = 0; a.contrast = 0; a.brightness = 0; a.saturation = 0; a.vibrance = 0
             a.highlights = 0; a.shadows = 0; a.blackPoint = 0; a.whitePoint = 0
             session.layerAdjustments = a }) }, metrics: .right) {
             RailRows {
@@ -72,6 +72,7 @@ struct ExposureSection: View {
                 ScrubSlider(label: L(.exposureContrast), value: adj(\.contrast), range: -50...50, snap: 5, format: { String(format: "%+.0f", $0) })
                 ScrubSlider(label: L(.exposureBrightness), value: adj(\.brightness), range: -50...50, snap: 5, format: { String(format: "%+.0f", $0) })
                 ScrubSlider(label: L(.exposureSaturation), value: adj(\.saturation), range: -100...100, snap: 5, format: { String(format: "%+.0f", $0) })
+                ScrubSlider(label: L("Vibrance", zh: "自然饱和度"), value: adj(\.vibrance), range: -100...100, snap: 5, format: { String(format: "%+.0f", $0) })
                 // A hairline, like the ones between sections — the same wall,
                 // one storey down. It separates the four global controls from
                 // the four that reach into a tonal range.
@@ -166,5 +167,45 @@ struct PerspectiveSection: View {
     }
     private func axis(_ key: WritableKeyPath<RawPerspective, Double>) -> Binding<Double> {
         Binding(get:{session.decode.perspective[keyPath:key]},set:{var d=session.decode;d.perspective[keyPath:key]=$0;session.decode=d})
+    }
+}
+
+struct SceneCurveSection: View {
+    @Bindable var session: Session
+    var body: some View {
+        PanelSection(L("Scene Curve", zh: "场景曲线"), key: "sceneCurve", initiallyExpanded: false,
+                     menu: { AnyView(Button(L(.helpResetChannels)) { var p = session.params; p.sceneCurve = CurveSet(); session.params = p }) }, metrics: .right) {
+            VStack(spacing: 6) {
+                CurveEditor(session: session, scene: true)
+                Text(L("−8 to +8 stops around film mid-grey, after Scene Placement and including Film Exposure. Before the film; not the print curve.",
+                       zh: "以胶片中灰为中心 −8 至 +8 档；在场景放置之后，坐标包含胶片曝光补偿。作用于胶片前，与成片曲线不同。"))
+                    .font(Theme.Font.caption).foregroundStyle(Theme.secondaryText)
+            }.padding(.horizontal, Theme.Metric.plotInset)
+        }
+    }
+}
+
+struct ChannelMixerSection: View {
+    @Bindable var session: Session
+    @State private var selected = ChannelMixer.Channel.red
+    var body: some View {
+        PanelSection(L("Channel Mixer", zh: "通道混合器"), key: "channelMixer", initiallyExpanded: false,
+                     menu: { AnyView(Button(L(.helpReset)) { var a = session.layerAdjustments; a.channelMixer = ChannelMixer(); session.layerAdjustments = a }) }, metrics: .right) {
+            RailRows {
+                Picker(L("Output", zh: "输出"), selection: $selected) {
+                    ForEach(ChannelMixer.Channel.allCases) { c in Text(c.title).tag(c) }
+                }.pickerStyle(.segmented)
+                ForEach(ChannelMixer.Channel.allCases) { c in
+                    ScrubSlider(label: c.title, value: coefficient(c), range: -100...100, snap: 5,
+                                format: { String(format: "%+.0f", $0) })
+                }
+                Text(L("Offsets from the identity matrix. Zero keeps the original channels.", zh: "相对于单位矩阵的百分比偏移；全部为零时保留原通道。"))
+                    .font(Theme.Font.caption).foregroundStyle(Theme.secondaryText)
+            }
+        }
+    }
+    private func coefficient(_ input: ChannelMixer.Channel) -> Binding<Double> {
+        Binding(get: { session.layerAdjustments.channelMixer[selected][input] },
+                set: { var a = session.layerAdjustments; a.channelMixer[selected][input] = $0; session.layerAdjustments = a })
     }
 }

@@ -492,7 +492,7 @@ struct FilmParams: Codable, Equatable, Sendable {
         case printBrightnessStops, yFilterShift, mFilterShift, glareActive, scanFilm
         case extendedDynamicRange, preflashExposure, contrastMask, sceneLatitude, effects, printEffects
         case digitalIntermediate, filmEdge, dateBack, scratches, lightLeaks, agingTextures
-        case sceneLatitudeOther, placementIsRight, pairSplit
+        case sceneLatitudeOther, placementIsRight, pairSplit, sceneCurve
     }
 
     // --- stock (shoot for film, print for paper) ---
@@ -648,6 +648,7 @@ struct FilmParams: Codable, Equatable, Sendable {
     /// RFC-024. Print layer.
     var contrastMask = ContrastMaskSettings()
     /// RFC-023. Shoot layer.
+    var sceneCurve = CurveSet() // Pre-film log exposure curve, separate from the post-print curve.
     var sceneLatitude = SceneLatitudeSettings()
     /// A half-frame pair has a placement per frame. `sceneLatitude` is always
     /// the one the Scene Placement section is showing — the picked frame's —
@@ -753,6 +754,7 @@ struct FilmParams: Codable, Equatable, Sendable {
         preflashExposure = try c.decodeIfPresent(Double.self, forKey: .preflashExposure) ?? 0
         contrastMask = try c.decodeIfPresent(ContrastMaskSettings.self, forKey: .contrastMask)
             ?? ContrastMaskSettings()
+        sceneCurve = try c.decodeIfPresent(CurveSet.self, forKey: .sceneCurve) ?? CurveSet()
         sceneLatitude = try c.decodeIfPresent(SceneLatitudeSettings.self, forKey: .sceneLatitude)
             ?? SceneLatitudeSettings()
         sceneLatitudeOther = try c.decodeIfPresent(SceneLatitudeSettings.self, forKey: .sceneLatitudeOther)
@@ -819,6 +821,7 @@ struct FilmParams: Codable, Equatable, Sendable {
             // Off under the Digital Intermediate (RFC-028): placement fits a
             // scene into a paper's range, and the DI keeps the film's whole
             // one. The pull-backs stay in the sidecar for when a paper returns.
+            ("scene_curve", .string(sceneCurve.sceneWire), .shoot),
             ("scene_latitude_active", .bool(firstPlacement.active && !(digitalIntermediate && !scanFilm)), .shoot),
             ("scene_latitude_norm", .string(firstPlacement.norm), .shoot),
             ("scene_latitude_highlight_knee", .double(firstPlacement.highlightKnee), .shoot),

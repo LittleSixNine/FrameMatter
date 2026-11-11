@@ -397,7 +397,7 @@ enum Exporter {
                                                                      height: full.height)
         guard let adjusted = session.renderer.applyLayer2(to: full,
                                                           uniforms: session.exportAdjustments.uniforms,
-                                                          hsl: session.exportAdjustments.hsl.uniforms,
+                                                          hsl: session.exportAdjustments.colorUniforms,
                                                           into: adjustedDestination)
             else { throw ExportError.noPixels }
         var current = adjusted

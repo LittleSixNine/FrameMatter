@@ -325,7 +325,11 @@ aqua, blue, purple, magenta), with hue, saturation and lightness in encoded
 ProPhoto RGB. The global HSL pass follows tone/colour balance and precedes
 curves; neutral settings bypass it exactly, grey is untouched, and values
 outside the working cube are preserved until the existing final clamp.
-Its independent uniform block does not enlarge local masks. Large local-mask
+Its independent uniform block also carries opt-in vibrance and a 3×3 channel
+mixer; it does not enlarge local masks. New neutral controls bypass exactly
+and keep the existing CB/HSL order. A separate pre-film Scene Curve follows
+Scene Placement on a ±8-stop log exposure axis, before spectral upsampling;
+it is not Layer 2. See API-SPEC §22 for the wire, pair scope and defaults. Large local-mask
 arrays bind a Metal buffer instead of exceeding `setBytes`' 4 KiB limit.
 Older sidecars load neutral HSL. An explicit Post-Dev clipboard group copies
 the complete grade and is off for a fresh clipboard selection. Shared CLI/MCP

@@ -41,7 +41,7 @@ struct Layer2Uniforms {           // must match Adjustments.swift
     uint inputDecode;
 };
 
-struct HSLUniforms { float4 bands[8]; uint active; };
+struct HSLUniforms { float4 bands[8]; uint active; float vibrance; uint mixerActive; uint pad; float4 mixR; float4 mixG; float4 mixB; };
 
 struct GeometryUniform {           // must match Geometry.Uniform in Geometry.swift
     float2 centre;                // crop centre, normalised to the source
@@ -375,7 +375,16 @@ kernel void layer2(texture2d<float, access::read> src [[texture(0)]],
     float3 masked = c;
 
     if (u.enabled != 0) {
-        c = layer2HSL(layer2Tone(c, u), hsl);
+        c = layer2Tone(c, u);
+        // SpektraLab 2.2.0 colour math; retain FrameMatter's existing CB/HSL order and ProPhoto space.
+        if (hsl.vibrance != 0.0f) {
+            float mx = max(max(c.r, c.g), c.b), mn = min(min(c.r, c.g), c.b);
+            float sat = mx > 1e-4f ? saturate((mx - mn) / mx) : 0.0f;
+            float y = luma(c);
+            c = y + (c - y) * max(1.0f + hsl.vibrance * (1.0f - sat), 0.0f);
+        }
+        c = layer2HSL(c, hsl);
+        if (hsl.mixerActive != 0) { c = float3(dot(c, hsl.mixR.xyz), dot(c, hsl.mixG.xyz), dot(c, hsl.mixB.xyz)); }
         // 7. curves — luma, then RGB master, then per channel
         if (u.curvesActive != 0) {
             c = saturate(c);

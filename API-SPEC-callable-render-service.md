@@ -1766,3 +1766,63 @@ face evidence (including a successful empty array) produced its reading. No NaN
 placeholder is serialized. The parameter field/table itself is unchanged:
 `auto_exposure_method` remains a string; this is a native-product accepted value,
 not a new Python-reference field or a modification of the external oracle.
+
+
+## 22. Pre-film scene curve (FrameMatter 2.0, opt-in)
+
+`scene_curve`: string, SHOOT, default `""`, non-live. Ported from SpektraLab
+`spektralab-v2.2.0` commit `243d3a362a6443db34109a93b622230699596d68`
+(Hanze Qiu; GPL-3.0-or-later). Empty bypasses the node exactly. Otherwise CSV
+contains five equal-length rows: RGB master, luminance, red, green, blue;
+2–4096 finite samples per row, each in 0…1. Malformed, non-finite, out-of-range
+or overlong tables reject the whole patch atomically. This node currently has
+a macOS Metal kernel; the retained Vulkan backend advertises it unsupported
+and explicitly refuses nonempty curve opens/patches. The upper bound and
+trailing-comma rejection are local trust-boundary safeguards.
+
+The axis is log2 exposure −8…+8 stops around linear mid-grey 0.184 (`slm::kMidgray`). It follows
+Scene Placement, precedes spectral upsampling, and samples at exposed E + Film
+Exposure compensation; exposure multiplication still occurs in its original
+node. The kernel applies luminance gain, RGB-master gain per channel, then
+individual channel gains. Nonpositive/nonfinite values get unit gain; beyond
+axis endpoints the endpoint gain is held. LUT bakes clear the curve. Curve
+changes rebuild the negative in live/full/reprint and striped execution.
+An explicit sampled identity table has interpolation roundoff; clients use
+empty for exact neutral bypass.
+
+The app stores five point curves in `params.sceneCurve`; missing is identity,
+identity sends empty. On half-frame pairs this is one shared transform over
+the combined scene, retained when selecting either half; it does not add a
+second per-half curve. Scene Placement clipboard copying includes this curve.
+The first UI uses the existing point editor with stop readout; it deliberately
+shows no post-print histogram or image eyedropper as scene-space evidence.
+Neutral print stamps omit the empty wire field, retaining old cache identity.
+
+### 22.1 Post-print colour additions
+
+`adjustments.vibrance` is −100…100, default 0. `adjustments.channelMixer`
+has red/green/blue output rows, each with red/green/blue input offsets
+−100…100 percent, default all zero. The effective matrix is identity + offsets;
+there is no constant term. Missing sidecar fields are neutral, new neutral
+fields are omitted from saved grade encoding to preserve existing grade/cache
+identities, while CLI/MCP readback explicitly exposes their defaults.
+
+These two controls are app Layer 2, not engine fields. They share the current
+Metal path for canvas, agent preview, pair grading, proof and file export.
+FrameMatter retains its encoded ProPhoto working space and existing order:
+old tone/colour balance → vibrance → old HSL → mixer → old curves/local masks/
+vignette and final clamp. This adapts upstream colour math; it does not adopt
+upstream's P3 space or reorder existing colour balance. Vibrance zero and
+mixer identity skip their new operations exactly, including when old tools
+are non-neutral. Masks keep the existing tone block and gain no new controls.
+Nonfinite/out-of-range persisted colour values are bounded at uniform packing;
+CLI/MCP validates and rejects illegal patches before applying any leaf.
+
+
+### 22.2 Host-only metadata acknowledgement
+
+A downstream crop can update dormant edge/date metadata while leaving the
+engine wire unchanged. The host submits that metadata-only state, and the
+scheduler acknowledges it (`sent = wanted`) without an engine call. This
+prevents CLI/MCP previews and exports from remaining pending after a crop;
+it does not add a render, change geometry or alter the scene.

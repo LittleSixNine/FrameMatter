@@ -86,7 +86,7 @@ final class HSLTests: XCTestCase {
         XCTAssertEqual(baseline[3], 65535)
         for count in [4,8] { XCTAssertEqual(try pixels(colors, a, maskCount: count), baseline) }
         XCTAssertEqual(MemoryLayout<Layer2Uniforms>.stride, 224)
-        XCTAssertEqual(MemoryLayout<HSLUniforms>.stride, 144)
+        XCTAssertEqual(MemoryLayout<HSLUniforms>.stride, 192)
     }
 
     func testTinyHSLDoesNotClipExposureBeforeTheVignette() throws {

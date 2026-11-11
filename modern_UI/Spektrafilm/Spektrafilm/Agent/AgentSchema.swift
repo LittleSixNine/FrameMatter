@@ -266,7 +266,14 @@ enum AgentSchema {
             .init("adjustments.vignette.amount", .number(-100...100), "Vignetting; negative darkens the corners."),
             .init("adjustments.vignette.midpoint", .number(0...100), "Where the vignette starts."),
         ]
+        f.append(.init("adjustments.vibrance", .number(-100...100), "Post-print vibrance; protects already saturated colours."))
+        for output in ["red", "green", "blue"] {
+            for input in ["red", "green", "blue"] {
+                f.append(.init("adjustments.channelMixer.\(output).\(input)", .number(-100...100), "Channel mixer offset from identity, percent."))
+            }
+        }
         for c in ["rgb", "luma", "red", "green", "blue"] {
+            f.append(.init("params.sceneCurve.\(c).points", .points, "Pre-film scene curve: log2 exposure −8…8 stops, after Scene Placement; coordinates include Film Exposure compensation."))
             f.append(.init("adjustments.curves.\(c).points", .points,
                            "The \(c) curve: [[x, y], …] from x = 0 to x = 1."))
         }
@@ -373,7 +380,7 @@ struct AgentDocument: Equatable {
         get throws {
             [
                 "params": try .from(params),
-                "adjustments": try .from(adjustments),
+                "adjustments": try JSONValue.from(adjustments).merged(with: ["vibrance": .number(adjustments.vibrance), "channelMixer": .from(adjustments.channelMixer)]),
                 "geometry": try .from(geometry),
                 "decode": try .from(decode),
             ]

@@ -125,6 +125,7 @@ const SchemaField kFields[] = {
     // re-develops the negative. The knees and rooms are the *resolved* curve
     // (RFC-023 §8.3) -- `spk_scene_latitude` solves them from the UI's
     // pull-backs -- and a room of 0 turns that side off exactly.
+    {"scene_curve", "camera.scene_curve", S, SHOOT, false, 0, 0, false},
     {"scene_latitude_active",         "camera.scene_latitude.active",         B, SHOOT, false, 0, 0, false},
     {"scene_latitude_norm",           "camera.scene_latitude.norm",           S, SHOOT, false, 0, 0, false},
     {"scene_latitude_highlight_knee", "camera.scene_latitude.highlight_knee", F, SHOOT, true, -24.0, 24.0, false},
@@ -391,6 +392,7 @@ std::string* str_slot(Params& p, const std::string& path) {
     if (path == "io.input_color_space") return &p.io.input_color_space;
     if (path == "enlarger.illuminant") return &p.enlarger.illuminant;
     if (path == "io.output_color_space") return &p.io.output_color_space;
+    if (path == "camera.scene_curve") return &p.camera.scene_curve;
     if (path == "camera.auto_exposure_method") return &p.camera.auto_exposure_method;
     if (path == "camera.filter") return &p.camera.filter;
     if (path == "camera.scene_latitude.norm") return &p.camera.scene_latitude.norm;
@@ -454,6 +456,38 @@ bool is_known_contrast_mask_scheme(const std::string& scheme) { return scheme ==
 
 bool is_known_scene_latitude_norm(const std::string& norm) {
     return norm == "power" || norm == "y" || norm == "max";
+}
+
+bool parse_scene_curve(const std::string& text, std::vector<float>& table, size_t& n, std::string& error) {
+    table.clear();
+    n = 0;
+    if (text.empty()) return true;
+    const char* p = text.c_str();
+    while (*p) {
+        char* end = nullptr;
+        const double v = std::strtod(p, &end);
+        if (end == p || !std::isfinite(v) || v < 0.0 || v > 1.0) {
+            error = "'scene_curve' must be comma-separated numbers in 0..1";
+            table.clear();
+            return false;
+        }
+        if (table.size() >= 5 * 4096) { error = "scene_curve exceeds 4096 samples per row"; return false; }
+        table.push_back(float(v));
+        p = end;
+        if (*p == ',') { ++p; if (!*p) { error = "scene_curve has a trailing comma"; return false; } }
+        else if (*p) {
+            error = "'scene_curve' must be comma-separated numbers in 0..1";
+            table.clear();
+            return false;
+        }
+    }
+    if (table.size() % kSceneCurveRows != 0 || table.size() / kSceneCurveRows < 2) {
+        error = "'scene_curve' must hold five rows of at least two samples (rgb, luma, r, g, b)";
+        table.clear();
+        return false;
+    }
+    n = table.size() / kSceneCurveRows;
+    return true;
 }
 
 bool is_known_camera_filter(const std::string& name) {
@@ -553,6 +587,10 @@ bool validate_delta(const Json& delta, std::string& error, std::string& param) {
             error = "'contrast_mask_scheme' = '" + v.as_string() + "' is not a scheme (gaussian)";
             param = kv.first;
             return false;
+        }
+        if (kv.first == "scene_curve") {
+            std::vector<float> table; size_t n = 0;
+            if (!parse_scene_curve(v.as_string(), table, n, error)) { param = kv.first; return false; }
         }
         if (kv.first == "scene_latitude_norm" && !is_known_scene_latitude_norm(v.as_string())) {
             error = "'scene_latitude_norm' = '" + v.as_string() +

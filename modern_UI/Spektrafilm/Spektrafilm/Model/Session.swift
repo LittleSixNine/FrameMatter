@@ -161,7 +161,7 @@ final class Session: CanvasHost {
               let curvesChanged = newValue.curves != sidecar.adjustments.curves
               sidecar.adjustments = newValue
               renderer.layer2 = newValue.uniforms
-              renderer.hsl = newValue.hsl.uniforms
+              renderer.hsl = newValue.colorUniforms
               if curvesChanged { renderer.setCurves(newValue.curves) } else { renderer.needsDraw?() }
               scheduleSave() }
     }
@@ -216,6 +216,8 @@ final class Session: CanvasHost {
               // negative: a new one is a develop — once, when the crop tool
               // lets go of it.
               if geometryIsInTheNegative && tool != .crop { requestPrint(); markStale() }
+              // Resolving a downstream crop can update dormant frame metadata without changing the engine wire.
+              if params != scheduler.sent && params.delta(from: scheduler.sent).delta.isEmpty { scheduler.request(params) }
               scheduleSave() }
     }
     /// The live tier's pixel size, which is what the geometry is normalised
@@ -1136,7 +1138,7 @@ final class Session: CanvasHost {
             self?.isDigitalIntermediate(texture) ?? false
         }
         renderer.layer2 = sidecar.adjustments.uniforms
-        renderer.hsl = sidecar.adjustments.hsl.uniforms
+        renderer.hsl = sidecar.adjustments.colorUniforms
         Session.removeLegacyLinearCache()
         if let cache {
             Task.detached(priority: .utility) {
@@ -2870,7 +2872,7 @@ final class Session: CanvasHost {
     private func pushLayer2(_ adjustments: Adjustments) {
         let shown = pairIsLayered ? Adjustments() : adjustments
         renderer.layer2 = shown.uniforms
-        renderer.hsl = shown.hsl.uniforms
+        renderer.hsl = shown.colorUniforms
         renderer.setCurves(shown.curves)
     }
 
@@ -3768,7 +3770,7 @@ final class Session: CanvasHost {
     /// still the truth is a question about *data* rather than about which
     /// callback happened to run last.
     nonisolated static func printStamp(_ p: FilmParams) -> String {
-        let stamp = p.wire.filter { $0.name != "overscan_factory_separate_halation" || $0.value != .bool(false) }.map { "\($0.name)=\($0.value)" }.joined(separator: ";")
+        let stamp = p.wire.filter { ($0.name != "overscan_factory_separate_halation" || $0.value != .bool(false)) && ($0.name != "scene_curve" || $0.value != .string("")) }.map { "\($0.name)=\($0.value)" }.joined(separator: ";")
         // With a film edge the crop is in the negative (`Session+FilmEdge`),
         // so the print is a different picture for every framing. Off, the
         // stamp is exactly what it always was.

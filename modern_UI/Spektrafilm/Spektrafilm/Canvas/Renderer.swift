@@ -981,7 +981,7 @@ final class Renderer: NSObject {
     func applyAdjustments(_ adjustments: Adjustments, to src: MTLTexture) -> MTLTexture? {
         store.upload(curves: adjustments.curves, into: curveTable)
         defer { store.upload(curves: currentCurves, into: curveTable); layer2Dirty = true }
-        return applyLayer2(to: src, uniforms: adjustments.uniforms, hsl: adjustments.hsl.uniforms)
+        return applyLayer2(to: src, uniforms: adjustments.uniforms, hsl: adjustments.colorUniforms)
     }
 
     /// `base` with each frame's rectangle taken from that frame's own texture

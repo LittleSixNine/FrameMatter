@@ -203,8 +203,11 @@ final class SurfaceAgreementTests: XCTestCase {
         p.filmEdge.active = true; p.filmEdge.format = .f135FullWidth
         p.filmEdge.cameraSeed = 19; p.filmEdge.frameSeed = 5
         session.params = p
+        var grade = session.adjustments; grade.vibrance = 45; grade.channelMixer.red.green = 20
+        session.adjustments = grade
         var geometry = session.geometry
         geometry.quarterTurns = 1
+        geometry.crop = CropRect(x: 0.05, y: 0.1, width: 0.8, height: 0.7)
         session.geometry = geometry
         session.requestPrint()
         try await waitUntil("full-width print",timeout:60) {
@@ -219,6 +222,51 @@ final class SurfaceAgreementTests: XCTestCase {
         let (pixels,_) = try properties(of:file)
         XCTAssertEqual(pixels.width / pixels.height,canvas.width / canvas.height,accuracy:0.01)
         XCTAssertEqual(max(pixels.width,pixels.height),512,accuracy:1)
+    }
+
+    func testSharedSceneCurveOnPairSurvivesSelectionAndMatchesProofExport() async throws {
+        let dir=FileManager.default.temporaryDirectory.appending(path:"spk-pair-tools-\(UUID())")
+        try FileManager.default.createDirectory(at:dir,withIntermediateDirectories:true)
+        addTeardownBlock { try? FileManager.default.removeItem(at:dir) }
+        let files=[dir.appending(path:"a.png"),dir.appending(path:"b.png")]
+        var look=Sidecar();look.params.grainActive=false;look.params.glareActive=false
+        for file in files {
+            let dst=try XCTUnwrap(CGImageDestinationCreateWithURL(file as CFURL,"public.png" as CFString,1,nil))
+            CGImageDestinationAddImage(dst,try halvesImage(width:360,height:240),nil);XCTAssertTrue(CGImageDestinationFinalize(dst));try look.save(for:file)
+        }
+        let session=Session();session.open(urls:files)
+        session.makePair(first:files[0],second:files[1],look:look,turned:false)
+        let url=try XCTUnwrap(session.selection)
+        addTeardownBlock { Sidecar.remove(for:url);files.forEach {Sidecar.remove(for:$0)} }
+        XCTAssertTrue(session.params.sceneCurve.isIdentity)
+        _ = await session.ensureDeveloped()
+        try await waitUntil("pair baseline",timeout:60) { session.serviceSessionIDForExport != nil && !session.busy && !session.scheduler.pending }
+        var recipe=ExportRecipe();recipe.format = .tiff;recipe.colorSpace = .sRGB
+        recipe.folder = .fixed(path:dir.appending(path:"out").path);recipe.subfolder="";recipe.outputSize = .longEdge(512)
+        func pixels(_ image:CGImage) throws -> Data {
+            let c=try XCTUnwrap(CGContext(data:nil,width:image.width,height:image.height,bitsPerComponent:16,bytesPerRow:image.width*8,space:image.colorSpace!,bitmapInfo:CGImageAlphaInfo.noneSkipLast.rawValue|CGBitmapInfo.byteOrder16Little.rawValue))
+            c.draw(image,in:CGRect(x:0,y:0,width:image.width,height:image.height))
+            let p=try XCTUnwrap(c.data).assumingMemoryBound(to:UInt16.self)
+            for i in stride(from:3,to:image.width*image.height*4,by:4) {p[i]=0}
+            return Data(bytes:p,count:image.width*image.height*8)
+        }
+        let neutralProof = await session.softProof(recipe:recipe)
+        let neutralBytes=try pixels(XCTUnwrap(neutralProof).image)
+        try session.applyAgentEdit(["params":["sceneCurve":["luma":["points":[[0,0],[0.5,0.55],[1,1]]]]],"adjustments":["vibrance":40,"channelMixer":["red":["green":20]]]])
+        let curve=session.params.sceneCurve
+        session.pairLayer = .left;XCTAssertEqual(session.params.sceneCurve,curve)
+        session.pairLayer = .right;XCTAssertEqual(session.params.sceneCurve,curve)
+        session.pairLayer = .film
+        // The shared curve is submitted after selection metadata has settled.
+        var p=session.params;p.sceneCurve.luma.points[1].y=0.56;session.params=p
+        try await waitUntil("pair curve",timeout:60) { session.scheduler.sent == session.params && !session.busy && !session.scheduler.pending }
+        let changedProof=await session.softProof(recipe:recipe)
+        let proof=try XCTUnwrap(changedProof)
+        XCTAssertNotEqual(try pixels(proof.image),neutralBytes)
+        let file=try await export(session,url,recipe)
+        let source=try XCTUnwrap(CGImageSourceCreateWithURL(file as CFURL,nil)),image=try XCTUnwrap(CGImageSourceCreateImageAtIndex(source,0,nil))
+        XCTAssertEqual(try pixels(image),try pixels(proof.image),"pair proof/export must use the same shared scene curve and colour tools")
+        await session.client.stop()
     }
 
     // MARK: - the agent's preview (RFC-026, camera fixture)

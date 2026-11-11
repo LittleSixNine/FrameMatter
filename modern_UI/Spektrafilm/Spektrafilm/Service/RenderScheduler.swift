@@ -96,7 +96,11 @@ final class RenderScheduler {
         defer { loop = nil }
         while !Task.isCancelled, gen == generation, let sid = sessionID {
             let (delta, layers) = wanted.delta(from: sent)
-            if delta.isEmpty { return }
+            if delta.isEmpty {
+                // Host-only metadata still needs acknowledgement; it must not leave preview/export pending.
+                sent = wanted
+                return
+            }
             let shoot = layers.contains(.shoot)
             try? await Task.sleep(for: .milliseconds(shoot ? 220 : 40))
             if Task.isCancelled || gen != generation {

@@ -67,6 +67,7 @@ KNOWN = {
 # exception exact: the test still fails on a rename, reordered row, changed
 # path/type/layer/default/live/range, or if the Python oracle later gains it.
 NATIVE_ONLY = {
+    "scene_curve": {"path": "camera.scene_curve", "type": "str", "layer": "shoot", "default": "", "live": False, "range": None},
     "extended_dynamic_range": {
         "path": "print_render.edr_enabled", "type": "bool", "layer": "print",
         "default": False, "live": False, "range": None,

@@ -62,7 +62,7 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
             // Pre-flash is gated by the Print Effects switch already.
             ["params.printEffects", "params.preflashExposure"]
         case .scenePlacement:
-            ["params.sceneLatitude", "placementNeedsFit"]
+            ["params.sceneLatitude", "params.sceneCurve", "placementNeedsFit"]
         case .rawInterpretation:
             ["decode.rawInterpretation"]
         case .perspective:
@@ -140,7 +140,7 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
         case .masks: L(.clipMasksHelp)
         case .rawInterpretation: L("Copy the RAW shadow interpretation to RAW targets only.", zh: "仅向 RAW 目标复制阴影解释版本。")
         case .perspective: L("Copy both perspective axes to single RAW targets only.", zh: "仅向单张 RAW 复制两个透视轴。")
-        case .postDev: L("Copy the complete post-print grade, including HSL.", zh: "复制完整的成片后调色，包括 HSL。")
+        case .postDev: L("Copy the complete post-print grade, including HSL, vibrance and channel mixing.", zh: "复制完整的成片后调色，包括 HSL、自然饱和度和通道混合。")
         }
     }
 }
@@ -218,6 +218,7 @@ struct SettingsClip: Equatable, Sendable {
             to.rolloff = from.rolloff
             to.maxLift = from.maxLift
             to.norm = from.norm
+            out.params.sceneCurve = s.params.sceneCurve
             out.params.sceneLatitude = to
             out.placementNeedsFit = to.highlightPullBack > 0 || to.shadowPullBack > 0
         }

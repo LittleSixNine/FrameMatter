@@ -98,7 +98,7 @@ final class ParamsTests: XCTestCase {
                                   "contrast_mask_scale", "contrast_mask_scheme",
                                   // RFC-023 (API-SPEC §12): the resolved curve,
                                   // never the pull-backs.
-                                  "scene_latitude_active", "scene_latitude_norm",
+                                  "scene_curve", "scene_latitude_active", "scene_latitude_norm",
                                   "scene_latitude_highlight_knee", "scene_latitude_highlight_room",
                                   "scene_latitude_shadow_knee", "scene_latitude_shadow_room",
                                   "scene_latitude_rolloff", "scene_latitude_max_lift",
