@@ -72,7 +72,7 @@ final class FilmEdgeSectionTests: XCTestCase {
     func testTheMenuOffersWhatTheEngineHas() {
         XCTAssertEqual(FilmEdgeFormat.allCases.filter(\.isAvailable).map(\.rawValue),
                        ["135", "135_half", "120_645", "120_6x6", "120_6x7", "120_6x8", "120_6x9",
-                        "135_xpan", "135_full_67", "120_6x12", "120_6x17"])
+                        "135_xpan", "135_full_67", "120_6x12", "120_6x17", "8_super", "16_super", "35_4perf", "65_5perf", "65_15perf"])
         XCTAssertEqual(FilmEdgeFormat.allCases.filter { $0.group == .panoramic }.count, 4)
         for f in FilmEdgeFormat.allCases where f.isAvailable {
             XCTAssertNotNil(f.filmCost(.strip), "\(f) has no measured cost")
@@ -94,7 +94,7 @@ final class FilmEdgeSectionTests: XCTestCase {
             let faces = DateBackFace.allCases.filter { f.draws($0) }
             switch f.group {
             case .film135, .film120: XCTAssertEqual(faces, [.lcd, .dots, .data], "\(f)")
-            case .panoramic: XCTAssertEqual(faces, [], "\(f) offers a date")
+            case .panoramic, .cine: XCTAssertEqual(faces, [], "\(f) offers a date")
             }
         }
     }

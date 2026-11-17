@@ -29,6 +29,7 @@
 #include <mutex>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "blob.hpp"
@@ -42,6 +43,8 @@ namespace spk {
 
 class SetupCache {
 public:
+    explicit SetupCache(std::string resources_dir = {}) : resources_dir_(std::move(resources_dir)) {}
+
     // The CAM16-UCS setup for one output colourspace, table included. Depends
     // on the colourspace and nothing else -- the knee and the lightness
     // compression are per-render constants the kernel reads separately.
@@ -60,6 +63,7 @@ public:
     Stats stats() const;
 
 private:
+    std::string resources_dir_;
     // Four is a user switching between a few stocks; each entry is 884 kB.
     // The Python service keeps exactly one, which makes an A/B between two
     // stocks pay the rebuild every time.

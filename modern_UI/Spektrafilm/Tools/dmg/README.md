@@ -13,4 +13,4 @@ DMG_TITLE_FONT_PATH=/path/to/your/licensed/font.woff \
 
 所用字体必须具有相应使用授权；字体文件不随源码或安装包分发。生成流程默认复用 `engine-grain.npy`；只在样本缺失时调用引擎重新采样。修改背景后应重新挂载最终 DMG，核验背景、图标位置和 Applications 链接。
 
-历史设计方案和本地确认记录仅保存在 `pravite/开发记录/modern_UI/Spektrafilm/Tools/dmg/README.md`，不随公开源码分发。
+历史设计方案和本地确认记录仅保存在 `pravite/04-开发与故障记录/开发记录/modern_UI/Spektrafilm/Tools/dmg/README.md`，不随公开源码分发。

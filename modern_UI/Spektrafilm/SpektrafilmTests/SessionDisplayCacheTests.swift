@@ -16,6 +16,8 @@ final class SessionDisplayCacheTests: XCTestCase {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let url = dir.appending(path: source.lastPathComponent)
         try FileManager.default.copyItem(at: source, to: url)
+        // These tests pin legacy metering/cache behavior; new-photo defaults have separate coverage.
+        try Sidecar().save(for: url)
         addTeardownBlock { try? FileManager.default.removeItem(at: dir) }
         return url
     }

@@ -153,6 +153,23 @@ final class RendererTests: XCTestCase {
         XCTAssertEqual(pixel(out, 15, 15)[0], 0.5, accuracy: 0.02, "bottom second must be grey")
     }
 
+    func testHoldOriginalFitsWideDecodeInsideSquarePrintAndRestoresPrint() throws {
+        let size = CGSize(width: 40, height: 40)
+        renderer.setLive(makeCard(), logical: CGSize(width: 4, height: 4))
+        renderer.viewport.resize(viewport: size)
+        renderer.viewport.fit()
+        let printViewport = renderer.viewport
+        renderer.original = makeCard()
+        renderer.showOriginal = true
+        let original = try XCTUnwrap(renderer.renderOffscreen(size: size, backingScale: 1))
+        XCTAssertNotEqual(pixel(original, 5, 2), [1, 0, 0], "the wide decode has a margin above it")
+        XCTAssertEqual(pixel(original, 5, 15), [1, 0, 0])
+        renderer.showOriginal = false
+        let print = try XCTUnwrap(renderer.renderOffscreen(size: size, backingScale: 1))
+        XCTAssertEqual(pixel(print, 5, 2), [1, 0, 0])
+        XCTAssertEqual(renderer.viewport, printViewport)
+    }
+
     func testOffscreenRenderShowsGroundOutsideImage() {
         let card = makeCard()
         renderer.setLive(card)

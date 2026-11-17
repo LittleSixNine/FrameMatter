@@ -1,6 +1,7 @@
 //  NavigatorSection.swift — the frame in miniature, Lightroom's navigator.
 //
-//  v4 (2026-09-26) heads the left rail with it. The picture is the frame's
+//  The upper-left canvas overlay appears when the photo exceeds the viewport.
+//  The picture is the frame's
 //  **print** (the thumbnail every develop refreshes, not the RAW), letter-
 //  boxed in a well a step darker than the plot ground. Past fit, the part of
 //  the frame on the canvas is framed and the rest is dimmed; a click or a drag
@@ -29,26 +30,19 @@ struct NavigatorSection: View {
     }
 
     var body: some View {
-        PanelSection(L(.sectionNavigator), key: "navigator") {
-            VStack(alignment: .leading, spacing: Theme.Metric.navigatorButtonGap) {
-                NavigatorWell(session: session, image: framed)
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: Theme.Metric.navigatorHeight, maxHeight: .infinity)
-                Button { session.zoomToFit() } label: {
-                    Text(L(.helpFit))
-                        .font(Theme.Font.value)
-                        .foregroundStyle(Theme.text)
-                        .padding(.horizontal, 12)
-                        .frame(height: Theme.Metric.controlHeight)
-                        .background(Theme.pill, in: Capsule())
-                        .contentShape(Capsule())
-                }
+        VStack(alignment: .leading, spacing: 4) {
+            NavigatorWell(session: session, image: framed)
+                .frame(width: 152, height: 94)
+            Button(L(.helpFit)) { session.zoomToFit() }
                 .buttonStyle(.plain)
-                .rowEnabled(session.selection != nil && !session.isFit && !session.zoomLocked)
+                .font(Theme.Font.caption)
                 .help(L(.helpFit) + " (⌘0)")
-            }
-            .padding(.horizontal, Theme.Metric.navigatorInset)
         }
+        .padding(5)
+        .background(Theme.card.opacity(0.94), in: RoundedRectangle(cornerRadius: 5))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(L(.sectionNavigator))
+        .accessibilityIdentifier("canvas.navigator")
         .task(id: session.selection) { await load() }
         .task(id: Framing(image: image.map(ObjectIdentifier.init),
                           geometry: session.tool == .crop ? .default : session.canvasGeometry)) {
@@ -62,7 +56,9 @@ struct NavigatorSection: View {
 
     private func load() async {
         guard let url = session.selection else { image = nil; return }
-        image = await ThumbnailCache.shared.thumbnail(for: url, maxPixel: 640)
+        let thumbnail = await ThumbnailCache.shared.thumbnail(for: url, maxPixel: 640)
+        guard !Task.isCancelled, session.selection == url else { return }
+        image = thumbnail
     }
 
     /// The thumbnail cropped, straightened, turned and flipped the way the
@@ -142,7 +138,7 @@ private struct NavigatorWell: View {
     /// where the frame is the whole picture and a box round it says nothing.
     private func visible(in pic: CGRect) -> CGRect? {
         let v = session.viewportSnapshot
-        guard !session.isFit, v.image.width > 0, v.image.height > 0, v.scale > 0 else { return nil }
+        guard v.imageOverflowsCanvas, v.image.width > 0, v.image.height > 0, v.scale > 0 else { return nil }
         let w = v.image.width * v.scale, h = v.image.height * v.scale
         let x0 = max(0, -v.offset.x / w), y0 = max(0, -v.offset.y / h)
         let x1 = min(1, (v.viewport.width - v.offset.x) / w), y1 = min(1, (v.viewport.height - v.offset.y) / h)

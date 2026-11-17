@@ -1,3 +1,6 @@
+#ifdef __APPLE__
+#include "cam16_bake.hpp"
+#endif
 #include "cam16.hpp"
 
 #include <array>
@@ -198,7 +201,7 @@ void cam16ucs_to_xyz(const Cam16Setup& st, const double jab[3], double xyz_out[3
 }
 
 bool cam16_setup_for(const Colour& colour, const std::string& cs, Cam16Setup& out,
-                     std::string& error) {
+                     std::string& error, const std::string& bake_directory) {
     const Colour::Colourspace* space = nullptr;
     if (!colour.colourspace(cs, space, error)) return false;
     const double white[2] = {space->whitepoint[0], space->whitepoint[1]};
@@ -222,6 +225,12 @@ bool cam16_setup_for(const Colour& colour, const std::string& cs, Cam16Setup& ou
     out.h_grid.resize(kCmaxNH);
     for (size_t i = 0; i < kCmaxNH; ++i)
         out.h_grid[i] = -kPi + 2.0 * kPi * double(i) / double(kCmaxNH);
+
+#ifdef __APPLE__
+    if (!bake_directory.empty() && cam16_bake::read(bake_directory.c_str(), cs, out)) return true;
+#else
+    (void)bake_directory;
+#endif
 
     out.c_max_table.assign(kCmaxNL * kCmaxNH, 0.0);
     for (size_t li = 0; li < kCmaxNL; ++li) {

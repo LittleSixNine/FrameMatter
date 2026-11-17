@@ -123,7 +123,7 @@ the identity is skipped.
 ```
 preprocess  decode_input · input_cast · geometry · crop_rescale · auto_exposure
 filming     expose.scene_latitude (RFC-023) · expose.upsample · expose.exposure
-            · expose.boost · expose.lens_blur · expose.overscan (RFC-032)
+            · expose.boost · expose.overscan (RFC-032) · expose.lens_blur
             · expose.halation · expose.log
             · develop.curves · develop.dir_couplers · develop.grain
 printing    expose.enlarger_spectral · expose.contrast_mask (RFC-024)
@@ -267,25 +267,30 @@ Localization/ English · 简体中文 (enum display names stay English; tests pi
 Diagnostics/  Log · JobLog · MemoryArena · MemorySampler · DiskCacheStore
 ```
 
-### 7.1 The window (v4, 2026-09-26)
+### 7.1 The editor window
 
-Three regions and a filmstrip. Which rail a control is on says what moving it
-costs.
+The toolbar and filmstrip span the window. The canvas shares the middle row with one
+resizable inspector and a permanent tab strip on the far right. Open a tab to
+switch in place, or press the active tab again to give its width back to the canvas.
+Each visited page retains its scroll position and its sections use their existing layout keys.
 
-| region | sections | runs in |
-|---|---|---|
-| **Film and Print** (left) | Navigator · Half-Frame Pair (on a pair) · Settings Clipboard · Film · Film Edge · Date Back · Print · Crop · Enlarger | the engine; Crop is geometry (below) — except under a film edge, where it is the negative (§7.11) |
-| **Parameters ▸ Pre-Dev** (right) | Latitude · Input / Camera · Film Format · Scene Placement | the engine, except Camera's white balance and lens correction, which are the **decode**. On a pair these are the picked frame's (§7.12) |
-| **Parameters ▸ Post-Dev** (right) | White Balance · Exposure · Curve · Color Balance | **Layer 2**, one draw |
-| canvas, top right | histogram · tier badges | reads, never writes |
-| filmstrip | one cell per frame | — |
+| tab | controls |
+|---|---|
+| Presets | Searchable thumbnail presets, categories and favorites, selectable save scope, updates and batch application |
+| Pre-Dev | Latitude, input / camera, perspective, film format, scene placement, scene curve, tone mask when enabled |
+| Film | Film and paper stocks, grain, enlarger |
+| Post-Dev | White balance, exposure, HSL, channel mixer, curves, colour balance, local masks when enabled |
+| Effects | Film edge, light leaks, date back, scratches, dust and aging textures |
+| Crop | Crop, straighten, rotate and flip for a single frame, or placement and pair controls on a half-frame pair |
+
+When the photo outgrows the canvas, its navigator appears in the upper left. Returning to fit or below fit fades it out.
 
 Costs, precisely:
 
 | change | costs |
 |---|---|
 | Camera Temperature · Tint · Lens Correction | a re-decode (`CIRAWFilter`), then a render |
-| anything else on Film and Print or Pre-Dev | a `params_delta` and a render |
+| other film, print and Pre-Dev parameters | a `params_delta` and a render |
 | Post-Dev | one draw |
 | Crop · Straighten · turns · flips | one draw — geometry sits **after** the engine; `Exporter` applies it to the returned print |
 | Original (⎵ held) | one draw — shows the decode instead of the print |
@@ -319,6 +324,33 @@ between a slider that tracks the mouse and one that does not.
 `shoot` or `print`. `ParamsTests.testWireNamesMatchTheServiceSchema` and
 `parity_schema.py` pin them: **a rename fails a test instead of silently
 rejecting every delta.**
+
+Post-Dev also offers eight cyclic hue ranges (red, orange, yellow, green,
+aqua, blue, purple, magenta), with hue, saturation and lightness in encoded
+ProPhoto RGB. The global HSL pass follows tone/colour balance and precedes
+curves; neutral settings bypass it exactly, grey is untouched, and values
+outside the working cube are preserved until the existing final clamp.
+Its independent uniform block also carries opt-in vibrance and a 3×3 channel
+mixer; it does not enlarge local masks. New neutral controls bypass exactly
+and keep the existing CB/HSL order. A separate pre-film Scene Curve follows
+Scene Placement on a ±8-stop log exposure axis, before spectral upsampling;
+it is not Layer 2. See API-SPEC §22 for the wire, pair scope and defaults. Large local-mask
+arrays bind a Metal buffer instead of exceeding `setBytes`' 4 KiB limit.
+Older sidecars load neutral HSL. An explicit Post-Dev clipboard group copies
+the complete grade and is off for a fresh clipboard selection. Shared CLI/MCP
+schema exposes all 24 values; undo/redo restores the grade without a film render.
+
+Single RAW perspective belongs to the decode (`decode.perspective`, vertical and
+horizontal, ±30 degrees). Both the scene-linear and original-display images use
+the same centred projective correction, preserving the source dimensions, before
+any film or film-edge crop. Existing post-print geometry is unchanged. A zero
+correction returns the original image object; older edits load zero. Decode and
+print identities include the correction. Cache-only encoding omits the field at zero, preserving historical display and
+ordinary-print keys byte for byte; sidecars and MCP still expose both default axes.
+Pairs explicitly zero perspective for composition/cache identity while retaining
+the source/hole's saved setting. An opt-in RAW Perspective clipboard group skips
+non-RAW/pair targets. CLI/MCP reject a non-neutral correction outside a decoded
+single RAW before applying any part of the patch.
 
 ### 7.3 Resolution: two states, not a ladder
 
@@ -372,6 +404,40 @@ RFC-018. One working space, exactly one conversion per destination.
   before grading starts. Choose ProPhoto in the recipe for a file you will
   grade further.
 
+**Versioned input and adaptive metering (2.0 branch).** A photograph without an
+existing sidecar starts with `adaptive` metering and
+`decode.rawInterpretation = shadowNeutralV1`. The latter sets only CIRAWFilter's
+shadow bias to zero, in both linear and display decodes; baseline, exposure and
+white balance keep their existing meanings. These are independent edits: switching
+meter does not change decode. Old sidecars and recipes missing the new decode
+field retain `legacy`; the low-level `FilmParams.default` stays unchanged for
+compatibility. Reset Film Settings selects the current product meter while
+preserving decode, as before.
+
+Adaptive uses the frozen relative highlight/primary-face equation and a maximum
+0.5 EV restoration toward balanced after measuring a valid face. Vision revision 3
+locates faces on the corresponding upright display decode at a 1600-pixel long
+edge, using four fixed overlapping tiles only after a successful empty full-frame
+request. Detection errors fail the develop; successful `[]` is legitimate no-face
+evidence. Face brightness, eligibility and primary selection remain in the engine.
+
+The host detects in the same source domain as its actual linear `EngineFrame`,
+after RAW perspective and any crop/turn/flip baked into a film/date frame.
+Ordinary post-print crop/rotation remains downstream. Adaptive pair meters use each independently framed source's linear/display
+recipes before pair placement, at the source's framed dimensions. The ordinary
+engine meter performs its own 1600-pixel downscale, independently of Vision's
+rounded display preview dimensions. Moving/scaling
+a frame in its hole reuses its measured EV, so exposure cannot pump; source
+white balance, input version or geometry changes invalidate it. The legacy
+meters retain their composed-hole 1024 input and cache keys. Embedded previews
+are never used as face evidence. Retaining the canonical CI recipes avoids a
+second filter construction, but their first render can still trigger demosaicing. Derived boxes are cached only for a
+decoded lifetime/framing, passed atomically through the face-aware open C ABI,
+and shared by live/full/export renders of that engine session. They are absent
+from sidecars, undo snapshots, clipboard and Agent edits. Adaptive finished-print
+and pair-meter identities include the detector/equation version; legacy decode
+cache configuration omits the new field and retains its historical bytes.
+
 ### 7.6 State: what lives where
 
 | what | where | survives |
@@ -381,6 +447,15 @@ RFC-018. One working space, exactly one conversion per destination.
 | decodes and finished prints | the disk cache (§4) | until evicted; deleting it costs speed, never work |
 | the session log | `~/Library/Logs/SpektraLab/` (RFC-016), settable | its retention settings |
 | an export's job log | `<file>.joblog.jsonl` beside it — **opt-in** since 2026-09-26 (Settings ▸ Diagnostics) | — |
+
+Ordinary single-frame finished prints use the `single-print-3` namespace:
+source file identity, effective decode (as-shot readout numbers excluded),
+Layer 1, engine version, tier and live edge identify the pre-Layer-2 RGBA16
+pixels. RAM restoration and disk restoration check the same key; async renders
+keep the key captured when issued. Ambiguous older prints go cold. Pairs,
+engine-cropped film/date edges, no-film, DI and scan-film bypass these ordinary
+cross-frame/persistent print shortcuts until their complete producer inputs are
+represented; their existing current-session full-render paths remain separate.
 
 Nothing is written into the photo's folder except exports. A develop writes
 the sidecar and changes the exposure meter's input, so a test opens a **copy**
@@ -408,6 +483,15 @@ surface applies the geometry itself.
   (`ExportRecipe`). The export page proves the file at its own resolution
   before it is written (soft proof, §7.5 row 7c) — measured identical to the
   file, pixel for pixel.
+- **CAM16 cold setup can read qualified float64 artifacts** from that engine's
+  resource root on macOS. Version, constants, matrices, grids and checksum must
+  match; otherwise the unchanged serial computation runs. Six tracked tables
+  add about 2.2 MB, need no runtime Python and do not change the knee or hot
+  in-memory setup cache. Linux/Vulkan retains its original computation.
+- **TIFF compression is per recipe.** Ordinary 16-bit TIFF accepts LZW (5,
+  including missing fields in older recipes) or uncompressed (1). Both use
+  the same pixels, metadata, preview-page and atomic writer. DI stays on its
+  existing dedicated route. CLI/MCP use the saved recipe by name.
 - **Batch is a loop, one frame at a time** (`ExportPage.run`): select →
   `ensureDeveloped` → `Exporter.export` → next. No queue, no parallelism, no
   database: one full render's peak, not N.
@@ -480,6 +564,16 @@ inside a field. `TypingKeyGuard` is a local key monitor that sends typing keys
   so it is not put over a film canvas a develop is about to replace
   (`Session.holdsFilmCanvas`). Without a film edge the new decode is shown at
   once, as before.
+- **Independent lettering halo** is an explicit Film Edge switch, off for
+  missing fields and new photos. It separates only the factory mark exposure
+  from camera lens blur and scene halo controls; dates remain in the scene.
+  Both exposures share development, DIR and grain. See API-SPEC §13 for the
+  upstream 2.2.0 look constant and retained striped/Vulkan rejection. Only the
+  new boolean is copied with Film Effects; seeds, format and framing stay local.
+  The temporary RGB float32 plane lives from overscan to `film_blurs` and is
+  absent when disabled or no factory marks rasterise. Its retained storage is
+  12 bytes per canvas pixel (plus transient halation working images), released
+  before development; it is never added to a long-lived cache/checkpoint.
 - **The print stamp carries the framing** (`Session.printStamp`), because the
   same parameters with another framing is another picture.
 
@@ -555,7 +649,7 @@ orientation, resource checks and local-only provenance.
   outside are opened (one file is "edit this"); the strip's own thumbnail is
   ignored; a file of the open folder goes on the canvas with the folder still
   around it.
-- **Select all and Sync** (⌘A, Settings Clipboard ▸ Sync to N) write the ticked
+- **Select all and Sync** (⌘A, Presets ▸ Copy and Sync Adjustments ▸ Sync to N) write the ticked
   groups from the current frame to the picked set through the clipboard's own
   rules; there is no batch undo.
 

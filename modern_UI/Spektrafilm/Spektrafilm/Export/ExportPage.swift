@@ -948,6 +948,13 @@ struct ExportPage: View {
                                     metrics: Self.sliderMetrics,
                                     onCommit: { store.save() })
                     }
+                    if recipe.wrappedValue.format == .tiff {
+                        PillMenu(label: L("Compression", zh: "压缩"), options: TIFFCompression.allCases,
+                                 title: { $0.label }, selection: recipe.tiffCompression,
+                                 labelWidth: ExportPage.labelColumn, font: F.label)
+                            .help(L("Uncompressed skips compression; files may be larger.",
+                                    zh: "无压缩可减少编码等待，文件可能更大。"))
+                    }
                     if recipe.wrappedValue.format.carriesPreviewPage { previewRow }
                     sizeRows
                     openWithRow

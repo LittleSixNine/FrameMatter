@@ -45,7 +45,18 @@ import Metal
 import UniformTypeIdentifiers
 
 /// A class-backed identity for ownership tests and debug lifetime checks.
-final class DecodeLifetime: @unchecked Sendable {}
+final class DecodeLifetime: @unchecked Sendable {
+    private let lock = NSLock()
+    private var faces: [String: String] = [:]
+    func faceEvidence(display: CIImage, key: String) throws -> String {
+        try lock.withLock {
+            if let cached = faces[key] { return cached }
+            let value = try FrameFaceDetector.evidence(display: display)
+            faces[key] = value
+            return value
+        }
+    }
+}
 
 struct DecodedImage: @unchecked Sendable {
     /// What the engine develops: scene-linear, Apple's tone rendering off.
@@ -54,6 +65,8 @@ struct DecodedImage: @unchecked Sendable {
     /// What the canvas shows as the original: Apple's default rendering of the
     /// same frame, same geometry. For a flat file the two are one image.
     let display: CIImage
+    let faceDisplay: CIImage
+    let pairMeterInputs: [HalfFramePair.Side: PairMeterInput]
     let pixelSize: CGSize
     let isRAW: Bool
     /// Whether this file carries the lens correction Core Image would apply —
@@ -77,9 +90,12 @@ struct DecodedImage: @unchecked Sendable {
          lensCorrectionSupported: Bool = false,
          sourceURL: URL, sourceEXIF: [CFString: Any]? = nil,
          asShotTemperature: Double?, asShotTint: Double?,
-         lifetime: DecodeLifetime = DecodeLifetime()) {
+         lifetime: DecodeLifetime = DecodeLifetime(), faceDisplay: CIImage? = nil,
+         pairMeterInputs: [HalfFramePair.Side: PairMeterInput] = [:]) {
         self.linear = linear
         self.display = display
+        self.faceDisplay = faceDisplay ?? display
+        self.pairMeterInputs = pairMeterInputs
         self.pixelSize = pixelSize
         self.isRAW = isRAW
         self.lensCorrectionSupported = lensCorrectionSupported
@@ -108,6 +124,14 @@ struct EngineFrame: @unchecked Sendable {
     let width: Int
     let height: Int
     let channels: Int
+    var facesJSON: String? = nil
+}
+
+/// Canonical source framing, before a pair's placement; recipes, not an additional RAW filter.
+struct PairMeterInput: @unchecked Sendable {
+    let linear: CIImage
+    let display: CIImage
+    let lifetime: DecodeLifetime
 }
 
 enum ImageDecoder {
@@ -226,6 +250,7 @@ enum ImageDecoder {
         // why the user's switch is read **here**, once, and not per look.
         filter.isLensCorrectionEnabled = settings.lensCorrection && filter.isLensCorrectionSupported
         filter.isDraftModeEnabled = false
+        if settings.rawInterpretation == .shadowNeutralV1 { filter.shadowBias = 0 }
         if look == .linear {
             // Apple's tone rendering, off: the film model wants sensor response.
             filter.boostAmount = 0
@@ -259,7 +284,8 @@ enum ImageDecoder {
         let asShotTint = displayResult.asShotTint
         try checkpoint()
         guard let display = displayResult.filter.outputImage else { throw Failure.unsupported(url) }
-        return DecodedImage(linear: linear, display: display, pixelSize: linear.extent.size,
+        return DecodedImage(linear: try settings.perspective.applying(to: linear),
+                            display: try settings.perspective.applying(to: display), pixelSize: linear.extent.size,
                             isRAW: true,
                             lensCorrectionSupported: displayResult.filter.isLensCorrectionSupported,
                             sourceURL: url,
@@ -329,7 +355,7 @@ enum ImageDecoder {
         try engineFrame(from: decoded.linear, device: device)
     }
 
-    static func engineFrame(from image: CIImage, device: MTLDevice) throws -> EngineFrame {
+    static func engineFrame(from image: CIImage, device: MTLDevice, facesJSON: String? = nil) throws -> EngineFrame {
         guard let space = linearProPhoto else { throw Failure.noColorSpace }
         // Checked before the `Int` conversion, which traps on infinity.
         guard !image.extent.isInfinite, !image.extent.isEmpty else { throw Failure.emptyFrame }
@@ -350,7 +376,7 @@ enum ImageDecoder {
                            bounds: CGRect(x: 0, y: 0, width: width, height: height),
                            format: .RGBAf, colorSpace: space)
         }
-        return EngineFrame(buffer: buffer, width: width, height: height, channels: 4)
+        return EngineFrame(buffer: buffer, width: width, height: height, channels: 4, facesJSON: facesJSON)
     }
 
     // MARK: display preview

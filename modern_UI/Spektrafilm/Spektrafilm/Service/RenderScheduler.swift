@@ -24,7 +24,8 @@ final class RenderScheduler {
     private var loop: Task<Void, Never>?
     private var generation = 0
     private var sessionID: String?
-    var onResult: (@MainActor (RenderOutcome, Int) -> Void)?
+    var cacheKeyForRender: (@MainActor (FilmParams) -> CacheKey?)?
+    var onResult: (@MainActor (RenderOutcome, Int, CacheKey?) -> Void)?
     /// The error itself, not a string. It used to hand over `"\(error)"`,
     /// which meant the only place that could rewrite the engine's
     /// developer-facing text for a user was too late to know what the failure
@@ -95,7 +96,11 @@ final class RenderScheduler {
         defer { loop = nil }
         while !Task.isCancelled, gen == generation, let sid = sessionID {
             let (delta, layers) = wanted.delta(from: sent)
-            if delta.isEmpty { return }
+            if delta.isEmpty {
+                // Host-only metadata still needs acknowledgement; it must not leave preview/export pending.
+                sent = wanted
+                return
+            }
             let shoot = layers.contains(.shoot)
             try? await Task.sleep(for: .milliseconds(shoot ? 220 : 40))
             if Task.isCancelled || gen != generation {
@@ -119,6 +124,7 @@ final class RenderScheduler {
             do {
                 var req = RenderRequest(sessionID: sid, paramsDelta: d2)
                 let r: RenderOutcome
+                let cacheKey = cacheKeyForRender?(target)
                 if l2.contains(.shoot) {
                     req.layer = "shoot"
                     r = try await client.render(.previewRender, req)
@@ -127,7 +133,7 @@ final class RenderScheduler {
                 }
                 if gen == generation {
                     sent = target
-                    onResult?(r, gen)
+                    onResult?(r, gen, cacheKey)
                 } else {
                     noteSuperseded(r, issuedGeneration: gen, layers: l2)
                 }

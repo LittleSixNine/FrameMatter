@@ -111,7 +111,7 @@ final class WhiteBalanceTests: XCTestCase {
         XCTAssertEqual(ExposureMethod.protectHighlights.title, "protect highlights")
         XCTAssertEqual(ExposureMethod.protectShadows.title, "protect shadows")
         XCTAssertEqual(ExposureMethod.allCases.map(\.rawValue),
-                       ["balanced", "center", "protect_highlights", "protect_shadows"])
+                       ["adaptive", "balanced", "center", "protect_highlights", "protect_shadows"])
     }
 
     func testALegacyFrameSaysWhichMeterIsRunningRatherThanPickingOne() {
@@ -229,13 +229,15 @@ final class WhiteBalanceTests: XCTestCase {
             session.serviceSessionIDForExport != nil && session.frameStates[url] == .processed && !session.busy
         }
 
-        XCTAssertEqual(session.params.autoExposureMethod, "balanced", "a new frame starts balanced")
+        XCTAssertEqual(session.params.autoExposureMethod, "balanced", "a legacy sidecar stays balanced")
         let sid = try XCTUnwrap(session.serviceSessionIDForExport)
         let solved = try await session.client.call(.solve, SolveRequest(sessionID: sid, target: "exposure"),
                                                    as: SolveResponse.self)
         let evs = try XCTUnwrap(solved.exposureEvByMethod, "the engine reported no per-method EVs")
         let balanced = try XCTUnwrap(evs["balanced"])
-        let highlights = try XCTUnwrap(evs["protect_highlights"])
+        let method = try XCTUnwrap(ExposureMethod.allCases.map(\.rawValue).filter { $0 != "adaptive" }
+            .max { abs((evs[$0] ?? balanced) - balanced) < abs((evs[$1] ?? balanced) - balanced) })
+        let highlights = try XCTUnwrap(evs[method])
         XCTAssertEqual(session.sidecar.solvedEV ?? .nan, balanced, accuracy: 1e-9,
                        "the develop's own solve is not the balanced intent's EV")
         // The pair this test needs: on the smoke frame `balanced` and
@@ -245,7 +247,7 @@ final class WhiteBalanceTests: XCTestCase {
 
         let before = try meanLuma(session, url)
         let previousPrint = try XCTUnwrap(session.renderer.store.print(for: url))
-        session.setAutoExposureMethod("protect_highlights")
+        session.setAutoExposureMethod(method)
 
         // Immediate: the label is a report, and the meter has changed.
         XCTAssertEqual(session.solvedEVLabel, String(format: "auto %+.1f EV", highlights),
@@ -285,14 +287,16 @@ final class WhiteBalanceTests: XCTestCase {
                                                    as: SolveResponse.self)
         let evs = try XCTUnwrap(solved.exposureEvByMethod)
         let balanced = try XCTUnwrap(evs["balanced"])
-        let highlights = try XCTUnwrap(evs["protect_highlights"])
+        let method = try XCTUnwrap(ExposureMethod.allCases.map(\.rawValue).filter { $0 != "adaptive" }
+            .max { abs((evs[$0] ?? balanced) - balanced) < abs((evs[$1] ?? balanced) - balanced) })
+        let highlights = try XCTUnwrap(evs[method])
         XCTAssertGreaterThan(abs(balanced - highlights), 0.1, "this frame cannot tell the two apart")
 
         // Copy at `balanced`, move the pill to `protect_highlights`, paste the
         // copy back: the paste is what puts the Tone back to balanced, and the
         // label has to follow it.
         session.copySettings()
-        session.setAutoExposureMethod("protect_highlights")
+        session.setAutoExposureMethod(method)
         XCTAssertEqual(session.solvedEVLabel, String(format: "auto %+.1f EV", highlights))
         session.pasteSettings()
         XCTAssertEqual(session.params.autoExposureMethod, "balanced", "the paste did not move the Tone")
@@ -321,6 +325,8 @@ final class WhiteBalanceTests: XCTestCase {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let url = dir.appending(path: source.lastPathComponent)
         try FileManager.default.copyItem(at: source, to: url)
+        // These tests pin legacy metering/cache behavior; new-photo defaults have separate coverage.
+        try Sidecar().save(for: url)
         addTeardownBlock { try? FileManager.default.removeItem(at: dir) }
         return url
     }

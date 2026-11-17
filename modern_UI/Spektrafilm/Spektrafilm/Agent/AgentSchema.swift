@@ -144,10 +144,24 @@ enum AgentSchema {
         // engine is listed and cannot be written.
         let resolved = "Resolved by the app from the frame, its EXIF and its stock."
         f += [
+            .init("params.filmEdge.independentLetteringHalation", .bool, "Opt-in independent factory-lettering exposure and halation. Off preserves the original optical path. Dates remain in the scene path."),
+            .init("params.diffusion.active", .bool, "Enable the camera diffusion filter."),
+            .init("params.diffusion.family", .choice(["black_pro_mist", "pro_mist", "glimmerglass", "cinebloom"]), "Diffusion filter family."),
+            .init("params.diffusion.strength", .number(0...1), "Diffusion strength."),
+            .init("params.diffusion.scale", .number(0.25...4), "Diffusion spatial scale."),
+            .init("params.doubleExposure.path", .choice([]), "The second photo selected in the file chooser.", readOnly: "Choose the second photograph in the Double Exposure panel."),
+            .init("params.doubleExposure.active", .bool, "Enable the second linear exposure."),
+            .init("params.doubleExposure.balance", .number(0.1...0.9), "Second exposure share of the combined light."),
+            .init("params.doubleExposure.scale", .number(1...4), "Second exposure scale."),
+            .init("params.doubleExposure.x", .number(-1...1), "Horizontal placement."),
+            .init("params.doubleExposure.y", .number(-1...1), "Vertical placement."),
+            .init("params.doubleExposure.turns", .integer(0...3), "Clockwise quarter turns."),
+            .init("params.doubleExposure.flipped", .bool, "Horizontal reflection."),
             .init("params.filmEdge.active", .bool, "Film Edge: the film around the frame. On, the crop is held at the gate's aspect and the result is the film canvas, larger than the picture."),
             .init("params.filmEdge.format", .choice(FilmEdgeFormat.allCases.filter(\.isAvailable).map(\.rawValue)), "The film and its gate."),
             .init("params.filmEdge.view", .choice(FilmEdgeView.allCases.map(\.rawValue)), "The whole film width, or a filed carrier's sliver of rebate."),
             .init("params.filmEdge.gate", .choice(FilmEdgeGate.allCases.map(\.rawValue)), "The gate's shape family; auto lets the body pick."),
+            .init("params.filmEdge.slitFilmPerforations", .bool, "KS perforations on 120 film cut from 65 mm camera stock."),
             .init("params.filmEdge.holes", .choice(FilmEdgeHoles.allCases.map(\.rawValue)), "What shows through the perforations."),
             .init("params.filmEdge.cameraSeed", .integer(FilmEdgeSettings.seedRange), "The camera body: gate, margins, holes, fog."),
             .init("params.filmEdge.frameSeed", .integer(FilmEdgeSettings.seedRange), "This frame's advance and scan: weave, leaks."),
@@ -265,7 +279,14 @@ enum AgentSchema {
             .init("adjustments.vignette.amount", .number(-100...100), "Vignetting; negative darkens the corners."),
             .init("adjustments.vignette.midpoint", .number(0...100), "Where the vignette starts."),
         ]
+        f.append(.init("adjustments.vibrance", .number(-100...100), "Post-print vibrance; protects already saturated colours."))
+        for output in ["red", "green", "blue"] {
+            for input in ["red", "green", "blue"] {
+                f.append(.init("adjustments.channelMixer.\(output).\(input)", .number(-100...100), "Channel mixer offset from identity, percent."))
+            }
+        }
         for c in ["rgb", "luma", "red", "green", "blue"] {
+            f.append(.init("params.sceneCurve.\(c).points", .points, "Pre-film scene curve: log2 exposure −8…8 stops, after Scene Placement; coordinates include Film Exposure compensation."))
             f.append(.init("adjustments.curves.\(c).points", .points,
                            "The \(c) curve: [[x, y], …] from x = 0 to x = 1."))
         }
@@ -274,6 +295,14 @@ enum AgentSchema {
                 .init("adjustments.colorBalance.\(z).hue", .number(0...360), "Color Balance \(z): hue, degrees."),
                 .init("adjustments.colorBalance.\(z).saturation", .number(0...1), "Color Balance \(z): amount."),
                 .init("adjustments.colorBalance.\(z).luminance", .number(-1...1), "Color Balance \(z): lightness."),
+            ]
+        }
+
+        for band in HSLAdjustments.names {
+            f += [
+                .init("adjustments.hsl.\(band).hue", .number(-30...30), "Post-print ProPhoto HSL: hue shift in degrees."),
+                .init("adjustments.hsl.\(band).saturation", .number(-100...100), "Post-print HSL saturation, percent."),
+                .init("adjustments.hsl.\(band).lightness", .number(-100...100), "Post-print HSL lightness, percent."),
             ]
         }
 
@@ -296,6 +325,10 @@ enum AgentSchema {
 
         // --- decode: the RAW development before the film ---
         f += [
+            .init("decode.perspective.vertical", .number(-30...30), "RAW-only perspective before film: vertical, degrees."),
+            .init("decode.perspective.horizontal", .number(-30...30), "RAW-only perspective before film: horizontal, degrees."),
+            .init("decode.rawInterpretation", .choice(DecodeSettings.RAWInterpretation.allCases.map(\.rawValue)),
+                  "Versioned RAW shadow interpretation; independent of metering. Legacy preserves the original decoder behavior."),
             .init("decode.whiteBalance", .choice(DecodeSettings.WhiteBalance.allCases.map(\.rawValue)),
                   "Decode white balance. A preset sets temperature itself."),
             .init("decode.temperature", .number(2000...12000), "Decode Kelvin (makes whiteBalance Custom)."),
@@ -360,7 +393,7 @@ struct AgentDocument: Equatable {
         get throws {
             [
                 "params": try .from(params),
-                "adjustments": try .from(adjustments),
+                "adjustments": try JSONValue.from(adjustments).merged(with: ["vibrance": .number(adjustments.vibrance), "channelMixer": .from(adjustments.channelMixer)]),
                 "geometry": try .from(geometry),
                 "decode": try .from(decode),
             ]
@@ -476,6 +509,9 @@ extension Session {
         }
         if positive, touched.contains("params.scanFilm"), !want.params.scanFilm {
             throw AgentError.refused("\(want.params.filmStock) is a slide film; scanFilm must stay true.")
+        }
+        if has("decode.perspective"), !canCorrectPerspective, !want.decode.perspective.isNeutral {
+            throw AgentError.refused("Perspective correction requires a single decoded RAW frame.")
         }
         if has("decode.lensCorrection"), want.decode.lensCorrection, !lensCorrectionEnabled {
             throw AgentError.refused(lensCorrectionReason)

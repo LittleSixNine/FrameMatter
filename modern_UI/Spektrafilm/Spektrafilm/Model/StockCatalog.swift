@@ -37,6 +37,7 @@ struct Stock: Codable, Identifiable, Hashable, Sendable {
     /// on (answer D3): the menu greys the rest. A stock with no record is
     /// not ruled out of anything — an unknown is not a no.
     func isMade(in format: FilmEdgeFormat) -> Bool {
+        if format.group == .cine { return true }
         guard let formats else { return true }
         // 35 mm motion stock is the same film as 135, loaded into cassettes
         // by hand or by a respooler, so a cine negative is not ruled out of
@@ -56,7 +57,12 @@ struct Stock: Codable, Identifiable, Hashable, Sendable {
     var isPositive: Bool { type == "positive" }
     var brand: String { name.split(separator: " ").first.map(String.init) ?? "" }
     var coverURL: URL? {
-        cover.flatMap { StockCatalog.bundle.url(forResource: $0, withExtension: nil, subdirectory: "Resources/FilmCovers") }
+        if isFilm {
+            return FilmArtwork.selected(for: id,
+                choices: UserDefaults.standard.string(forKey: "filmArtwork.choices") ?? "{}",
+                alternate: UserDefaults.standard.bool(forKey: "filmArtwork.alternate"))?.url
+        }
+        return cover.flatMap { StockCatalog.bundle.url(forResource: $0, withExtension: nil, subdirectory: "Resources/FilmCovers") }
     }
 }
 

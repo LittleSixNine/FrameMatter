@@ -9,6 +9,11 @@ import CryptoKit
 import Foundation
 
 struct DecodeSettings: Codable, Equatable, Hashable, Sendable {
+    enum RAWInterpretation: String, Codable, CaseIterable, Sendable {
+        case legacy, shadowNeutralV1
+    }
+    var rawInterpretation: RAWInterpretation = .legacy
+
     enum WhiteBalance: String, Codable, CaseIterable, Sendable {
         case asShot = "As Shot", daylight = "Daylight", cloudy = "Cloudy", shade = "Shade",
              tungsten = "Tungsten", fluorescent = "Fluorescent", custom = "Custom"
@@ -44,6 +49,19 @@ struct DecodeSettings: Codable, Equatable, Hashable, Sendable {
     /// straighten made before it was turned on would no longer describe the
     /// same rectangle.
     var lensCorrection: Bool = false
+    var perspective = RawPerspective()
+
+    init() {}
+    private enum CodingKeys: String, CodingKey { case whiteBalance, temperature, tint, lensCorrection, perspective, rawInterpretation }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        rawInterpretation = try c.decodeIfPresent(RAWInterpretation.self, forKey: .rawInterpretation) ?? .legacy
+        whiteBalance = try c.decode(WhiteBalance.self, forKey: .whiteBalance)
+        temperature = try c.decode(Double.self, forKey: .temperature)
+        tint = try c.decode(Double.self, forKey: .tint)
+        lensCorrection = try c.decode(Bool.self, forKey: .lensCorrection)
+        perspective = try c.decodeIfPresent(RawPerspective.self, forKey: .perspective) ?? RawPerspective()
+    }
 }
 
 /// The two "As Shot" checkboxes beside the white-balance sliders, as a value.
@@ -117,6 +135,13 @@ struct CropRect: Codable, Equatable, Sendable {
 }
 
 struct Sidecar: Codable, Equatable, Sendable {
+    /// Only files with no existing sidecar adopt current product defaults.
+    static var newPhoto: Sidecar {
+        var value = Sidecar()
+        value.decode.rawInterpretation = .shadowNeutralV1
+        value.params = .newPhoto
+        return value
+    }
     var schemaVersion = 3
     var decoder = "coreimage"
     var decode = DecodeSettings()

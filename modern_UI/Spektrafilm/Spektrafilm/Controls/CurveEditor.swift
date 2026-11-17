@@ -14,17 +14,20 @@ import SwiftUI
 
 struct CurveEditor: View {
     @Bindable var session: Session
+    var scene: Bool = false
     @State private var channel: CurveChannel = .rgb
     @State private var dragging: Int? = nil
     @State private var hover: CGPoint? = nil
 
     private var curve: Curve {
-        get { session.adjustments.curves[channel] }
+        get { scene ? session.params.sceneCurve[channel] : session.adjustments.curves[channel] }
     }
     private func setCurve(_ c: Curve) {
-        var a = session.adjustments
-        a.curves[channel] = c
-        session.adjustments = a
+        if scene {
+            var p = session.params; p.sceneCurve[channel] = c; session.params = p
+        } else {
+            var a = session.adjustments; a.curves[channel] = c; session.adjustments = a
+        }
     }
 
     var body: some View {
@@ -62,7 +65,7 @@ struct CurveEditor: View {
         GeometryReader { geo in
             let size = geo.size
             ZStack {
-                HistogramPlot(bins: session.histogram, channels: [channel], showGrid: true, lineWidth: 1)
+                if !scene { HistogramPlot(bins: session.histogram, channels: [channel], showGrid: true, lineWidth: 1) }
                 Canvas { ctx, size in
                     // Diagonal reference.
                     var d = Path(); d.move(to: CGPoint(x: 0, y: size.height)); d.addLine(to: CGPoint(x: size.width, y: 0))
@@ -246,15 +249,15 @@ struct CurveEditor: View {
 
     private var readout: some View {
         HStack(spacing: 16) {
-            let input: Double? = hover.map { Double($0.x) } ?? session.hoverValue.map { Double(0.2126 * $0.x + 0.7152 * $0.y + 0.0722 * $0.z) }
+            let input: Double? = hover.map { Double($0.x) } ?? (scene ? nil : session.hoverValue.map { Double(0.2126 * $0.x + 0.7152 * $0.y + 0.0722 * $0.z) })
             // Label and number are joined here rather than in the table: the
             // spec's rule for a dynamic value is a placeholder or system
             // formatting, never a Chinese sentence assembled from fragments.
             // `String`, so `Text` does not treat it as a localized key.
-            Text(readoutLine(L(.curveInput), input.map { String(format: "%.0f", $0 * 255) }))
-            Text(readoutLine(L(.curveOutput), input.map { String(format: "%.0f", curve.evaluate(CGFloat($0)) * 255) }))
+            Text(readoutLine(L(.curveInput), input.map { scene ? String(format: "%+.1f EV", $0 * 16 - 8) : String(format: "%.0f", $0 * 255) }))
+            Text(readoutLine(L(.curveOutput), input.map { scene ? String(format: "%+.1f EV", curve.evaluate(CGFloat($0)) * 16 - 8) : String(format: "%.0f", curve.evaluate(CGFloat($0)) * 255) }))
             Spacer()
-            Button { session.curvePickerActive.toggle() } label: {
+            if !scene { Button { session.curvePickerActive.toggle() } label: {
                 Image(systemName: "eyedropper")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(session.curvePickerActive ? Theme.accent : Theme.text)
@@ -262,6 +265,7 @@ struct CurveEditor: View {
             }
             .buttonStyle(.plain)
             .help(L("Pick a point from the image", zh: "从图像中取点"))
+            }
         }
         .font(Theme.Font.value)
         .foregroundStyle(Theme.secondaryText)

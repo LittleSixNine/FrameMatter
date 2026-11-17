@@ -135,7 +135,7 @@ final class FilmEdgeSessionTests: XCTestCase {
         let url = try copied("tests/Test_image/_smoke_1mp.tif")
         let session = try await developedSession(url)
         let measured = await session.measureLatitude()
-        let bare = try XCTUnwrap(measured)
+        let bare = try XCTUnwrap(measured, session.latitude.failure ?? session.status)
         let before = session.renderer.live
         edit(session) { $0.filmEdge.active = true }
         try await waitForPrint(session, after: before) { session.engineFraming != nil }
@@ -247,6 +247,8 @@ final class FilmEdgeSessionTests: XCTestCase {
     func testTheDateAloneFollowsTheCropTheTurnAndTheFlip() async throws {
         let url = try copied("tests/Test_image/A7m3/DSC03710.ARW")
         let session = try await developedSession(url)
+        // Isolate date geometry: stochastic background pixels can widen the difference box.
+        edit(session) { $0.glareActive = false; $0.grainActive = false }
 
         // The date's place on the canvas: where a print with it differs from
         // one whose date back is on with nothing to print (the same frame in

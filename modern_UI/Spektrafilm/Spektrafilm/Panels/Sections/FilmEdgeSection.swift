@@ -44,8 +44,10 @@ struct FilmEdgeSection: View {
                     formatRow
                     if edge.format == .f135Half { enterPairRow }
                 }
-                PillSwitchRow(label: L(.edgeView), options: FilmEdgeView.allCases,
+                Group {
+                    PillSwitchRow(label: L(.edgeView), options: FilmEdgeView.allCases,
                               selection: bind(\.view), title: { L($0.key) })
+                }
                 if session.pair == nil {
                 framingRow
                 // The held crop's straighten, scrubbed the way Crop's is: the
@@ -64,7 +66,11 @@ struct FilmEdgeSection: View {
 
                 RailSubhead(L(.edgeGateAndScan))
                 RailSubgroup {
-                    if edge.format != .f135FullWidth {
+                    if edge.format.gauge == "120" {
+                        ToggleRow(label: L("65 mm perforations", zh: "65 mm 裁切齿孔"), isOn: bind(\.slitFilmPerforations),
+                                  help: L("120 film slit from perforated 65 mm stock", zh: "模拟从 65 mm 电影胶片裁切的 120 胶卷"))
+                    }
+                    if edge.format != .f135FullWidth && edge.format.group != .cine {
                         PillMenu(label: L(.edgeGate), options: FilmEdgeGate.allCases, title: { L($0.key) },
                                  selection: bind(\.gate))
                     }
@@ -72,17 +78,25 @@ struct FilmEdgeSection: View {
                                   selection: bind(\.holes), title: { L($0.key) })
                     bodyRow
                     advanceRow
-                    // The frame's number on the edge print. 0 reads "Auto": the
-                    // seed's draw, what a frame from before the field had.
-                    ScrubSlider(label: L(.edgeFrameNumber),
-                                value: Binding(get: { Double(edge.frameNumber) },
-                                               set: { set(\.frameNumber, Int($0.rounded())) }),
-                                range: Double(FilmEdgeSettings.frameNumberRange.lowerBound)...Double(FilmEdgeSettings.frameNumberRange.upperBound),
-                                zero: 0, snap: 1,
-                                format: { $0 < 0.5 ? L(.edgeFrameNumberAuto) : String(Int($0.rounded())) },
-                                parse: { Int($0).map(Double.init) ?? ($0.isEmpty ? 0 : nil) })
+                    if edge.hasFactoryMarkings {
+                        // The frame's number on the edge print. 0 reads "Auto": the
+                        // seed's draw, what a frame from before the field had.
+                        ScrubSlider(label: L(.edgeFrameNumber),
+                                    value: Binding(get: { Double(edge.frameNumber) },
+                                                   set: { set(\.frameNumber, Int($0.rounded())) }),
+                                    range: Double(FilmEdgeSettings.frameNumberRange.lowerBound)...Double(FilmEdgeSettings.frameNumberRange.upperBound),
+                                    zero: 0, snap: 1,
+                                    format: { $0 < 0.5 ? L(.edgeFrameNumberAuto) : String(Int($0.rounded())) },
+                                    parse: { Int($0).map(Double.init) ?? ($0.isEmpty ? 0 : nil) })
+                    }
                 }
 
+                if edge.hasFactoryMarkings {
+                    ToggleRow(label: L("Independent lettering halo", zh: "独立片边字光晕"),
+                              isOn: bind(\.independentLetteringHalation),
+                              help: L("Separate the factory lettering exposure from the camera optics; the date back keeps its normal exposure path.",
+                                      zh: "将工厂片边字作为独立曝光；日期后背仍沿相机曝光路径处理。"))
+                }
                 RailSubhead(L(.edgeLight))
                 RailSubgroup {
                     ScrubSlider(label: L(.edgeFog), value: bind(\.fog), range: FilmEdgeSettings.fogRange,
@@ -93,7 +107,7 @@ struct FilmEdgeSection: View {
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     note(lensNote)
-                    if !edge.edgeText.isEmpty { note(edgePrintNote) }
+                    if edge.hasFactoryMarkings && !edge.edgeText.isEmpty { note(edgePrintNote) }
                 }
             }
             // Off, the rows keep what they hold and say why they are grey: the
@@ -155,17 +169,20 @@ struct FilmEdgeSection: View {
             .buttonStyle(.plain)
             .help(edge.format.title)
             .popover(isPresented: $formatMenu, arrowEdge: .trailing) {
-                FilmEdgeFormatMenu(selection: edge.format, view: edge.view,
+                ScrollView {
+                    FilmEdgeFormatMenu(selection: edge.format, view: edge.view,
                                    stockName: shortStockName,
                                    isMade: { session.filmStockIsMade(in: $0) }) { format in
                     formatMenu = false
                     set(\.format, format)
+                    }
                 }
+                .frame(width: Theme.Metric.edgeFormatMenuWidth, height: 460)
             }
             Spacer(minLength: 6)
             Text(edge.format.gateLabel)
                 .font(Theme.Font.caption).foregroundStyle(Theme.Ink.tertiary)
-                .lineLimit(1).fixedSize()
+                .lineLimit(1).minimumScaleFactor(0.65)
         }
         .frame(height: Theme.Metric.rowHeight)
     }
@@ -553,6 +570,7 @@ extension FilmEdgeFormat.Group {
         case .film135: "135"
         case .film120: "120"
         case .panoramic: L(.edgeGroupPanoramic)
+        case .cine: L("Cine", zh: "电影")
         }
     }
 }
@@ -562,6 +580,11 @@ extension FilmEdgeFormat {
     @MainActor var title: String {
         if let key { return L(key) }
         switch self {
+        case .super8: return "Super 8"
+        case .cine16: return "Super 16"
+        case .cine35: return L("35 mm · 4-perf", zh: "35 mm · 4 孔")
+        case .cine65: return L("70 mm · 5-perf", zh: "70 mm · 5 孔")
+        case .cine65x15: return L("70 mm · 15-perf", zh: "70 mm · 15 孔")
         case .f135: return "135"
         case .f135Half: return "Half"
         case .f645: return "645"
@@ -584,6 +607,11 @@ extension FilmEdgeFormat {
     /// The gate as the drawing writes it after the pill: `36 × 24`.
     var gateLabel: String {
         switch self {
+        case .super8: "5.79 × 4.01"
+        case .cine16: "12.35 × 7.5"
+        case .cine35: "24.89 × 18.67"
+        case .cine65: "52.63 × 23.01"
+        case .cine65x15: "70.41 × 52.63"
         case .f135: "36 × 24"
         case .f135Half: "18 × 24"
         case .f645: "56 × 41.5"
@@ -601,6 +629,7 @@ extension FilmEdgeFormat {
     /// The menu's second line: the gate and its ratio.
     var menuSize: String {
         let ratio = switch self {
+        case .super8, .cine16, .cine35, .cine65, .cine65x15: String(format: "%.2f", gateMM.long / gateMM.short)
         case .f135, .f6x9: "3:2"
         case .f135Half: "3:4"
         case .f645: "1.35"
@@ -622,6 +651,8 @@ extension FilmEdgeFormat {
     /// measured.
     func filmCost(_ view: FilmEdgeView) -> Double? {
         switch (self, view) {
+        case (.super8, _), (.cine16, _), (.cine35, _), (.cine65, _), (.cine65x15, _):
+            cineDimensions.map { $0.width * $0.advance / (gateMM.long * gateMM.short) }
         case (.f135, .strip): 1.52
         case (.f135Half, .strip): 1.54
         case (.f645, .strip): 1.20

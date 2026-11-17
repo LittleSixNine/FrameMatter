@@ -72,6 +72,32 @@ final class CanvasViewTests: XCTestCase {
         XCTAssertEqual(view.colorPixelFormat, Renderer.drawableFormat)
     }
 
+    func testOriginalCornerTracksPressAndReleaseOutsideItsBounds() throws {
+        let session = Session()
+        session.selection = URL(fileURLWithPath: "/tmp/frame-for-canvas-hit-test")
+        let size = CGSize(width: 600, height: 400)
+        let window = NSWindow(contentRect: CGRect(origin: .zero, size: size),
+                              styleMask: [.titled], backing: .buffered, defer: false)
+        let host = NSHostingView(rootView: CanvasArea(session: session))
+        window.contentView = host
+        window.orderFront(nil)
+        defer { window.orderOut(nil) }
+        host.layoutSubtreeIfNeeded()
+
+        func send(_ type: NSEvent.EventType, _ point: CGPoint) throws {
+            let event = try XCTUnwrap(NSEvent.mouseEvent(with: type, location: point, modifierFlags: [],
+                timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber,
+                context: nil, eventNumber: 1, clickCount: 1, pressure: 1))
+            window.sendEvent(event)
+        }
+        try send(.leftMouseDown, CGPoint(x: size.width - 30, y: 23))
+        XCTAssertTrue(session.showingOriginal)
+        try send(.leftMouseDragged, CGPoint(x: 250, y: 180))
+        XCTAssertTrue(session.showingOriginal)
+        try send(.leftMouseUp, CGPoint(x: 250, y: 180))
+        XCTAssertFalse(session.showingOriginal)
+    }
+
     /// A redraw request must produce a draw. This asserts the wiring —
     /// delegate installed, closure connected, view able to dispatch — and it
     /// caught a real defect: `configured(host:)` at one point installed no
@@ -323,19 +349,11 @@ final class CanvasViewTests: XCTestCase {
         }
         let canvas = try XCTUnwrap(find(CanvasNSView.self, in: host), "the representable must produce a CanvasNSView")
 
-        // `Session` reads the collapse flags out of `UserDefaults` at init, and
-        // this test does not own those: whether the panel starts open depends
-        // on whatever wrote `ui2.leftCollapsed` last — the app itself, another
-        // test class, or a person. Measured: with the flag left set, this test
-        // measured a collapse that never happened and reported zero of
-        // everything. So it sets its own input and puts it back (AGENTS 24).
-        let savedLeft = session.leftCollapsed
-        defer { session.leftCollapsed = savedLeft }
-        session.leftCollapsed = false
+        session.rightCollapsed = false
         host.layoutSubtreeIfNeeded()
 
         try await Task.sleep(for: .milliseconds(700))     // let the window settle
-        XCTAssertFalse(session.leftCollapsed, "the panel must be open before it is collapsed")
+        XCTAssertFalse(session.rightCollapsed, "the panel must be open before it is collapsed")
 
         let before = (resizes: canvas.resizeCount, draws: session.renderer.drawCount)
         func cpu() -> Double {
@@ -344,7 +362,7 @@ final class CanvasViewTests: XCTestCase {
             return Double(t.tv_sec) + Double(t.tv_nsec) / 1e9
         }
         let cpuBefore = cpu()
-        withAnimation(.easeOut(duration: 0.18)) { session.leftCollapsed = true }
+        withAnimation(.easeOut(duration: 0.18)) { session.rightCollapsed = true }
 
         // Sample until the animation is over and the surface is still.
         var samples: [(t: Double, draws: Int, left: CGFloat)] = []

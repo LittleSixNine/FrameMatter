@@ -54,7 +54,7 @@ enum S: String, CaseIterable, Sendable {
     case cameraTemperature, cameraTint, cameraVignetting, cameraLensCorrection
 
     // MARK: the metering pill's options
-    case meteringCustom, meteringBalanced, meteringCenter
+    case meteringAdaptive, meteringCustom, meteringBalanced, meteringCenter
     case meteringProtectHighlights, meteringProtectShadows
     case meteringCenterWeightedLegacy
 
@@ -187,7 +187,7 @@ extension S {
         case .reasonNotDeveloped: "Develop the frame first."
         case .setResetLayout: "Reset All Layout"
         case .setResetLayoutCaption: "Panel widths, section heights and which sections are open, back to the drawing."
-        case .sectionClipboard: "Settings Clipboard"
+        case .sectionClipboard: "Copy and Sync Adjustments"
         case .clipSync: "Sync"
         case .clipSyncTo: "Sync to %d"
         case .clipSyncHelp: "Apply the ticked groups from the current photo to the other selected photos. Crop and Post-Dev adjustments are not included."
@@ -211,7 +211,7 @@ extension S {
         case .clipWhiteBalanceHelp: "Camera white balance and the enlarger's yellow and magenta filters. As Shot stays each frame's own camera value."
         case .clipFilmEffectsHelp: "Film format, grain, halation, glare, scatter and couplers."
         case .clipPrintEffectsHelp: "The Print Effects switch and pre-flash."
-        case .clipScenePlacementHelp: "Highlight and shadow pull-back. The curve is fitted again on each frame."
+        case .clipScenePlacementHelp: "Highlight and shadow pull-back, fitted again on each frame, plus the shared pre-film Scene Curve."
         case .clipMasksHelp: "The Tone Mask and the local masks."
         case .clipCopyHelp: "Copy the ticked groups from the frame on the canvas (⇧⌘C)."
         case .clipPasteHelp: "Paste what the clipboard holds onto every picked frame (⇧⌘V)."
@@ -263,6 +263,7 @@ extension S {
 
         // metering
         case .meteringCustom: "Custom"
+        case .meteringAdaptive: "Adaptive"
         case .meteringBalanced: "Balanced"
         case .meteringCenter: "Center"
         case .meteringProtectHighlights: "Protect highlights"
@@ -514,7 +515,7 @@ extension S {
         case .reasonNotDeveloped: "请先显影。"
         case .setResetLayout: "重置全部布局"
         case .setResetLayoutCaption: "将面板宽度、各部分高度与展开状态恢复为默认。"
-        case .sectionClipboard: "设置剪贴板"
+        case .sectionClipboard: "复制与同步调整"
         case .clipSync: "同步"
         case .clipSyncTo: "同步到 %d 张"
         case .clipSyncHelp: "将当前照片中勾选的项目应用到其他选中的照片。不包含裁剪和显影后调整。"
@@ -538,7 +539,7 @@ extension S {
         case .clipWhiteBalanceHelp: "相机白平衡与放大机的黄、品滤色。“拍摄时设置”保持每张照片自己的相机值。"
         case .clipFilmEffectsHelp: "胶片画幅、颗粒、光晕、耀光、散射与耦合剂。"
         case .clipPrintEffectsHelp: "相纸效果开关与预闪。"
-        case .clipScenePlacementHelp: "高光与阴影的回拉量。曲线在每张照片上重新拟合。"
+        case .clipScenePlacementHelp: "复制高光与阴影回拉意图并在目标重新拟合，同时复制胶片前场景曲线。"
         case .clipMasksHelp: "影调蒙版与局部蒙版。"
         case .clipCopyHelp: "从画布上的照片复制勾选的项目（⇧⌘C）。"
         case .clipPasteHelp: "把剪贴板里的内容粘贴到所有选中的照片（⇧⌘V）。"
@@ -590,6 +591,7 @@ extension S {
 
         // metering
         case .meteringCustom: "自定义"
+        case .meteringAdaptive: "自适应"
         case .meteringBalanced: "均衡"
         case .meteringCenter: "中央主体"
         case .meteringProtectHighlights: "保护高光"
@@ -838,6 +840,7 @@ extension AEMethod {
     var key: S {
         switch self {
         case .custom: .meteringCustom
+        case .metered(.adaptive): .meteringAdaptive
         case .metered(.balanced): .meteringBalanced
         case .metered(.center): .meteringCenter
         case .metered(.protectHighlights): .meteringProtectHighlights

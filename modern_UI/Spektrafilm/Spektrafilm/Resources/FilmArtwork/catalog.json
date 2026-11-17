@@ -1,0 +1,558 @@
+[
+  {
+    "stockID": "cinestill_800t",
+    "id": "bef5cbd2c3dbbe9c3887f16bdb15ada4a21f4a125ce4f4fed4b336f80574651d",
+    "file": "bef5cbd2c3dbbe9c3887f16bdb15ada4a21f4a125ce4f4fed4b336f80574651d.png",
+    "title": "CineStill 800T · 1",
+    "sourceID": "filmer:cinestill-800t",
+    "sourceFile": "原图/bef5cbd2c3dbbe9c3887f16bdb15ada4a21f4a125ce4f4fed4b336f80574651d.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "cinestill_800t",
+    "id": "54330408d952996fea18940fd3f3d8b65109cd9e90027d01fdc1656b709c4a48",
+    "file": "54330408d952996fea18940fd3f3d8b65109cd9e90027d01fdc1656b709c4a48.png",
+    "title": "CineStill 800T · 2",
+    "sourceID": "filmer:cinestill-800t",
+    "sourceFile": "原图/54330408d952996fea18940fd3f3d8b65109cd9e90027d01fdc1656b709c4a48.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "fujifilm_c200",
+    "id": "c87674e312322a1247e27613e0b4766a0908f79223bf3fc9b355cef9dbaab4d4",
+    "file": "c87674e312322a1247e27613e0b4766a0908f79223bf3fc9b355cef9dbaab4d4.png",
+    "title": "FUJIFILM 200 · 可选包装 · 1",
+    "sourceID": "filmer:fujifilm200",
+    "sourceFile": "原图/c87674e312322a1247e27613e0b4766a0908f79223bf3fc9b355cef9dbaab4d4.png",
+    "thirdParty": false,
+    "packagingOnly": true,
+    "mappingNote": "按用户要求作为可选封面关联；不表示已确认与原型号同乳剂，不修改模拟配置。"
+  },
+  {
+    "stockID": "fujifilm_c200",
+    "id": "b5ca7b78d3cfb46a027d4e5572f125fd65d9266efa56524e14138a2471ccb43a",
+    "file": "b5ca7b78d3cfb46a027d4e5572f125fd65d9266efa56524e14138a2471ccb43a.png",
+    "title": "Fujifilm C200 · 1",
+    "sourceID": "filmer:fuji-c200",
+    "sourceFile": "原图/b5ca7b78d3cfb46a027d4e5572f125fd65d9266efa56524e14138a2471ccb43a.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "fujifilm_neopan_acros_100_ii",
+    "id": "badb80bee37ba174e39beb0bf5f5c28d32eb390bb172736bb31a7f0a16ce90fc",
+    "file": "badb80bee37ba174e39beb0bf5f5c28d32eb390bb172736bb31a7f0a16ce90fc.png",
+    "title": "Fujifilm Acros 100 II · 1",
+    "sourceID": "filmer:fujifilm-acros-100ii",
+    "sourceFile": "原图/badb80bee37ba174e39beb0bf5f5c28d32eb390bb172736bb31a7f0a16ce90fc.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "fujifilm_pro_400h",
+    "id": "e99a3145c245e9e5726865693f62aabfb8193fd907ec5a93e8cd55dac9997679",
+    "file": "e99a3145c245e9e5726865693f62aabfb8193fd907ec5a93e8cd55dac9997679.png",
+    "title": "Fujifilm Pro 400H · 1",
+    "sourceID": "filmer:fuji-pro-400h",
+    "sourceFile": "原图/e99a3145c245e9e5726865693f62aabfb8193fd907ec5a93e8cd55dac9997679.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "fujifilm_provia_100f",
+    "id": "78490dd19280740c5bdefc988634a88e2f76d8a33458f8894b5120b352cbb075",
+    "file": "78490dd19280740c5bdefc988634a88e2f76d8a33458f8894b5120b352cbb075.png",
+    "title": "Fujifilm Provia 100F · 2",
+    "sourceID": "filmer:fuji-provia-100f",
+    "sourceFile": "原图/78490dd19280740c5bdefc988634a88e2f76d8a33458f8894b5120b352cbb075.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "fujifilm_provia_100f",
+    "id": "645e3b907e680811cfb837a392489078b092eb9bbbd016351bfed924411595d5",
+    "file": "645e3b907e680811cfb837a392489078b092eb9bbbd016351bfed924411595d5.png",
+    "title": "Fujifilm Provia 100F · 1",
+    "sourceID": "filmer:fuji-provia-100f",
+    "sourceFile": "原图/645e3b907e680811cfb837a392489078b092eb9bbbd016351bfed924411595d5.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "fujifilm_velvia_100",
+    "id": "8c4fb7341095b8602d8b1b2973dd8b9875c77199c10b3aab936096e5aefa27aa",
+    "file": "8c4fb7341095b8602d8b1b2973dd8b9875c77199c10b3aab936096e5aefa27aa.png",
+    "title": "Fujifilm Velvia 100 · 1",
+    "sourceID": "filmer:fuji-velvia-100",
+    "sourceFile": "原图/8c4fb7341095b8602d8b1b2973dd8b9875c77199c10b3aab936096e5aefa27aa.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "fujifilm_xtra_400",
+    "id": "97bf7fede1a47741f62437b8455059249e9902151f74da02b622d689bfa4d1a1",
+    "file": "97bf7fede1a47741f62437b8455059249e9902151f74da02b622d689bfa4d1a1.png",
+    "title": "FUJIFILM 400 · 可选包装 · 1",
+    "sourceID": "filmer:fujifilm400",
+    "sourceFile": "原图/97bf7fede1a47741f62437b8455059249e9902151f74da02b622d689bfa4d1a1.png",
+    "thirdParty": false,
+    "packagingOnly": true,
+    "mappingNote": "按用户要求作为可选封面关联；不表示已确认与原型号同乳剂，不修改模拟配置。"
+  },
+  {
+    "stockID": "fujifilm_xtra_400",
+    "id": "09a1b9efa18e4d17d59c7570297135cdd214920c4d26a81ef7b65ec710dd98b3",
+    "file": "09a1b9efa18e4d17d59c7570297135cdd214920c4d26a81ef7b65ec710dd98b3.png",
+    "title": "Fujifilm Superia X-tra 400 · 1",
+    "sourceID": "filmer:fuji-superia-400",
+    "sourceFile": "原图/09a1b9efa18e4d17d59c7570297135cdd214920c4d26a81ef7b65ec710dd98b3.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "ilford_hp5_plus_400",
+    "id": "b235381798e479fd809fdbb716ca6599870cf3c3fc0ba7745d42617308090012",
+    "file": "b235381798e479fd809fdbb716ca6599870cf3c3fc0ba7745d42617308090012.png",
+    "title": "Ilford HP5 Plus · 1",
+    "sourceID": "filmer:ilford-hp5",
+    "sourceFile": "原图/b235381798e479fd809fdbb716ca6599870cf3c3fc0ba7745d42617308090012.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "ilford_hp5_plus_400",
+    "id": "5ebc5b92ec02bccb3cda0ff8484cd7b47671c3c7cbfc3c7a270bfb03d973437a",
+    "file": "5ebc5b92ec02bccb3cda0ff8484cd7b47671c3c7cbfc3c7a270bfb03d973437a.png",
+    "title": "Ilford HP5 Plus · 2",
+    "sourceID": "filmer:ilford-hp5",
+    "sourceFile": "原图/5ebc5b92ec02bccb3cda0ff8484cd7b47671c3c7cbfc3c7a270bfb03d973437a.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "ilford_hp5_plus_400",
+    "id": "1f950dcabdb8a9eb1facc0296b9778b29f299a93fa1b06c184bc827e45792279",
+    "file": "1f950dcabdb8a9eb1facc0296b9778b29f299a93fa1b06c184bc827e45792279.png",
+    "title": "Ilford HP5 Plus · 4",
+    "sourceID": "filmer:ilford-hp5",
+    "sourceFile": "原图/1f950dcabdb8a9eb1facc0296b9778b29f299a93fa1b06c184bc827e45792279.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_ektachrome_100",
+    "id": "94a16f1729ce6f33d486ab2c062a07cc7b91c9c2a284f16dda7196a9f2b3a77b",
+    "file": "94a16f1729ce6f33d486ab2c062a07cc7b91c9c2a284f16dda7196a9f2b3a77b.png",
+    "title": "Kodak Ektachrome E100 · 1",
+    "sourceID": "filmer:kodak-e100",
+    "sourceFile": "原图/94a16f1729ce6f33d486ab2c062a07cc7b91c9c2a284f16dda7196a9f2b3a77b.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_ektachrome_100",
+    "id": "74245830b70d22bd0322e6ddabf8fe6185f0c40fdfb89f19f530c8d319a55260",
+    "file": "74245830b70d22bd0322e6ddabf8fe6185f0c40fdfb89f19f530c8d319a55260.png",
+    "title": "Kodak Ektachrome 100 · 1",
+    "sourceID": "filmer:kedaektachrome100",
+    "sourceFile": "原图/74245830b70d22bd0322e6ddabf8fe6185f0c40fdfb89f19f530c8d319a55260.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_ektachrome_100",
+    "id": "05b435fbfdd43705ffdfd1d3e5852e2a22ec8095fb225c4fc8e5fcb00a966751",
+    "file": "05b435fbfdd43705ffdfd1d3e5852e2a22ec8095fb225c4fc8e5fcb00a966751.png",
+    "title": "Kodak Ektachrome E100 · 2",
+    "sourceID": "filmer:kodak-e100",
+    "sourceFile": "原图/05b435fbfdd43705ffdfd1d3e5852e2a22ec8095fb225c4fc8e5fcb00a966751.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_ektachrome_100",
+    "id": "3c620898f8d2937bbd684b0f482f1f07159cfbfefdf574faabe979885cf65ad5",
+    "file": "3c620898f8d2937bbd684b0f482f1f07159cfbfefdf574faabe979885cf65ad5.png",
+    "title": "Kodak Ektachrome E100 · 3",
+    "sourceID": "filmer:kodak-e100",
+    "sourceFile": "原图/3c620898f8d2937bbd684b0f482f1f07159cfbfefdf574faabe979885cf65ad5.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_ektar_100",
+    "id": "4ea9a1ad0b61ed55d8ba1881d305e2fb6e0e7cb8c7f41855bd3414624cd974c2",
+    "file": "4ea9a1ad0b61ed55d8ba1881d305e2fb6e0e7cb8c7f41855bd3414624cd974c2.png",
+    "title": "Kodak Ektar 100 · 2",
+    "sourceID": "filmer:kodak-ektar-100",
+    "sourceFile": "原图/4ea9a1ad0b61ed55d8ba1881d305e2fb6e0e7cb8c7f41855bd3414624cd974c2.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_ektar_100",
+    "id": "0094b2b73a9975afef8b473f779002b77ce1a6c65f6fbe1cacfaeb9ef27d15de",
+    "file": "0094b2b73a9975afef8b473f779002b77ce1a6c65f6fbe1cacfaeb9ef27d15de.png",
+    "title": "Kodak Ektar 100 · 1",
+    "sourceID": "filmer:kodak-ektar-100",
+    "sourceFile": "原图/0094b2b73a9975afef8b473f779002b77ce1a6c65f6fbe1cacfaeb9ef27d15de.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_gold_200",
+    "id": "acbe17104ebf3aaacfae81912bffbf09bd8ac9c894bd25e4b2c80bf6c7097715",
+    "file": "acbe17104ebf3aaacfae81912bffbf09bd8ac9c894bd25e4b2c80bf6c7097715.png",
+    "title": "Kodak Gold 200 · 4",
+    "sourceID": "filmer:kodak-gold-200",
+    "sourceFile": "原图/acbe17104ebf3aaacfae81912bffbf09bd8ac9c894bd25e4b2c80bf6c7097715.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_gold_200",
+    "id": "f08fcecf4774cdafb630bdc2cab801cb0d514cc6913e283acb223541d4f64ebb",
+    "file": "f08fcecf4774cdafb630bdc2cab801cb0d514cc6913e283acb223541d4f64ebb.png",
+    "title": "Kodak Gold 200 · 1",
+    "sourceID": "filmer:kodak-gold-200",
+    "sourceFile": "原图/f08fcecf4774cdafb630bdc2cab801cb0d514cc6913e283acb223541d4f64ebb.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_gold_200",
+    "id": "067760d7fe794763fc74af0e915962f94a4a71f44a012d7993816472770fed33",
+    "file": "067760d7fe794763fc74af0e915962f94a4a71f44a012d7993816472770fed33.png",
+    "title": "Kodak Gold 200 · 2",
+    "sourceID": "filmer:kodak-gold-200",
+    "sourceFile": "原图/067760d7fe794763fc74af0e915962f94a4a71f44a012d7993816472770fed33.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_gold_200",
+    "id": "d8b9daccb44b48ba194d4c1d3c3de648026f923c40889f5ec90675f180b97673",
+    "file": "d8b9daccb44b48ba194d4c1d3c3de648026f923c40889f5ec90675f180b97673.png",
+    "title": "Kodak Gold 200 · 3",
+    "sourceID": "filmer:kodak-gold-200",
+    "sourceFile": "原图/d8b9daccb44b48ba194d4c1d3c3de648026f923c40889f5ec90675f180b97673.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_kodachrome_64",
+    "id": "30de44306a50f1990a6f1ad04152f9dec9767b8e837d8f902f922cb17e42fbcd",
+    "file": "30de44306a50f1990a6f1ad04152f9dec9767b8e837d8f902f922cb17e42fbcd.png",
+    "title": "Kodak Kodachrome 64 · 本地生成",
+    "sourceID": "local:generated-kodachrome-64",
+    "sourceFile": "30de44306a50f1990a6f1ad04152f9dec9767b8e837d8f902f922cb17e42fbcd.png",
+    "thirdParty": false,
+    "generated": true,
+    "derivedFromSourceID": "filmer:kodakkodachrome25",
+    "provenance": "用户确认的生成封面：由 Kodachrome 25 版式将数字改为 64，非原厂包装实拍。"
+  },
+  {
+    "stockID": "kodak_portra_160",
+    "id": "835dd2ffee907d6e0ec6416c745cfd4e3001a9993d782ef1d5b79751675adf65",
+    "file": "835dd2ffee907d6e0ec6416c745cfd4e3001a9993d782ef1d5b79751675adf65.png",
+    "title": "Kodak Portra 160 · 1",
+    "sourceID": "filmer:kodakportra160",
+    "sourceFile": "原图/835dd2ffee907d6e0ec6416c745cfd4e3001a9993d782ef1d5b79751675adf65.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_portra_160",
+    "id": "d737e555bc45edb4a51db40a92ea46fa772385ad4b3cb860dc8e20c2e6f7c81e",
+    "file": "d737e555bc45edb4a51db40a92ea46fa772385ad4b3cb860dc8e20c2e6f7c81e.png",
+    "title": "Kodak Portra 160 · 2",
+    "sourceID": "filmer:kodakportra160",
+    "sourceFile": "原图/d737e555bc45edb4a51db40a92ea46fa772385ad4b3cb860dc8e20c2e6f7c81e.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_portra_160nc",
+    "id": "97322fd0026433b341067a713580d64cae3e531e427d5c66aec14ebe26234dc0",
+    "file": "97322fd0026433b341067a713580d64cae3e531e427d5c66aec14ebe26234dc0.png",
+    "title": "Kodak Portra 160 NC · 1",
+    "sourceID": "filmer:kodakportra160nc",
+    "sourceFile": "原图/97322fd0026433b341067a713580d64cae3e531e427d5c66aec14ebe26234dc0.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_portra_160vc",
+    "id": "5c70d31d4edb33069864f7cf06ae8a6da6ac94b3b462a19b6605e79f45d70299",
+    "file": "5c70d31d4edb33069864f7cf06ae8a6da6ac94b3b462a19b6605e79f45d70299.png",
+    "title": "Kodak Portra 160 VC · 1",
+    "sourceID": "filmer:kodakportra160vc",
+    "sourceFile": "原图/5c70d31d4edb33069864f7cf06ae8a6da6ac94b3b462a19b6605e79f45d70299.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_portra_400",
+    "id": "56709d7783404048e0bf02375bd34637ca0e656e2111b8b88fa0e7f520530aae",
+    "file": "56709d7783404048e0bf02375bd34637ca0e656e2111b8b88fa0e7f520530aae.png",
+    "title": "Kodak Portra 400 · 1",
+    "sourceID": "filmer:kodak-portra-400",
+    "sourceFile": "原图/56709d7783404048e0bf02375bd34637ca0e656e2111b8b88fa0e7f520530aae.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_portra_400",
+    "id": "f3eff9953d236d773198e12e1387cac4133d908b397c68c98a3c8c89f5275d7f",
+    "file": "f3eff9953d236d773198e12e1387cac4133d908b397c68c98a3c8c89f5275d7f.png",
+    "title": "Kodak Portra 400 · 2",
+    "sourceID": "filmer:kodak-portra-400",
+    "sourceFile": "原图/f3eff9953d236d773198e12e1387cac4133d908b397c68c98a3c8c89f5275d7f.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_portra_400nc",
+    "id": "d6e44ff02816f495f779442a1854434fc3b3e3e229a90f6905f695198d7d51c8",
+    "file": "d6e44ff02816f495f779442a1854434fc3b3e3e229a90f6905f695198d7d51c8.png",
+    "title": "Kodak Portra 400 NC · 1",
+    "sourceID": "filmer:kodakportra400nc",
+    "sourceFile": "原图/d6e44ff02816f495f779442a1854434fc3b3e3e229a90f6905f695198d7d51c8.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_portra_400vc",
+    "id": "df8c7d8d5beacf40ca17720f0fdaeadd9abbdb1cb145857f99adcdf5e1988a7b",
+    "file": "df8c7d8d5beacf40ca17720f0fdaeadd9abbdb1cb145857f99adcdf5e1988a7b.png",
+    "title": "Kodak Portra 400 VC · 1",
+    "sourceID": "filmer:kodakportra400vc",
+    "sourceFile": "原图/df8c7d8d5beacf40ca17720f0fdaeadd9abbdb1cb145857f99adcdf5e1988a7b.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_portra_800",
+    "id": "e61678035dd2b19ff0c671de3d1d2be0ce2dd8f6fdcc8e18a8fd2ab64c06539e",
+    "file": "e61678035dd2b19ff0c671de3d1d2be0ce2dd8f6fdcc8e18a8fd2ab64c06539e.png",
+    "title": "Kodak Portra 800 · 1",
+    "sourceID": "filmer:kodakportra800",
+    "sourceFile": "原图/e61678035dd2b19ff0c671de3d1d2be0ce2dd8f6fdcc8e18a8fd2ab64c06539e.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_portra_800",
+    "id": "968259a2143c475012e07a681e189a03de2f74120522f1c7e6a28835dab47f6d",
+    "file": "968259a2143c475012e07a681e189a03de2f74120522f1c7e6a28835dab47f6d.png",
+    "title": "Kodak Portra 800 · 2",
+    "sourceID": "filmer:kodakportra800",
+    "sourceFile": "原图/968259a2143c475012e07a681e189a03de2f74120522f1c7e6a28835dab47f6d.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_portra_800_push1",
+    "id": "e61678035dd2b19ff0c671de3d1d2be0ce2dd8f6fdcc8e18a8fd2ab64c06539e",
+    "file": "e61678035dd2b19ff0c671de3d1d2be0ce2dd8f6fdcc8e18a8fd2ab64c06539e.png",
+    "title": "Kodak Portra 800 · 1",
+    "sourceID": "filmer:kodakportra800",
+    "sourceFile": "原图/e61678035dd2b19ff0c671de3d1d2be0ce2dd8f6fdcc8e18a8fd2ab64c06539e.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_portra_800_push1",
+    "id": "968259a2143c475012e07a681e189a03de2f74120522f1c7e6a28835dab47f6d",
+    "file": "968259a2143c475012e07a681e189a03de2f74120522f1c7e6a28835dab47f6d.png",
+    "title": "Kodak Portra 800 · 2",
+    "sourceID": "filmer:kodakportra800",
+    "sourceFile": "原图/968259a2143c475012e07a681e189a03de2f74120522f1c7e6a28835dab47f6d.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_portra_800_push2",
+    "id": "e61678035dd2b19ff0c671de3d1d2be0ce2dd8f6fdcc8e18a8fd2ab64c06539e",
+    "file": "e61678035dd2b19ff0c671de3d1d2be0ce2dd8f6fdcc8e18a8fd2ab64c06539e.png",
+    "title": "Kodak Portra 800 · 1",
+    "sourceID": "filmer:kodakportra800",
+    "sourceFile": "原图/e61678035dd2b19ff0c671de3d1d2be0ce2dd8f6fdcc8e18a8fd2ab64c06539e.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_portra_800_push2",
+    "id": "968259a2143c475012e07a681e189a03de2f74120522f1c7e6a28835dab47f6d",
+    "file": "968259a2143c475012e07a681e189a03de2f74120522f1c7e6a28835dab47f6d.png",
+    "title": "Kodak Portra 800 · 2",
+    "sourceID": "filmer:kodakportra800",
+    "sourceFile": "原图/968259a2143c475012e07a681e189a03de2f74120522f1c7e6a28835dab47f6d.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_tmax_100",
+    "id": "ebe163eca810b104226d6351708dd6eb84f54bf6b05e6e7f633d56c3a8093aff",
+    "file": "ebe163eca810b104226d6351708dd6eb84f54bf6b05e6e7f633d56c3a8093aff.png",
+    "title": "Kodak 100 TMAX · 1",
+    "sourceID": "filmer:kodak100tmax",
+    "sourceFile": "原图/ebe163eca810b104226d6351708dd6eb84f54bf6b05e6e7f633d56c3a8093aff.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_tmax_100",
+    "id": "5057868e52821e05c610fe88a9c01f41ad27194afb3a30d103f9535b1f18eaeb",
+    "file": "5057868e52821e05c610fe88a9c01f41ad27194afb3a30d103f9535b1f18eaeb.png",
+    "title": "Kodak 100 TMAX · 2",
+    "sourceID": "filmer:kodak100tmax",
+    "sourceFile": "原图/5057868e52821e05c610fe88a9c01f41ad27194afb3a30d103f9535b1f18eaeb.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_tmax_100",
+    "id": "b2d89ad60230873fd7277927d353086c7c977a25f58f4bb8bc0d466a2a7b4451",
+    "file": "b2d89ad60230873fd7277927d353086c7c977a25f58f4bb8bc0d466a2a7b4451.png",
+    "title": "Kodak 100 TMAX · 3",
+    "sourceID": "filmer:kodak100tmax",
+    "sourceFile": "原图/b2d89ad60230873fd7277927d353086c7c977a25f58f4bb8bc0d466a2a7b4451.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_tri_x_400",
+    "id": "4fad4bdf57df026d3fe9dd526b3968b66ed0c7b631c90816a6fd4e05d3de3984",
+    "file": "4fad4bdf57df026d3fe9dd526b3968b66ed0c7b631c90816a6fd4e05d3de3984.png",
+    "title": "Kodak TRI-X 400 · 1",
+    "sourceID": "filmer:kodak400tx",
+    "sourceFile": "原图/4fad4bdf57df026d3fe9dd526b3968b66ed0c7b631c90816a6fd4e05d3de3984.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_tri_x_400",
+    "id": "259e4f11fcfd2307af52bc22656649d79dc66a3bb29bc844cea0888b6b108b8e",
+    "file": "259e4f11fcfd2307af52bc22656649d79dc66a3bb29bc844cea0888b6b108b8e.png",
+    "title": "Kodak TRI-X 400 · 2",
+    "sourceID": "filmer:kodak400tx",
+    "sourceFile": "原图/259e4f11fcfd2307af52bc22656649d79dc66a3bb29bc844cea0888b6b108b8e.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_tri_x_400",
+    "id": "5e7d9b68090ab2a87048745c9ca14ee5522fe67b42e69beda1f7f0995a1305e0",
+    "file": "5e7d9b68090ab2a87048745c9ca14ee5522fe67b42e69beda1f7f0995a1305e0.png",
+    "title": "Kodak TRI-X 400 · 3",
+    "sourceID": "filmer:kodak400tx",
+    "sourceFile": "原图/5e7d9b68090ab2a87048745c9ca14ee5522fe67b42e69beda1f7f0995a1305e0.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_tri_x_400",
+    "id": "62051e5ae76c132f9740ab6aaf88ca30046072540baa787c30539743d288fc34",
+    "file": "62051e5ae76c132f9740ab6aaf88ca30046072540baa787c30539743d288fc34.png",
+    "title": "Kodak TRI-X 400 · 4",
+    "sourceID": "filmer:kodak400tx",
+    "sourceFile": "原图/62051e5ae76c132f9740ab6aaf88ca30046072540baa787c30539743d288fc34.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_tri_x_400",
+    "id": "8fcf6b3d2c8029104cf2c9cb777af54927bc967afe2df434e8c02863463747c9",
+    "file": "8fcf6b3d2c8029104cf2c9cb777af54927bc967afe2df434e8c02863463747c9.png",
+    "title": "Kodak TRI-X 400 · 5",
+    "sourceID": "filmer:kodak400tx",
+    "sourceFile": "原图/8fcf6b3d2c8029104cf2c9cb777af54927bc967afe2df434e8c02863463747c9.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_tri_x_400",
+    "id": "046b22ac91804d569b3253bf4716f07d90ea618f4ccae096cc950ce7143941ed",
+    "file": "046b22ac91804d569b3253bf4716f07d90ea618f4ccae096cc950ce7143941ed.png",
+    "title": "Kodak TRI-X 400 · 6",
+    "sourceID": "filmer:kodak400tx",
+    "sourceFile": "原图/046b22ac91804d569b3253bf4716f07d90ea618f4ccae096cc950ce7143941ed.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_tri_x_400",
+    "id": "5d7cff07528fbe5730b64ee5b1822cf3e3a68201eea064c82a9e25bd0c8ed3d0",
+    "file": "5d7cff07528fbe5730b64ee5b1822cf3e3a68201eea064c82a9e25bd0c8ed3d0.png",
+    "title": "Kodak TRI-X 400 · 7",
+    "sourceID": "filmer:kodak400tx",
+    "sourceFile": "原图/5d7cff07528fbe5730b64ee5b1822cf3e3a68201eea064c82a9e25bd0c8ed3d0.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_ultramax_400",
+    "id": "632611cbcd4a19d9919a59ba0f285af7fda6d30a8d27e17b80450c75b98ed7ea",
+    "file": "632611cbcd4a19d9919a59ba0f285af7fda6d30a8d27e17b80450c75b98ed7ea.png",
+    "title": "Kodak UltraMax 400 · 3",
+    "sourceID": "filmer:kodak-ultramax-400",
+    "sourceFile": "原图/632611cbcd4a19d9919a59ba0f285af7fda6d30a8d27e17b80450c75b98ed7ea.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_ultramax_400",
+    "id": "79aad0c3ca0e3060f46f32e0011fd893f578e48dccad55ba40533164be36f91b",
+    "file": "79aad0c3ca0e3060f46f32e0011fd893f578e48dccad55ba40533164be36f91b.png",
+    "title": "Kodak UltraMax 400 · 1",
+    "sourceID": "filmer:kodak-ultramax-400",
+    "sourceFile": "原图/79aad0c3ca0e3060f46f32e0011fd893f578e48dccad55ba40533164be36f91b.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_ultramax_400",
+    "id": "b5f1802afe29fe9ef0353fed11d4051e42339ed9b3173712373d39a3deabc216",
+    "file": "b5f1802afe29fe9ef0353fed11d4051e42339ed9b3173712373d39a3deabc216.png",
+    "title": "Kodak UltraMax 400 · 2",
+    "sourceID": "filmer:kodak-ultramax-400",
+    "sourceFile": "原图/b5f1802afe29fe9ef0353fed11d4051e42339ed9b3173712373d39a3deabc216.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_verita_200d",
+    "id": "9b5216a53ab2725617a1fc2cf60b936cd53340cc1d1a896d1fe4a3c207815379",
+    "file": "9b5216a53ab2725617a1fc2cf60b936cd53340cc1d1a896d1fe4a3c207815379.png",
+    "title": "Kodak Verita 5206/200D · 1",
+    "sourceID": "filmer:kedaverita5206200d",
+    "sourceFile": "原图/9b5216a53ab2725617a1fc2cf60b936cd53340cc1d1a896d1fe4a3c207815379.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_vision3_200t",
+    "id": "c186067bf5c2b416b93de8de001e48d590d953ed975d82f3feb28a5bdcc2d4df",
+    "file": "c186067bf5c2b416b93de8de001e48d590d953ed975d82f3feb28a5bdcc2d4df.png",
+    "title": "Kodak Vision3 5213/200T · 1",
+    "sourceID": "filmer:kodak5213200t",
+    "sourceFile": "原图/c186067bf5c2b416b93de8de001e48d590d953ed975d82f3feb28a5bdcc2d4df.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_vision3_200t",
+    "id": "9b81dd2b6c61c6a3ecc9f98761023740d07b2cd630ebb0e50af93cec4c5b3962",
+    "file": "9b81dd2b6c61c6a3ecc9f98761023740d07b2cd630ebb0e50af93cec4c5b3962.png",
+    "title": "Yue Crystal Vision3 5213/200T · 1",
+    "sourceID": "filmer:yue-5213",
+    "sourceFile": "原图/9b81dd2b6c61c6a3ecc9f98761023740d07b2cd630ebb0e50af93cec4c5b3962.png",
+    "thirdParty": true
+  },
+  {
+    "stockID": "kodak_vision3_250d",
+    "id": "c9476f5b6f9563c05ef6875946d8750e6193ecf6cd286575d71cc35a0637419d",
+    "file": "c9476f5b6f9563c05ef6875946d8750e6193ecf6cd286575d71cc35a0637419d.png",
+    "title": "Kodak Vision3 5207/250D · 1",
+    "sourceID": "filmer:kodak5207250d",
+    "sourceFile": "原图/c9476f5b6f9563c05ef6875946d8750e6193ecf6cd286575d71cc35a0637419d.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_vision3_250d",
+    "id": "efb77002bb54fa6285f3e771cc3ce2de97bc07850a2c9d96587cfe85c9c2d90d",
+    "file": "efb77002bb54fa6285f3e771cc3ce2de97bc07850a2c9d96587cfe85c9c2d90d.png",
+    "title": "Yue Crystal Vision3 5207/250D · 1",
+    "sourceID": "filmer:yue-5207",
+    "sourceFile": "原图/efb77002bb54fa6285f3e771cc3ce2de97bc07850a2c9d96587cfe85c9c2d90d.png",
+    "thirdParty": true
+  },
+  {
+    "stockID": "kodak_vision3_500t",
+    "id": "b03ee762f146cb669004c1b5cc75776d6c8f6774267e4a784801e8c7c5ea91db",
+    "file": "b03ee762f146cb669004c1b5cc75776d6c8f6774267e4a784801e8c7c5ea91db.png",
+    "title": "Kodak Vision3 5219/500T · 1",
+    "sourceID": "filmer:kodak5219500t",
+    "sourceFile": "原图/b03ee762f146cb669004c1b5cc75776d6c8f6774267e4a784801e8c7c5ea91db.png",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_vision3_500t",
+    "id": "ed788dfd806437ca27f09ee0d5e6076d595fdcaaec6e57473509a86482df3f7d",
+    "file": "ed788dfd806437ca27f09ee0d5e6076d595fdcaaec6e57473509a86482df3f7d.png",
+    "title": "Yue Crystal Vision3 5219/500T · 1",
+    "sourceID": "filmer:yue-5219",
+    "sourceFile": "原图/ed788dfd806437ca27f09ee0d5e6076d595fdcaaec6e57473509a86482df3f7d.png",
+    "thirdParty": true
+  },
+  {
+    "stockID": "kodak_vision3_50d",
+    "id": "1b6d4a57acf0232d4b776d6e48495b5016df539151f99b651208958f7bdbcb64",
+    "file": "1b6d4a57acf0232d4b776d6e48495b5016df539151f99b651208958f7bdbcb64.png",
+    "title": "Kodak Vision3 5203/50D · 1",
+    "sourceID": "filmer:kodak520350d",
+    "sourceFile": "原图/1b6d4a57acf0232d4b776d6e48495b5016df539151f99b651208958f7bdbcb64.jpg",
+    "thirdParty": false
+  },
+  {
+    "stockID": "kodak_vision3_50d",
+    "id": "6ddd1ef713a3a00b7795489f24961430944f8c2e713f7d1f175d9afa2923ae67",
+    "file": "6ddd1ef713a3a00b7795489f24961430944f8c2e713f7d1f175d9afa2923ae67.png",
+    "title": "Yue Crystal Vision3 5203/50D · 1",
+    "sourceID": "filmer:yue-5203",
+    "sourceFile": "原图/6ddd1ef713a3a00b7795489f24961430944f8c2e713f7d1f175d9afa2923ae67.png",
+    "thirdParty": true
+  }
+]

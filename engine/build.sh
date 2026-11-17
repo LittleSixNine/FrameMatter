@@ -5,6 +5,7 @@
 #   engine/build.sh lib        the static library + the metallib
 #   engine/build.sh dylib      the shared library the ctypes parity harness loads
 #   engine/build.sh tests      the setup/schema dump drivers
+#   engine/build.sh cam16      recompute optional CAM16 initialization artifacts
 #   engine/build.sh metallib   just the kernels
 #
 # bash, and arrays throughout, because the repository path contains a space
@@ -125,7 +126,7 @@ build_dylib() {
 build_tests() {
   collect_sources
   local driver
-  for driver in dump_setup dump_json gpu_smoke; do
+  for driver in dump_setup dump_json gpu_smoke device_lifetime_checks cam16_cache_checks; do
     [[ -f "$here/tests/$driver.cpp" ]] || continue
     "$CXX" "${cxxflags[@]}" "${includes[@]}" -I"$here/tests" \
       "$here/tests/$driver.cpp" "${sources[@]}" "${frameworks[@]}" -o "$out/$driver"
@@ -155,12 +156,13 @@ bundle_resources() {
   fi
   mkdir -p "$app"
   rsync -a --delete --delete-excluded --exclude=/local_light_leaks/ --exclude=/local_aging_textures/ "$here/resources/" "$app/"
-  # The product's own profiles (black and white; `resources_product/NOTICE.md`)
+  # The product's own profiles and colour packs (`resources_product/NOTICE.md`)
   # go in beside spektrafilm's, because the engine opens a stock from one
   # `profiles/` directory. They are not spektrafilm's and the notice travels
-  # with them. The app lists them only where `FeatureFlags.blackAndWhite` is on.
+  # with them.
   if [[ -d "$here/resources_product/profiles" ]]; then
     cp "$here/resources_product/profiles/"*.json "$app/profiles/"
+    cp "$here/resources_product/neutral_print_filters_colour.json" "$app/"
     cp "$here/resources_product/NOTICE.md" "$app/PRODUCT_PROFILES_NOTICE.md"
   fi
   local size
@@ -172,8 +174,13 @@ case "${1:-all}" in
   metallib) build_metallib ;;
   lib)      build_metallib; build_lib ;;
   dylib)    build_metallib; build_dylib ;;
+  cam16)    build_lib
+            "$CXX" "${cxxflags[@]}" "${includes[@]}" "$here/tools/bake_cam16.cpp" \
+              "$out/libspektrafilm_engine.a" "${frameworks[@]}" -o "$out/bake_cam16"
+            "$out/bake_cam16" "$here/resources" "$here/resources/cam16"
+            (cd "$here/resources/cam16" && shasum -a 256 *.cam16 > SHA256SUMS) ;;
   tests)    build_tests ;;
   bundle)   build_metallib; bundle_resources ;;
   all)      build_metallib; build_lib; build_dylib; build_tests; bundle_resources ;;
-  *) echo "usage: build.sh [all|lib|dylib|tests|metallib|bundle]" >&2; exit 2 ;;
+  *) echo "usage: build.sh [all|lib|dylib|tests|metallib|bundle|cam16]" >&2; exit 2 ;;
 esac

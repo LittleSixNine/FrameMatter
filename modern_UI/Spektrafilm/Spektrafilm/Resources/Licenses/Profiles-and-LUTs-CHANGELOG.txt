@@ -55,3 +55,11 @@ illuminant SDs, the colourspace primaries and matrices, the CAT cone
 matrices, the Mallett basis, the Hanatos irradiance spectra, and the measured
 KG3 and lens filter curves -- is published colour-science data, not Andrea
 Volpato's profile work, and is not covered by this file.
+CAM16 C_max initialization artifacts -- generated 2026-11-09
+----------------------------------------------------------
+Six float64 tables were recomputed from FrameMatter's unchanged serial CAM16
+mathematics and existing baked colour-space constants. Film/paper profiles,
+print LUTs, viewing conditions, gamut knee and render mathematics are unchanged.
+The serializer/validator is from Hanze Qiu's SpektraLab 2.2.0; the computed
+artifacts match its corresponding tables byte-for-byte. Existing source-code
+and spektrafilm data licences and attribution are retained; see engine/cam16/README.md.

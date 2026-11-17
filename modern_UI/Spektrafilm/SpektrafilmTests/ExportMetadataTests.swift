@@ -102,4 +102,58 @@ final class ExportMetadataTests: XCTestCase {
             XCTAssertNil(ExifTimeOffsets.read(invalid)["OffsetTime" as CFString])
         }
     }
+    func testTIFFCompressionPreserves16BitPixelsICCOffsetsAndPreviewPages() throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "tiff-compression-\(UUID())")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let space = try XCTUnwrap(CGColorSpace(name: CGColorSpace.displayP3))
+        let width = 64, height = 48
+        let samples: [UInt16] = (0..<(width * height * 4)).map { i in
+            i % 4 == 3 ? 65535 : UInt16((i * 997 + i / 7) % 65536)
+        }
+        let bytes = samples.withUnsafeBytes { Data($0) }
+        let provider = try XCTUnwrap(CGDataProvider(data: bytes as CFData))
+        let image = try XCTUnwrap(CGImage(width: width, height: height, bitsPerComponent: 16,
+            bitsPerPixel: 64, bytesPerRow: width * 8, space: space,
+            bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipLast.rawValue).union(.byteOrder16Little),
+            provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent))
+        let metadata = ExportMetadata(source: nil, fallbackEXIF: [
+            kCGImagePropertyExifDateTimeOriginal: "2019:06:15 12:34:56",
+            "OffsetTimeOriginal" as CFString: "+09:00"
+        ])
+        func rgb(_ image: CGImage) throws -> [UInt16] {
+            let context = try XCTUnwrap(CGContext(data: nil, width: width, height: height,
+                bitsPerComponent: 16, bytesPerRow: width * 8, space: space,
+                bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue | CGBitmapInfo.byteOrder16Little.rawValue))
+            context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+            let buffer = try XCTUnwrap(context.data).assumingMemoryBound(to: UInt16.self)
+            return (0..<(width * height * 4)).compactMap { $0 % 4 == 3 ? nil : buffer[$0] }
+        }
+        let expected = try rgb(image)
+        for compression in TIFFCompression.allCases {
+            for withPreview in [false, true] {
+                let output = root.appending(path: "\(compression.rawValue)-\(withPreview).tif")
+                try Exporter.write(image, to: output, format: .tiff,
+                    preview: withPreview ? image : nil, tiffCompression: compression, sourceMetadata: metadata)
+                let source = try XCTUnwrap(CGImageSourceCreateWithURL(output as CFURL, nil))
+                XCTAssertEqual(CGImageSourceGetCount(source), withPreview ? 2 : 1)
+                let properties = try XCTUnwrap(CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any])
+                let tiff = try XCTUnwrap(properties[kCGImagePropertyTIFFDictionary] as? [String: Any])
+                XCTAssertEqual(tiff["Compression"] as? Int, compression.imageIOValue)
+                let exif = try XCTUnwrap(properties[kCGImagePropertyExifDictionary] as? [String: Any])
+                XCTAssertEqual(exif["OffsetTimeOriginal"] as? String, "+09:00")
+                XCTAssertEqual(exif["DateTimeOriginal"] as? String, "2019:06:15 12:34:56")
+                let readback = try XCTUnwrap(CGImageSourceCreateImageAtIndex(source, 0, nil))
+                XCTAssertEqual(readback.bitsPerComponent, 16)
+                XCTAssertEqual(try rgb(readback), expected)
+                XCTAssertEqual(readback.colorSpace?.copyICCData() as Data?, space.copyICCData() as Data?)
+                if withPreview { XCTAssertNotNil(CGImageSourceCreateImageAtIndex(source, 1, nil)) }
+                // The same atomic writer must replace an existing whole file.
+                try Exporter.write(image, to: output, format: .tiff, tiffCompression: compression)
+                XCTAssertEqual(CGImageSourceGetCount(try XCTUnwrap(CGImageSourceCreateWithURL(output as CFURL, nil))), 1)
+            }
+        }
+        XCTAssertFalse(try FileManager.default.contentsOfDirectory(atPath: root.path).contains { $0.contains(".partial-") })
+    }
+
 }

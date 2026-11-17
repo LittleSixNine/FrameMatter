@@ -125,6 +125,7 @@ const SchemaField kFields[] = {
     // re-develops the negative. The knees and rooms are the *resolved* curve
     // (RFC-023 §8.3) -- `spk_scene_latitude` solves them from the UI's
     // pull-backs -- and a room of 0 turns that side off exactly.
+    {"scene_curve", "camera.scene_curve", S, SHOOT, false, 0, 0, false},
     {"scene_latitude_active",         "camera.scene_latitude.active",         B, SHOOT, false, 0, 0, false},
     {"scene_latitude_norm",           "camera.scene_latitude.norm",           S, SHOOT, false, 0, 0, false},
     {"scene_latitude_highlight_knee", "camera.scene_latitude.highlight_knee", F, SHOOT, true, -24.0, 24.0, false},
@@ -155,6 +156,11 @@ const SchemaField kFields[] = {
     // RFC-032/031: overscan and the date back. Native-only, placed
     // before `preview_long_edge` like every native field. SHOOT layer: both
     // are exposure on the negative, so an edit re-develops it.
+    {"overscan_factory_separate_halation", "film_render.overscan.factory_separate_halation", B, SHOOT, false, 0, 0, false},
+    {"diffusion_filter_active",          "camera.diffusion_filter.active",          B, SHOOT, false, 0, 0, false},
+    {"diffusion_filter_family",          "camera.diffusion_filter.filter_family",   S, SHOOT, false, 0, 0, false},
+    {"diffusion_filter_strength",        "camera.diffusion_filter.strength",        F, SHOOT, true, 0.0, 2.0, false},
+    {"diffusion_filter_spatial_scale",   "camera.diffusion_filter.spatial_scale",   F, SHOOT, true, 0.25, 4.0, false},
     {"overscan_active",          "film_render.overscan.active",           B, SHOOT, false, 0, 0, false},
     {"overscan_format",          "film_render.overscan.format",           S, SHOOT, false, 0, 0, false},
     {"overscan_mode",            "film_render.overscan.mode",             S, SHOOT, false, 0, 0, false},
@@ -166,6 +172,7 @@ const SchemaField kFields[] = {
     {"overscan_f_number",        "film_render.overscan.f_number",         F, SHOOT, true, 0.0, 64.0, false},
     {"overscan_gate",            "film_render.overscan.gate",             S, SHOOT, false, 0, 0, false},
     {"overscan_holes",           "film_render.overscan.holes",            S, SHOOT, false, 0, 0, false},
+    {"overscan_perforation",     "film_render.overscan.perforation",            S, SHOOT, false, 0, 0, false},
     {"aging_active", "print_render.aging.active", B, PRINT, false, 0, 0, false},
     {"aging_texture", "print_render.aging.texture", S, PRINT, false, 0, 0, false},
     {"aging_strength", "print_render.aging.strength", F, PRINT, true, 0, 1, false},
@@ -332,7 +339,9 @@ double* float_slot(Params& p, const std::string& path) {
     if (path == "film_render.grain.amount") return &p.film_render.grain.amount;
     if (path == "film_render.grain.particle_area_um2") return &p.film_render.grain.particle_area_um2;
     if (path == "film_render.grain.blur") return &p.film_render.grain.blur;
+    if (path == "camera.diffusion_filter.strength") return &p.camera.diffusion_filter.strength;
     if (path == "film_render.overscan.fog") return &p.film_render.overscan.fog;
+    if (path == "camera.diffusion_filter.spatial_scale") return &p.camera.diffusion_filter.spatial_scale;
     if (path == "film_render.overscan.leaks") return &p.film_render.overscan.leaks;
     if (path == "film_render.overscan.f_number") return &p.film_render.overscan.f_number;
     if (path == "film_render.date_imprint.exposure_ev") return &p.film_render.date_imprint.exposure_ev;
@@ -374,6 +383,8 @@ bool* bool_slot(Params& p, const std::string& path) {
     if (path == "print_render.contrast_mask.active") return &p.print_render.contrast_mask.active;
     if (path == "camera.scene_latitude.active") return &p.camera.scene_latitude.active;
     if (path == "camera.scene_latitude.b_active") return &p.camera.scene_latitude.b_active;
+    if (path == "film_render.overscan.factory_separate_halation") return &p.film_render.overscan.factory_separate_halation;
+    if (path == "camera.diffusion_filter.active") return &p.camera.diffusion_filter.active;
     if (path == "film_render.overscan.active") return &p.film_render.overscan.active;
     if (path == "film_render.overscan.pair") return &p.film_render.overscan.pair;
     if (path == "film_render.date_imprint.active") return &p.film_render.date_imprint.active;
@@ -389,11 +400,13 @@ std::string* str_slot(Params& p, const std::string& path) {
     if (path == "io.input_color_space") return &p.io.input_color_space;
     if (path == "enlarger.illuminant") return &p.enlarger.illuminant;
     if (path == "io.output_color_space") return &p.io.output_color_space;
+    if (path == "camera.scene_curve") return &p.camera.scene_curve;
     if (path == "camera.auto_exposure_method") return &p.camera.auto_exposure_method;
     if (path == "camera.filter") return &p.camera.filter;
     if (path == "camera.scene_latitude.norm") return &p.camera.scene_latitude.norm;
     if (path == "print_render.contrast_mask.scheme") return &p.print_render.contrast_mask.scheme;
     if (path == "film_render.scratches.leak_style") return &p.film_render.scratches.leak_style;
+    if (path == "camera.diffusion_filter.filter_family") return &p.camera.diffusion_filter.filter_family;
     if (path == "film_render.overscan.format") return &p.film_render.overscan.format;
     if (path == "film_render.overscan.mode") return &p.film_render.overscan.mode;
     if (path == "film_render.overscan.edge_text") return &p.film_render.overscan.edge_text;
@@ -405,6 +418,7 @@ std::string* str_slot(Params& p, const std::string& path) {
     if (path == "film_render.date_imprint.corner") return &p.film_render.date_imprint.corner;
     if (path == "film_render.overscan.gate") return &p.film_render.overscan.gate;
     if (path == "film_render.overscan.holes") return &p.film_render.overscan.holes;
+    if (path == "film_render.overscan.perforation") return &p.film_render.overscan.perforation;
     if (path == "film_render.overscan.carrier") return &p.film_render.overscan.carrier;
     return nullptr;
 }
@@ -443,7 +457,7 @@ const char* type_name(FieldType t) {
 bool is_known_exposure_method(const std::string& method) {
     // The three legacy meters are the Python reference's own and their
     // arithmetic does not change (RFC-015 §3); the four intents are §2.3.
-    return method == "center_weighted" || method == "average" || method == "median" ||
+    return method == "adaptive" || method == "center_weighted" || method == "average" || method == "median" ||
            method == "balanced" || method == "center" ||
            method == "protect_highlights" || method == "protect_shadows";
 }
@@ -452,6 +466,38 @@ bool is_known_contrast_mask_scheme(const std::string& scheme) { return scheme ==
 
 bool is_known_scene_latitude_norm(const std::string& norm) {
     return norm == "power" || norm == "y" || norm == "max";
+}
+
+bool parse_scene_curve(const std::string& text, std::vector<float>& table, size_t& n, std::string& error) {
+    table.clear();
+    n = 0;
+    if (text.empty()) return true;
+    const char* p = text.c_str();
+    while (*p) {
+        char* end = nullptr;
+        const double v = std::strtod(p, &end);
+        if (end == p || !std::isfinite(v) || v < 0.0 || v > 1.0) {
+            error = "'scene_curve' must be comma-separated numbers in 0..1";
+            table.clear();
+            return false;
+        }
+        if (table.size() >= 5 * 4096) { error = "scene_curve exceeds 4096 samples per row"; return false; }
+        table.push_back(float(v));
+        p = end;
+        if (*p == ',') { ++p; if (!*p) { error = "scene_curve has a trailing comma"; return false; } }
+        else if (*p) {
+            error = "'scene_curve' must be comma-separated numbers in 0..1";
+            table.clear();
+            return false;
+        }
+    }
+    if (table.size() % kSceneCurveRows != 0 || table.size() / kSceneCurveRows < 2) {
+        error = "'scene_curve' must hold five rows of at least two samples (rgb, luma, r, g, b)";
+        table.clear();
+        return false;
+    }
+    n = table.size() / kSceneCurveRows;
+    return true;
 }
 
 bool is_known_camera_filter(const std::string& name) {
@@ -543,7 +589,7 @@ bool validate_delta(const Json& delta, std::string& error, std::string& param) {
         if (kv.first == "auto_exposure_method" && !is_known_exposure_method(v.as_string())) {
             error = "'auto_exposure_method' = '" + v.as_string() +
                     "' is not an exposure method (balanced, center, protect_highlights, "
-                    "protect_shadows, center_weighted, average, median)";
+                    "protect_shadows, center_weighted, average, median, adaptive)";
             param = kv.first;
             return false;
         }
@@ -551,6 +597,10 @@ bool validate_delta(const Json& delta, std::string& error, std::string& param) {
             error = "'contrast_mask_scheme' = '" + v.as_string() + "' is not a scheme (gaussian)";
             param = kv.first;
             return false;
+        }
+        if (kv.first == "scene_curve") {
+            std::vector<float> table; size_t n = 0;
+            if (!parse_scene_curve(v.as_string(), table, n, error)) { param = kv.first; return false; }
         }
         if (kv.first == "scene_latitude_norm" && !is_known_scene_latitude_norm(v.as_string())) {
             error = "'scene_latitude_norm' = '" + v.as_string() +

@@ -67,6 +67,7 @@ KNOWN = {
 # exception exact: the test still fails on a rename, reordered row, changed
 # path/type/layer/default/live/range, or if the Python oracle later gains it.
 NATIVE_ONLY = {
+    "scene_curve": {"path": "camera.scene_curve", "type": "str", "layer": "shoot", "default": "", "live": False, "range": None},
     "extended_dynamic_range": {
         "path": "print_render.edr_enabled", "type": "bool", "layer": "print",
         "default": False, "live": False, "range": None,
@@ -189,6 +190,26 @@ NATIVE_ONLY = {
     # RFC-032's overscan and RFC-031's date back (API-SPEC §13).
     # Shoot layer and not live: every mark is exposure
     # on the negative. `overscan_active = false` dispatches nothing.
+    "overscan_factory_separate_halation": {
+        "path": "film_render.overscan.factory_separate_halation", "type": "bool", "layer": "shoot",
+        "default": False, "live": False, "range": None,
+    },
+    "diffusion_filter_active": {
+        "path": "camera.diffusion_filter.active", "type": "bool", "layer": "shoot",
+        "default": False, "live": False, "range": None,
+    },
+    "diffusion_filter_family": {
+        "path": "camera.diffusion_filter.filter_family", "type": "str", "layer": "shoot",
+        "default": 'black_pro_mist', "live": False, "range": None,
+    },
+    "diffusion_filter_strength": {
+        "path": "camera.diffusion_filter.strength", "type": "float", "layer": "shoot",
+        "default": 0.5, "live": False, "range": [0.0, 2.0],
+    },
+    "diffusion_filter_spatial_scale": {
+        "path": "camera.diffusion_filter.spatial_scale", "type": "float", "layer": "shoot",
+        "default": 1.0, "live": False, "range": [0.25, 4.0],
+    },
     "overscan_active": {
         "path": "film_render.overscan.active", "type": "bool", "layer": "shoot",
         "default": False, "live": False, "range": None,
@@ -228,6 +249,10 @@ NATIVE_ONLY = {
     "overscan_gate": {
         "path": "film_render.overscan.gate", "type": "str", "layer": "shoot",
         "default": 'auto', "live": False, "range": None,
+    },
+    "overscan_perforation": {
+        "path": "film_render.overscan.perforation", "type": "str", "layer": "shoot",
+        "default": "none", "live": False, "range": None,
     },
     "overscan_holes": {
         "path": "film_render.overscan.holes", "type": "str", "layer": "shoot",

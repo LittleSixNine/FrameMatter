@@ -30,6 +30,13 @@ struct ViewportState: Equatable, Sendable {
     var zoomPercent: Int { Int((zoomFraction * 100).rounded()) }
     var imageFrame: CGRect { CGRect(origin: offset, size: CGSize(width: image.width * scale, height: image.height * scale)) }
 
+    /// A fraction of a device pixel at fit can be rounding, rather than missing picture.
+    var imageOverflowsCanvas: Bool {
+        guard image.width > 0, image.height > 0, viewport.width > 0, viewport.height > 0 else { return false }
+        let tolerance = 0.5 / max(1, backingScale)
+        return imageFrame.width > viewport.width + tolerance || imageFrame.height > viewport.height + tolerance
+    }
+
     mutating func fit() {
         scale = fitScale
         centre()

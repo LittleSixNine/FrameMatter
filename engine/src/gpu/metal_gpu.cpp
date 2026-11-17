@@ -89,8 +89,8 @@ constexpr size_t kInlineLimit = 4096;
 
 class MetalGpu final : public Gpu {
 public:
-    MetalGpu(MTL::Device* device, bool owns_device, MTL::Library* library, MTL::CommandQueue* queue)
-        : device_(device), owns_device_(owns_device), library_(library), queue_(queue) {}
+    MetalGpu(MTL::Device* device, MTL::Library* library, MTL::CommandQueue* queue)
+        : device_(device), library_(library), queue_(queue) {}
 
     ~MetalGpu() override {
         // First, so no handler can be running (or start) while the pool below
@@ -101,7 +101,7 @@ public:
         if (command_buffer_) command_buffer_->release();
         if (queue_) queue_->release();
         if (library_) library_->release();
-        if (device_ && owns_device_) device_->release();
+        if (device_) device_->release();
     }
 
     // The pressure source (§3.2) and the idle timer (§3.1). Called by
@@ -1108,7 +1108,6 @@ private:
     }
 
     MTL::Device* device_ = nullptr;
-    bool owns_device_ = false;
     MTL::Library* library_ = nullptr;
     MTL::CommandQueue* queue_ = nullptr;
     MTL::CommandBuffer* command_buffer_ = nullptr;
@@ -1185,7 +1184,7 @@ Gpu* Gpu::create_metal(void* device_handle, const std::string& metallib_path, st
         device->release();
         return nullptr;
     }
-    auto* gpu = new MetalGpu(device, owns, library, queue);
+    auto* gpu = new MetalGpu(device, library, queue);
     // After construction, and best-effort: the source's context is the object,
     // and a source that cannot be made leaves pressure unmonitored rather than
     // failing the engine. `MetalGpu`'s own destructor undoes it.

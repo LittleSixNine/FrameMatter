@@ -79,6 +79,14 @@ struct CameraSection: View {
                                   selection: Binding(get: { session.exposureScope }, set: { session.exposureScope = $0 }),
                                   title: { $0 == .frame ? L("Frame", zh: "仅画面") : L("+ Film", zh: "含片基") })
                 }
+                if session.shotIsRAW {
+                    PillMenu(label: L("RAW Input", zh: "RAW 输入"),
+                             options: DecodeSettings.RAWInterpretation.allCases,
+                             title: { $0 == .legacy ? L("Legacy", zh: "旧版") : L("Neutral Shadows", zh: "中性阴影") },
+                             selection: Binding(get: { session.decode.rawInterpretation },
+                                                set: { var d = session.decode; d.rawInterpretation = $0; session.decode = d }),
+                             labelWidth: Theme.Metric.parameterLabelWidth)
+                }
                 WhiteBalanceRows(session: session)
                 // Lens fall-off is drawn about the picture's middle, which on
                 // a pair is the gap between two pictures: not offered there.

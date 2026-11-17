@@ -26,3 +26,10 @@ notice into the app's `Resources/engine/`; the app lists them only where
 `FeatureFlags.blackAndWhite` is on. `engine/tests/bw_checks.py` renders them from a scratch
 resources directory that overlays this one on `engine/resources/`. The engine does not read `paper_grades.json` or this
 directory's `neutral_print_filters.json`; a caller sends the pack on the wire.
+
+## Portra NC/VC (SpektraLab 2.4.1)
+
+| File | Contents | Source |
+|---|---|---|
+| `profiles/kodak_portra_160nc.json`, `kodak_portra_160vc.json`, `kodak_portra_400nc.json`, `kodak_portra_400vc.json` | Kodak Professional Portra 160NC, 160VC, 400NC, 400VC (the 2006–2011 line, C-41), colour negatives in the schema of spektrafilm 0.3.x (sub-layer CDFs, Status-M-normalised dyes, hanatos2025 window and surface). | Kodak publication E-190 (10/2006), pp. 8–11: characteristic curves, spectral sensitivity and spectral dye density (midscale neutral, D-min) digitised from the PDF's vector paths (grid residuals ≤ 0.001 D, 0.01 nm). Processed by spektrafilm's own profile factory (commit 9428440, GPL-3.0, with its generic starting dyes), then brought to the shipped profiles' form by rules measured on them (method in each profile's `metadata`); the hanatos2025 window fitted to the Otsu, Munsell, UEF forest and Japan natural-object reflectance sets. Built from modern Portra 160's and 400's own raw curves, the same chain renders within ΔE2000 0.85 / 1.6 (mean, ColorChecker on Portra Endura) of the shipped profiles. No array of a shipped profile is copied. |
+| `neutral_print_filters_colour.json` | The neutral pack (C 0, M, Y) of each of those four films on each colour paper under TH-KG3, in the shape of `engine/resources/neutral_print_filters.json`. **The engine reads this one** (`spk_engine_create`), filling only films spektrafilm's table does not name. | Fitted through the engine as spektrafilm's `fit_print_filters` fits its own: 18 % grey printed back at 18 %, M, Y and print exposure free. The same fit reproduces every shipped row it was tried on (16 pairs) to 0.01. |

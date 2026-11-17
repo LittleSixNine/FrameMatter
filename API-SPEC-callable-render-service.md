@@ -683,7 +683,7 @@ really puts the extreme, because the Fit solves the curve for the lift that
 
 **With the Digital Intermediate** (RFC-028): `film_present` runs before the DI node, so the film's edge and the gate are in the DI, but the scan's view of the holes (`spk_overscan_light`) has no DI counterpart and the perforations do not show. Open.
 
-Twenty-one native-only fields, all **shoot layer** and **not live**. Every mark
+Native-only fields below are all **shoot layer** and **not live**. Every mark
 (gate shadow, fog, leaks, edge print, DX code, date) is exposure on the
 negative, so an edit re-develops it (`negative_was_cached` is 0 on the next
 render). The fields sit before `preview_long_edge` with the other native
@@ -693,10 +693,12 @@ fields. Design and measurements: RFC-032 §26–§29 and RFC-031 (the date back)
 
 | field | path | type | default | range | meaning |
 |---|---|---|---|---|---|
+| `overscan_factory_separate_halation` | `film_render.overscan.factory_separate_halation` | bool | `false` | — | explicit independent factory-lettering exposure; missing/off keeps the original optical path. Date-back exposure stays with the scene. SHOOT, not live; see below. |
 | `overscan_active` | `film_render.overscan.active` | bool | `false` | — | the switch; `false` dispatches nothing (byte-identical to the pre-RFC build) |
-| `overscan_format` | `…overscan.format` | str | `"135"` | `135` \| `135_half` \| `120_645` \| `120_6x6` \| `120_6x7` \| `120_6x8` \| `120_6x9` \| `135_xpan` \| `135_full_67` \| `120_6x12` \| `120_6x17` | the film and its gate (`135_half`: 18 × 24 mm half frame, below). The panoramic long formats (2026-10-03, reversing "nothing larger than 6×9"): `135_xpan` 24 × 65 on 14 perforations, `120_6x12` 56 × 112, `120_6x17` 56 × 168; their gates are `square` until real strips are measured, and none carries a date |
+| `overscan_format` | `…overscan.format` | str | `"135"` | `135` \| `135_half` \| `120_645` \| `120_6x6` \| `120_6x7` \| `120_6x8` \| `120_6x9` \| `135_xpan` \| `135_full_67` \| `120_6x12` \| `120_6x17` \| `8_super` \| `16_super` \| `35_4perf` \| `65_5perf` \| `65_15perf` | the film and its gate (`135_half`: 18 × 24 mm half frame, below). The panoramic long formats (2026-10-03, reversing "nothing larger than 6×9"): `135_xpan` 24 × 65 on 14 perforations, `120_6x12` 56 × 112, `120_6x17` 56 × 168; their gates are `square` until real strips are measured, and none carries a date |
 | `overscan_mode` | `…overscan.mode` | str | `"strip"` | `strip` \| `filed` | the whole film width, or a filed-out carrier's sliver of rebate |
 | `overscan_gate` | `…overscan.gate` | str | `"auto"` | `auto` \| `square` \| `rounded` \| `eared` \| `shouldered` \| `kicked` | the gate's shape family (RFC-032 §29.2, §30.2); `auto` lets the camera seed pick one the format's real cameras have. `shouldered` (6×8) also seats the gate at the stock-name edge, with its ears ~1.2 mm from it and the edge print in the recess between them |
+| `overscan_perforation` | `…overscan.perforation` | str | `"none"` | `none` \| `ks65` | `ks65` adds two KS perforation rows on 120 film slit from 65 mm stock and suppresses the factory edge print. Valid only for 120 formats. Cine formats have their own perforations. |
 | `overscan_holes` | `…overscan.holes` | str | `"white"` | `white` \| `black` | what shows through the perforations (past the film's long edges is `overscan_carrier`'s). `white`: the picture's white (a scan's light). `black`: a black backing or a darkroom print. Either way the cut is not a perfectly vertical knife: a slight rounding of the base shows as a faint, patchy shoulder just outside each hole (1-6 % lift, ~0.03 mm), different on every hole, plus per-hole punch tolerances, roughness and burrs (RFC-032 §30.5, §31.5) |
 | `overscan_camera_seed` | `…overscan.camera_seed` | int | `1` | 0–2³¹−1 | **the body**: gate shape and radii, burrs, gate-to-emulsion gap, where the frame sits on the perforations, fog, flare |
 | `overscan_frame_seed` | `…overscan.frame_seed` | int | `1` | 0–2³¹−1 | **the advance and the scan**: weave, advance error, scan rotation, leaks, and which numbers are on the edge when `overscan_frame_number` is 0 |
@@ -973,6 +975,29 @@ and penumbra are inside a few tenths of a millimetre of it.
 3. `overscan_holes` acts only in the print stages and could become
    `print`-layer (a reprint, not a re-develop). It stays `shoot` until a
    reprint is shown to keep the overscan layout across a pipeline rebuild.
+
+**Independent factory-lettering exposure (optional, 2026-11-10).**
+`overscan_factory_separate_halation=false` (including a missing field) uses the
+original shared scene/lettering optical path; the app also defaults new photos
+to false. True keeps factory mark groups in a separate linear exposure plane.
+The scene and date-back groups retain normal lens blur and halation. Factory
+marks skip the camera lens blur, use the existing halation model with its four
+amount/spatial controls at 1 and per-channel return strengths multiplied by
+0.02, then add back before the common log exposure, development, DIR and grain.
+The master halation switch, back-reflection model and stock data are retained.
+The 0.02 is upstream look policy, not measured calibration. This ports
+[SpektraLab 2.2.0 commit 243d3a3](https://github.com/JamesQiu2005/SpektraLab/commit/243d3a362a6443db34109a93b622230699596d68)
+without its experimental environment toggle.
+
+The temporary plane belongs to the local film-stage chain and is released after
+`film_blurs`, including on errors/cancellation. It is not checkpoint/session
+state. Overscan with `striped=true` retains its existing explicit rejection for
+both switch values; no whole-frame fallback is introduced. Vulkan retains its
+existing explicit overscan rejection. With overscan disabled this setting has
+no effect, including on a date-only render. Host sidecars use
+`params.filmEdge.independentLetteringHalation`; only this leaf joins the Film
+Effects clipboard group. Other film-edge settings retain their prior ownership.
+
 
 ## 14. `filter_shift_scale` — what a unit of the two filter shifts is (2026-10-04)
 
@@ -1261,6 +1286,8 @@ user grading may change its displayed appearance. A narrow, seeded absorptive
 edge-colour variation uses the existing spectral base transmittance, with
 falloff 0.018 mm and support within 0.06 mm of the outline. It multiplies
 transmission rather than adding glow; it does not invent cyan/yellow wear.
+
+
 
 ### 18.1 Perforation light leaks
 
@@ -1640,3 +1667,182 @@ normalisation, black-floor removal or preprocessing blur occurs. The source,
 checksums and original mapping remain in the private development record. The
 renamed release derivatives are tracked and validated before bundling. Original-source redistribution
 and commercial permission have not been established.
+
+## 21. Adaptive subject exposure and derived face input (FrameMatter 2.0)
+
+`auto_exposure_method="adaptive"` is an additive native product intent. The
+seven existing methods, the C++ schema/default (`center_weighted`), old native
+opens and absent-field semantics retain their arithmetic and behaviour. The app
+selects adaptive for new photographs; a separate versioned RAW input
+interpretation owns shadow-neutral decode, never the meter selector. Neither
+film/paper profiles nor encoded/linear input conversion changes here.
+
+The frozen algorithm is the stage-C combination: balanced-relative grey+2.5..3
+highlight area and exact-rank P99.5, area smoothstep .005..03, at most 2EV scene
+reduction; the largest eligible face (confidence≥.6, clipped width/height≥16
+actual framed-meter pixels; equal area uses x then y) uses its central60%
+integer-rank median, grey+.5EV target and balanced+1EV ceiling. After a successful
+face measurement only, add `min(.5,max(0,Eb-Eold))`; no-face follows the scene
+rule. Detector fallback remains the host's revision3/1600 full image followed by
+four fixed60% crops only when the successful raw full-image array is empty.
+
+Precisely, with `g=.184`, `S(t)=clamp(t,0,1)^2*(3-2*clamp(t,0,1))` and
+`Y'=max(Y,g/4096)`: `T=log2(Y'/g)+Eb`, `A=mean(S((T-2.5)/.5))`,
+`wA=S((A-.005)/.025)`, `H=log2(P99.5(Y')/g)+Eb-2.5`,
+`Escene=Eb-wA*clamp(H,0,2)`. P99.5 uses integer rank `995*(N-1)/1000`.
+For a measured face median `F`, `Eold=max(Escene,min(log2(g*sqrt(2)/F),Eb+1))`
+and `E=Eold+min(.5,max(0,Eb-Eold))`; otherwise `E=Escene`.
+Central60% bounds are ceil-rounded, clipped, half-open pixel ranges in the
+meter's top-row-first Y plane; the median uses integer rank `(n-1)/2`.
+
+### 21.1 Atomic native face-evidence opens
+
+The existing `spk_open` and `spk_open_device` signatures remain unchanged. New
+`spk_open_with_faces(engine,image,faces_json,params_delta,out_json)` and
+`spk_open_device_with_faces(...)` borrow/copy exactly like the old entries and
+bind the supplied derived evidence to that same immutable source in one call.
+This is an in-memory input, not a file, parameter, sidecar, clipboard recipe or
+user-editable agent field. Their JSON has this independent version1 shape:
+
+```json
+{"version":1,"width":1600,"height":1067,"detector":"vision-face-v3-tile-v1",
+ "faces":[{"x":0.1,"y":0.2,"width":0.3,"height":0.4,"confidence":0.9}]}
+```
+
+Width/height must equal the actual `EngineFrame` input dimensions, after any
+app-owned crop/turn/perspective operation. Coordinates are normalized
+bottom-left within those exact input pixels. Each box requires finite numeric
+fields and positive width/height, with confidence in[0,1]. Vision rectangles may
+cross any image edge. Interior rectangles are retained exactly; only out-of-image
+rectangles are clipped to the unit image before geometry. Fully outside rectangles
+retain their original list index as zero-width/zero-height placeholders, ignored
+before rotation as well as sampling (a zero-area line cannot become a rotated
+face enclosure). Clipping is bounded even for very large finite coordinates.
+Maximum4096 boxes and2MiB JSON;
+version and detector must match the above. Malformed evidence fails before a
+session is registered. All entries/frames are copied, so callers may release
+their memory when open returns. `faces:[]` means a successful detection of no
+faces. Missing evidence is distinct: old methods/manual rendering remain valid,
+but selecting adaptive for a solve or active auto-exposed render requires a
+reopen with evidence and returns an explicit error otherwise. Detection failure
+must propagate from the host rather than masquerade as a successful empty array.
+
+`auto_exposure=false` with a retained `adaptive` method is dormant-adaptive
+manual mode. Its `solve(exposure|both)` does not require faces and returns the
+all seven old-method diagnostics, but omits `exposure_compensation_ev` from `solved_params`
+(no zero or substitute meter is written). `both` still solves the print filter
+pack. Callers retain the manual compensation and refresh diagnostics even when
+that exposure key is absent. Existing seven-method solve semantics are unchanged.
+
+### 21.2 Geometry, tiers, identity and cache
+
+The host detects in the same display domain as the linear pixels it hands the
+engine, including its own framing. Engine `io.geometry` still runs before the
+meter; the engine maps every source-box corner through the inverse of the same
+continuous pixel-edge crop/angle/quarter-turn/flip mapping as `node_geometry`,
+then takes the axis-aligned enclosure and clips it to the framed unit square.
+Faces cropped out have zero size and are ineligible. Rotation can expand the
+axis-aligned box: this is the defined rectangle approximation, not segmentation.
+Qualification and median bounds use the actual post-geometry meter dimensions,
+not source/display dimensions. The host does not double-apply engine geometry.
+
+The session's source and face evidence are immutable. Meter cache identity
+already includes all upstream colour/geometry fields; the new adaptive result
+has an independent optional slot alongside the seven unchanged results. A
+method change reuses that complete reading only when evidence exists. The
+missing-evidence guard precedes cache hits, so an old legacy open cannot silently
+select adaptive from a previously cached seven-method reading. Every render
+resolution uses the same1600-long-edge session meter; preview tier does not
+alter qualification/exposure. Host persistent cache identity additionally owns
+source/decode version, app framing and detector version.
+
+### 21.3 Additive capabilities and responses
+
+Capabilities adds `meter_face_input:{version:1,detector:"vision-face-v3-tile-v1",
+method:"adaptive"}`; transport/schema versions remain1. The existing
+`exposure_ev_by_method` retains all old keys. When adaptive is selected it also
+reports the three legacy readings (center_weighted/average/median), and adds
+`adaptive` only when valid
+face evidence (including a successful empty array) produced its reading. No NaN
+placeholder is serialized. The parameter field/table itself is unchanged:
+`auto_exposure_method` remains a string; this is a native-product accepted value,
+not a new Python-reference field or a modification of the external oracle.
+
+
+## 22. Pre-film scene curve (FrameMatter 2.0, opt-in)
+
+`scene_curve`: string, SHOOT, default `""`, non-live. Ported from SpektraLab
+`spektralab-v2.2.0` commit `243d3a362a6443db34109a93b622230699596d68`
+(Hanze Qiu; GPL-3.0-or-later). Empty bypasses the node exactly. Otherwise CSV
+contains five equal-length rows: RGB master, luminance, red, green, blue;
+2–4096 finite samples per row, each in 0…1. Malformed, non-finite, out-of-range
+or overlong tables reject the whole patch atomically. This node currently has
+a macOS Metal kernel; the retained Vulkan backend advertises it unsupported
+and explicitly refuses nonempty curve opens/patches. The upper bound and
+trailing-comma rejection are local trust-boundary safeguards.
+
+The axis is log2 exposure −8…+8 stops around linear mid-grey 0.184 (`slm::kMidgray`). It follows
+Scene Placement, precedes spectral upsampling, and samples at exposed E + Film
+Exposure compensation; exposure multiplication still occurs in its original
+node. The kernel applies luminance gain, RGB-master gain per channel, then
+individual channel gains. Nonpositive/nonfinite values get unit gain; beyond
+axis endpoints the endpoint gain is held. LUT bakes clear the curve. Curve
+changes rebuild the negative in live/full/reprint and striped execution.
+An explicit sampled identity table has interpolation roundoff; clients use
+empty for exact neutral bypass.
+
+The app stores five point curves in `params.sceneCurve`; missing is identity,
+identity sends empty. On half-frame pairs this is one shared transform over
+the combined scene, retained when selecting either half; it does not add a
+second per-half curve. Scene Placement clipboard copying includes this curve.
+The first UI uses the existing point editor with stop readout; it deliberately
+shows no post-print histogram or image eyedropper as scene-space evidence.
+Neutral print stamps omit the empty wire field, retaining old cache identity.
+
+### 22.1 Post-print colour additions
+
+`adjustments.vibrance` is −100…100, default 0. `adjustments.channelMixer`
+has red/green/blue output rows, each with red/green/blue input offsets
+−100…100 percent, default all zero. The effective matrix is identity + offsets;
+there is no constant term. Missing sidecar fields are neutral, new neutral
+fields are omitted from saved grade encoding to preserve existing grade/cache
+identities, while CLI/MCP readback explicitly exposes their defaults.
+
+These two controls are app Layer 2, not engine fields. They share the current
+Metal path for canvas, agent preview, pair grading, proof and file export.
+FrameMatter retains its encoded ProPhoto working space and existing order:
+old tone/colour balance → vibrance → old HSL → mixer → old curves/local masks/
+vignette and final clamp. This adapts upstream colour math; it does not adopt
+upstream's P3 space or reorder existing colour balance. Vibrance zero and
+mixer identity skip their new operations exactly, including when old tools
+are non-neutral. Masks keep the existing tone block and gain no new controls.
+Nonfinite/out-of-range persisted colour values are bounded at uniform packing;
+CLI/MCP validates and rejects illegal patches before applying any leaf.
+
+
+### 22.2 Host-only metadata acknowledgement
+
+A downstream crop can update dormant edge/date metadata while leaving the
+engine wire unchanged. The host submits that metadata-only state, and the
+scheduler acknowledges it (`sent = wanted`) without an engine call. This
+prevents CLI/MCP previews and exports from remaining pending after a crop;
+it does not add a render, change geometry or alter the scene.
+
+### FrameMatter optical effects, 2026-11-17
+
+The camera diffusion filter uses the upstream 2.4.1 PSF families
+`black_pro_mist`, `pro_mist`, `glimmerglass`, and `cinebloom`.
+Shoot-layer fields are `diffusion_filter_active` (bool, false),
+`diffusion_filter_family` (string, black_pro_mist),
+`diffusion_filter_strength` (float, 0–2, default 0.5), and
+`diffusion_filter_spatial_scale` (float, 0.25–4, default 1).
+FrameMatter applies the PSF with its existing exponential Gaussian-mixture
+blur before lens blur and halation. The upstream pyramid optimization is
+not used. Disabled is an exact bypass.
+
+Double exposure is composed by the macOS host from decoded scene-linear
+images before handing pixels to the engine. The original photograph sets
+the output extent, the second photograph fills that extent with scale,
+translation, quarter-turn and horizontal-flip controls. Its fraction of
+light is 0.1–0.9. The second image remains an external file reference in
+the sidecar. A missing reference fails development visibly.

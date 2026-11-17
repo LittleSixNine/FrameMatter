@@ -81,12 +81,35 @@ final class FrontendPolicyTests: XCTestCase {
             UserDefaults.standard.removeObject(forKey: Session.uiKey + "rightCollapsed")
         }
         let session = Session()
-        XCTAssertFalse(session.leftCollapsed)
         XCTAssertFalse(session.rightCollapsed)
 
         // They still fold for as long as the window lives.
-        session.leftCollapsed = true
-        XCTAssertTrue(session.leftCollapsed)
+        session.toggleInspector(.film)
+        XCTAssertTrue(session.rightCollapsed)
+    }
+
+    func testInspectorNavigationAndCropUseTheSameCanvasTool() {
+        let s = Session()
+        XCTAssertEqual(ParametersTab.allCases, [.presets, .preDev, .film, .postDev, .effects, .crop])
+        XCTAssertEqual(s.inspectorTab, .film)
+        s.toggleInspector(.film)
+        XCTAssertTrue(s.rightCollapsed)
+        s.toggleInspector(.postDev)
+        XCTAssertFalse(s.rightCollapsed)
+        s.toggleInspector(.crop)
+        XCTAssertEqual(s.tool, .crop)
+        s.cancelCrop()
+        XCTAssertEqual(s.inspectorTab, .postDev)
+        s.showInspector(.crop)
+        s.toggleInspector(.effects)
+        XCTAssertEqual(s.tool, .select)
+        XCTAssertEqual(s.inspectorTab, .effects)
+        s.showInspector(.crop)
+        s.toggleInspector(.crop)
+        XCTAssertTrue(s.rightCollapsed)
+        XCTAssertEqual(s.tool, .select)
+        s.toggleInspector(.crop)
+        XCTAssertEqual(s.tool, .crop)
     }
 
     /// When a frame gets a native render: whenever it is bigger than the
@@ -203,8 +226,8 @@ final class FrontendPolicyTests: XCTestCase {
         // develop is required to know how big the frame is.
         try await waitUntil("the frame to decode", timeout: 120) { session.decoded != nil }
         let native = try XCTUnwrap(session.decoded?.pixelSize)
-        XCTAssertEqual(native.width, 6000, accuracy: 1, "not the frame this test is about")
-        XCTAssertEqual(native.height, 4000, accuracy: 1)
+        XCTAssertGreaterThan(max(native.width, native.height), CGFloat(session.previewLongEdge),
+                             "the fixture must be larger than its preview")
         // The texture on the canvas is a tier; the size the viewport is
         // expressed against is the frame — which is the whole of D4.
         let texture = try XCTUnwrap(session.renderer.live)
@@ -219,9 +242,9 @@ final class FrontendPolicyTests: XCTestCase {
         session.renderer.viewport = vp
 
         session.zoomToFit()
-        // Fitted: 1200 points of 6000 native px, at 2 device px per point, is
-        // 0.4 — device px over native px, which is what the label means.
-        let fitted = 1200 * 2 / native.width
+        // Fit is constrained by either native axis, then converted from points
+        // to device pixels; the fixture may be portrait or landscape.
+        let fitted = min(1200 / native.width, 800 / native.height) * 2
         XCTAssertEqual(Double(session.zoomPercent), Double(fitted * 100), accuracy: 1,
                        "Fit is measured against the texture, not the frame")
 

@@ -24,6 +24,7 @@ import AppKit
 import SwiftUI
 
 struct BootWindow: View {
+    @Environment(\.openWindow) private var openWindow
     @Bindable var session: Session
 
     var body: some View {
@@ -79,6 +80,7 @@ struct BootWindow: View {
         }
         .preferredColorScheme(.dark)
         .ignoresSafeArea()
+        .onAppear { openWindow(id: "editor") }
     }
 }
 

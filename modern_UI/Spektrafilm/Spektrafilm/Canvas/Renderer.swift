@@ -371,6 +371,7 @@ final class Renderer: NSObject {
     /// and what `logicalSize(forSource:)` turns into the viewport's units.
     private(set) var sourceSize: CGSize?
     var layer2 = Layer2Uniforms() { didSet { layer2Dirty = true } }
+    var hsl = HSLUniforms() { didSet { layer2Dirty = true } }
     /// RFC-028: asked at encode time, of the texture being encoded. True for
     /// a Digital Intermediate, whose pixels are Cineon codes: the layer reads
     /// them through the DI view (`CineonLUT`) first, and Post-Dev then works
@@ -595,6 +596,8 @@ final class Renderer: NSObject {
         u.inputDecode = decode ? 1 : 0
         enc.setTexture(cineonTable, index: 4)
         enc.setBytes(&u, length: MemoryLayout<Layer2Uniforms>.stride, index: 0)
+        var globalHSL = hsl
+        enc.setBytes(&globalHSL, length: MemoryLayout<HSLUniforms>.stride, index: 4)
         var list = Array(masks.prefix(EditMask.maxCount))
         var count = UInt32(list.count)
         var overlay = maskOverlay
@@ -604,7 +607,15 @@ final class Renderer: NSObject {
             var dummy = MaskUniform()
             enc.setBytes(&dummy, length: MemoryLayout<MaskUniform>.stride, index: 1)
         } else {
-            enc.setBytes(&list, length: MemoryLayout<MaskUniform>.stride * list.count, index: 1)
+            let length = MemoryLayout<MaskUniform>.stride * list.count
+            if length > 4096 {
+                guard let buffer = device.makeBuffer(bytes: &list, length: length, options: .storageModeShared) else {
+                    enc.endEncoding(); return
+                }
+                enc.setBuffer(buffer, offset: 0, index: 1)
+            } else {
+                enc.setBytes(&list, length: length, index: 1)
+            }
         }
         enc.setBytes(&count, length: MemoryLayout<UInt32>.size, index: 2)
         enc.setBytes(&overlay, length: MemoryLayout<Int32>.size, index: 3)
@@ -845,14 +856,23 @@ final class Renderer: NSObject {
         // logical-over-texture ratio: a 5504 px detail texture and a 1600 px
         // live one already occupy the same rectangle because they are both
         // sampled by uv, not by pixel.
-        let output = max(viewport.image.width, 1)
-        u.imageSize = SIMD2(Float(viewport.image.width), Float(viewport.image.height))
-        u.offset = SIMD2(Float(viewport.offset.x * backingScale), Float(viewport.offset.y * backingScale))
-        u.scale = Float(viewport.scale * backingScale)
+        var display = viewport
+        // A film border can change the print's aspect ratio. Fit the bare decode
+        // for this draw and keep the print's zoom and pan ready for release.
+        if showOriginal, shown === original, !editingCrop {
+            let decodedOutput = geometry.outputSize(for: CGSize(width: shown.width, height: shown.height))
+            if !Self.sameShape(display.image, decodedOutput) {
+                display.resize(viewport: display.viewport, image: decodedOutput)
+            }
+        }
+        let output = max(display.image.width, 1)
+        u.imageSize = SIMD2(Float(display.image.width), Float(display.image.height))
+        u.offset = SIMD2(Float(display.offset.x * backingScale), Float(display.offset.y * backingScale))
+        u.scale = Float(display.scale * backingScale)
         // Source texture pixels actually spanned by the output, so the
         // sampler choice survives both the detail-tier swap and the crop.
         let spanned = editingCrop ? CGFloat(shown.width) : CGFloat(shown.width) * geometry.crop.width
-        u.magnification = Float(viewport.scale * backingScale * output / max(spanned, 1))
+        u.magnification = Float(display.scale * backingScale * output / max(spanned, 1))
         u.geometry = geometry.uniform(for: CGSize(width: shown.width, height: shown.height))
         u.editingCrop = editingCrop ? 1 : 0
         u.compare = compareMode.rawValue
@@ -945,14 +965,17 @@ final class Renderer: NSObject {
     /// Run Layer 2 over any texture synchronously. Used by export at full
     /// resolution and by the tests.
     func applyLayer2(to src: MTLTexture, uniforms: Layer2Uniforms? = nil,
+                     hsl: HSLUniforms? = nil,
                      into destination: MTLTexture? = nil) -> MTLTexture? {
         guard let dst = destination ?? store.makeWritable(width: src.width, height: src.height),
               dst.width == src.width, dst.height == src.height,
               let cb = queue.makeCommandBuffer() else { return nil }
-        let saved = layer2
+        let saved = layer2, savedHSL = self.hsl
         if let uniforms { layer2 = uniforms }
+        if let hsl { self.hsl = hsl }
         encodeLayer2(cb, src: src, dst: dst)
         layer2 = saved
+        self.hsl = savedHSL
         cb.commit()
         cb.waitUntilCompleted()
         return dst
@@ -967,7 +990,7 @@ final class Renderer: NSObject {
     func applyAdjustments(_ adjustments: Adjustments, to src: MTLTexture) -> MTLTexture? {
         store.upload(curves: adjustments.curves, into: curveTable)
         defer { store.upload(curves: currentCurves, into: curveTable); layer2Dirty = true }
-        return applyLayer2(to: src, uniforms: adjustments.uniforms)
+        return applyLayer2(to: src, uniforms: adjustments.uniforms, hsl: adjustments.colorUniforms)
     }
 
     /// `base` with each frame's rectangle taken from that frame's own texture
@@ -1015,7 +1038,7 @@ final class Renderer: NSObject {
         forceCineonDecode = true
         masks = []
         defer { forceCineonDecode = false; masks = savedMasks }
-        return applyLayer2(to: src, uniforms: viewOnly)
+        return applyLayer2(to: src, uniforms: viewOnly, hsl: HSLUniforms())
     }
 
     /// Apply crop, straighten, quarter turns and flips to a texture at its

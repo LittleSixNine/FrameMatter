@@ -30,7 +30,7 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
         allCases.filter { $0 != .masks || FeatureFlags.masks || FeatureFlags.toneMask }
     }
 
-    case filmAndPaper, exposure, whiteBalance, filmEffects, printEffects, scenePlacement, masks
+    case filmAndPaper, exposure, whiteBalance, filmEffects, printEffects, scenePlacement, masks, postDev, perspective, rawInterpretation
 
     var id: String { rawValue }
 
@@ -56,12 +56,19 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
         case .filmEffects:
             // The film format sets the physical scale of grain and halation.
             ["params.filmFormatMM", "params.filmFrame", "params.filmSide", "params.sideLengthMM",
-             "params.grainActive", "params.halationActive", "params.glareActive", "params.effects"]
+             "params.grainActive", "params.halationActive", "params.glareActive", "params.effects",
+             "params.diffusion", "params.doubleExposure", "params.filmEdge.independentLetteringHalation", "params.filmEdge.slitFilmPerforations"]
         case .printEffects:
             // Pre-flash is gated by the Print Effects switch already.
             ["params.printEffects", "params.preflashExposure"]
         case .scenePlacement:
-            ["params.sceneLatitude", "placementNeedsFit"]
+            ["params.sceneLatitude", "params.sceneCurve", "placementNeedsFit"]
+        case .rawInterpretation:
+            ["decode.rawInterpretation"]
+        case .perspective:
+            ["decode.perspective"]
+        case .postDev:
+            ["adjustments"]
         case .masks:
             ["params.contrastMask", "masks"]
         }
@@ -70,14 +77,27 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
     /// Stored fields no group owns, and why.
     static let notCopied: [String: String] = [
         "decode.lensCorrection": "a property of the lens, not of the look",
-        "adjustments": "the Post-Dev grade, outside the 2026-09-23 positioning",
         "geometry": "crop and framing belong to the photograph (PRD §7)",
         "heldCrop": "the photograph's own crop, kept while Film Edge frames it",
         "noFilm": "Don't Apply Film Simulation is the frame's own choice, like its crop",
         // Undecided (answer sheet F10 is open): whether Film Edge and Date Back
-        // become a group of their own. Until then neither is copied, and the
-        // seeds and the resolved text would be the source photograph's anyway.
-        "params.filmEdge": "Film Edge: not copied until a group is decided (F10)",
+        // become a group of their own. Only the independent-lettering look is
+        // copied with Film Effects; seeds, format and resolved text remain local.
+        "params.filmEdge.active": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.format": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.view": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.gate": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.holes": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.cameraSeed": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.frameSeed": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.frameNumber": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.fog": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.leaks": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.edgeText": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.fNumber": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.framing": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.pair": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.seeded": "Film Edge: photograph-specific settings are not copied (F10)",
         "params.agingTextures": "Saved whole-frame aging texture belongs to the photograph",
         "params.lightLeaks": "Perforation light and its saved patterns belong to the photograph",
         "params.scratches": "Film-border wear belongs to the photograph, like Film Edge and Date Back",
@@ -103,6 +123,9 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
         case .printEffects: L(.clipPrintEffects)
         case .scenePlacement: L(.clipScenePlacement)
         case .masks: L(.clipMasks)
+        case .rawInterpretation: L("RAW Interpretation", zh: "RAW 解释")
+        case .perspective: L("RAW Perspective", zh: "RAW 透视")
+        case .postDev: L("Post-Dev", zh: "后期调色")
         }
     }
 
@@ -115,6 +138,9 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
         case .printEffects: L(.clipPrintEffectsHelp)
         case .scenePlacement: L(.clipScenePlacementHelp)
         case .masks: L(.clipMasksHelp)
+        case .rawInterpretation: L("Copy the RAW shadow interpretation to RAW targets only.", zh: "仅向 RAW 目标复制阴影解释版本。")
+        case .perspective: L("Copy both perspective axes to single RAW targets only.", zh: "仅向单张 RAW 复制两个透视轴。")
+        case .postDev: L("Copy the complete post-print grade, including HSL, vibrance and channel mixing.", zh: "复制完整的成片后调色，包括 HSL、自然饱和度和通道混合。")
         }
     }
 }
@@ -127,9 +153,12 @@ struct SettingsClip: Equatable, Sendable {
     var sourceName: String
 
     /// `target` with this clip's groups written into it, and nothing else.
-    func applied(to target: Sidecar) -> Sidecar {
+    func applied(to target: Sidecar, perspectiveAllowed: Bool = true) -> Sidecar {
         var out = target
         let s = settings
+        if perspectiveAllowed && groups.contains(.rawInterpretation) { out.decode.rawInterpretation = s.decode.rawInterpretation }
+        if perspectiveAllowed && groups.contains(.perspective) { out.decode.perspective = s.decode.perspective }
+        if groups.contains(.postDev) { out.adjustments = s.adjustments }
         if groups.contains(.filmAndPaper) {
             out.params.filmStock = s.params.filmStock
             out.params.printStock = s.params.printStock
@@ -171,6 +200,10 @@ struct SettingsClip: Equatable, Sendable {
             out.params.halationActive = s.params.halationActive
             out.params.glareActive = s.params.glareActive
             out.params.effects = s.params.effects
+            out.params.diffusion = s.params.diffusion
+            out.params.doubleExposure = s.params.doubleExposure
+            out.params.filmEdge.slitFilmPerforations = s.params.filmEdge.slitFilmPerforations
+            out.params.filmEdge.independentLetteringHalation = s.params.filmEdge.independentLetteringHalation
         }
         if groups.contains(.printEffects) {
             out.params.printEffects = s.params.printEffects
@@ -188,6 +221,7 @@ struct SettingsClip: Equatable, Sendable {
             to.rolloff = from.rolloff
             to.maxLift = from.maxLift
             to.norm = from.norm
+            out.params.sceneCurve = s.params.sceneCurve
             out.params.sceneLatitude = to
             out.placementNeedsFit = to.highlightPullBack > 0 || to.shadowPullBack > 0
         }
@@ -196,5 +230,56 @@ struct SettingsClip: Equatable, Sendable {
             out.masks = s.masks
         }
         return out
+    }
+}
+
+/// Presets carry a reusable look. Frame-specific crop, borders, stamps and wear
+/// stay with the target, using the same transfer rules as Copy Adjustments.
+struct DevelopPreset: Identifiable, Codable {
+    static let previewLongEdge = 800
+    var id: UUID
+    var name: String
+    var settings: Sidecar
+    var category: String?
+    var favorite: Bool?
+    var includedGroups: Set<ClipboardGroup>?
+    var includesEffects: Bool?
+    var includesSecondPhoto: Bool?
+
+    static let groups: Set<ClipboardGroup> = [.filmAndPaper, .exposure, .whiteBalance, .filmEffects,
+                                              .printEffects, .scenePlacement, .postDev]
+    var clip: SettingsClip {
+        SettingsClip(groups: includedGroups ?? Self.groups, settings: settings, sourceName: name)
+    }
+
+    init(name: String, source: Sidecar) {
+        id = UUID()
+        self.name = name
+        settings = SettingsClip(groups: Self.groups, settings: source, sourceName: name).applied(to: Sidecar())
+    }
+
+    func applied(to target: Sidecar, perspectiveAllowed: Bool = true) -> Sidecar {
+        var result = clip.applied(to: target, perspectiveAllowed: perspectiveAllowed)
+        if (includedGroups ?? Self.groups).contains(.filmAndPaper) { result.noFilm = false }
+        if includesEffects == false { result.params.diffusion = target.params.diffusion }
+        if includesEffects == true {
+            result.params.diffusion = settings.params.diffusion
+            result.params.lightLeaks = settings.params.lightLeaks
+            result.params.agingTextures = settings.params.agingTextures
+            result.params.scratches = settings.params.scratches
+            var edge = settings.params.filmEdge
+            edge.cameraSeed = target.params.filmEdge.cameraSeed
+            edge.frameSeed = target.params.filmEdge.frameSeed
+            edge.frameNumber = target.params.filmEdge.frameNumber
+            edge.edgeText = target.params.filmEdge.edgeText
+            edge.framing = target.params.filmEdge.framing
+            edge.pair = target.params.filmEdge.pair
+            result.params.filmEdge = edge
+        }
+        // Old presets retain their saved scope; new ones explicitly decide whether a second photo travels.
+        if let include = includesSecondPhoto {
+            result.params.doubleExposure = include ? settings.params.doubleExposure : target.params.doubleExposure
+        }
+        return result
     }
 }

@@ -178,3 +178,11 @@ struct CurveSet: Codable, Equatable, Sendable {
         CurveChannel.allCases.flatMap { self[$0].table() }
     }
 }
+
+// Scene curve uses the upstream five-row wire, but samples stops −8…8 around film mid-grey.
+extension CurveSet {
+    var sceneWire: String {
+        isIdentity ? "" : CurveChannel.allCases.flatMap { self[$0].table(size: 129) }
+            .map { String($0) }.joined(separator: ",")
+    }
+}

@@ -187,6 +187,8 @@ struct PrintCurvesMorphParams {
 // per stock and format and needs no seed.
 struct OverscanParams {
     bool active = false;
+    std::string perforation = "none";
+    bool factory_separate_halation = false; // opt-in independent factory exposure; missing = legacy
     std::string format = "135";      // 135 | 135_half | 120_645 | 120_6x6 | 120_6x7 | 120_6x8 | 120_6x9
     std::string mode = "strip";      // strip (the whole film width) | filed (a sliver of rebate)
     int camera_seed = 1;
@@ -357,7 +359,12 @@ struct SceneLatitudeParams {
 bool is_known_scene_latitude_norm(const std::string& norm);
 bool is_known_camera_filter(const std::string& name);
 
+inline constexpr size_t kSceneCurveRows = 5;
+inline constexpr int kSceneCurveStops = 8;
+bool parse_scene_curve(const std::string& text, std::vector<float>& table, size_t& n, std::string& error);
+
 struct CameraParams {
+    std::string scene_curve; // Empty bypasses the pre-film scene curve exactly.
     double exposure_compensation_ev = 0.0;
     bool auto_exposure = true;
     /// Which exposure intent the meter follows (RFC-015 §2.3). The default is
@@ -573,8 +580,8 @@ Json transport_schema();
 // the user-facing one; `param` names the offending field.
 bool validate_delta(const Json& delta, std::string& error, std::string& param);
 
-// The seven accepted `auto_exposure_method` names: RFC-015 §2.3's four intents
-// plus the three legacy meters. The names are checked here rather than at
+// The seven existing `auto_exposure_method` names plus native adaptive:
+// RFC-015 §2.3's four intents, three legacy meters, and derived face exposure. The names are checked here rather than at
 // render time because `set_params`/`open` is where a user error can still be
 // reported as one — the meter used to be the first thing to notice, which
 // meant an unknown name surfaced as a failed render long after the edit.

@@ -67,7 +67,8 @@ bool SetupCache::cam16(const Colour& colour, const std::string& cs,
     }
     ++misses_;
     Cam16Setup setup;
-    if (!cam16_setup_for(colour, cs, setup, error)) return false;
+    if (!cam16_setup_for(colour, cs, setup, error,
+                         resources_dir_.empty() ? "" : resources_dir_ + "/cam16")) return false;
     out = &cam16_.emplace(cs, std::move(setup)).first->second;
     return true;
 }

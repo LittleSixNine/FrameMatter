@@ -81,7 +81,7 @@ struct FilmFormatSection: View {
                 .frame(minWidth: width, alignment: .leading)
             Text(session.params.filmEdge.format.pillTitle)
                 .font(Theme.Font.label).foregroundStyle(Theme.text)
-                .lineLimit(1).fixedSize()
+                .lineLimit(1).minimumScaleFactor(0.65)
                 .padding(.horizontal, 10)
                 .frame(height: Theme.Metric.controlHeight)
                 .background(Theme.pill, in: Capsule())

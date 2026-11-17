@@ -202,6 +202,21 @@ spk_session* spk_open(spk_engine* engine, const spk_image* input,
 spk_session* spk_open_device(spk_engine* engine, const spk_device_image* input,
                              const char* params_delta_json, char** out_json);
 
+/* Atomic open with successful face-detection evidence for these exact input pixels.
+ * `faces_json` is separate from params and is copied, never retained or persisted.
+ * Shape: {"version":1,"width":W,"height":H,"detector":"vision-face-v3-tile-v1",
+ *         "faces":[{"x":0.1,"y":0.2,"width":0.3,"height":0.4,"confidence":0.9}]}.
+ * Boxes are normalized bottom-left in the actual input frame, before io.geometry.
+ * [] means a successful no-face detection; NULL/missing evidence is not no-face.
+ * Existing opens remain valid for all seven legacy methods. Adaptive requires
+ * evidence, including when selected later through spk_set_params. */
+spk_session* spk_open_with_faces(spk_engine* engine, const spk_image* input,
+                                 const char* faces_json, const char* params_delta_json,
+                                 char** out_json);
+spk_session* spk_open_device_with_faces(spk_engine* engine, const spk_device_image* input,
+                                        const char* faces_json, const char* params_delta_json,
+                                        char** out_json);
+
 /* `out_json` receives `{"invalidated": ..., "params": {...}}`. */
 spk_status spk_set_params(spk_session* session, const char* params_delta_json,
                           char** out_json);

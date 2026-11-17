@@ -33,6 +33,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "adaptive_meter.hpp"
 #include "blob.hpp"
 #include "blur.hpp"
 #include "cam16.hpp"
@@ -220,6 +221,7 @@ struct Progress {
 // because the trim and the percentiles are shared.
 struct ExposureEvs {
     double balanced = 0.0;
+    std::optional<meter::AdaptiveResult> adaptive;
     double center = 0.0;
     double protect_highlights = 0.0;
     double protect_shadows = 0.0;
@@ -269,6 +271,11 @@ struct OverscanLayout {
     double A[4] = {1, 0, 0, 1};           // canvas mm (about its centre) -> film mm
     double cu = 0, cv = 0, cs = 0, ct = 0;
     double scan_rot = 0;
+    bool holes = false, cine = false;
+    int perf_shape = 0, perf_rows = 0;
+    double perf_dt = 0, perf_rmin = 0, perf_rmax = 0, perf_jit = 0, nb_prev = 0, nb_next = 0;
+    bool stripes = false;
+    double stripe_g_rgb[3]{}, stripe_r_rgb[3]{};
     bool perforated = false;
     double perf_pitch = 0, perf_w = 0, perf_h = 0, perf_edge = 0, perf_r = 0, perf_phase = 0;
     double fog_amp = 0, fog_width = 0.5, fog_period = 8.0;
@@ -356,8 +363,9 @@ public:
     // RFC-015 P.1: the session's one meter of the frame. `in` is the frame at
     // the meter's own resolution; this runs the node's own upstream nodes on
     // it (input_cast, decode_input, geometry), reads the whole image back and
-    // returns all seven methods' EVs. Leaves the pipeline's pitch as it was.
-    bool measure_meter_evs(const Image& in, ExposureEvs& out, std::string& error);
+    // returns the seven existing EVs and, with evidence, adaptive. Leaves the pitch unchanged.
+    bool measure_meter_evs(const Image& in, ExposureEvs& out, std::string& error,
+                           const std::vector<meter::FaceBox>* faces = nullptr);
 
     // RFC-024: the mask this print would apply, as the delta in stops at each
     // cell of its analysis grid (`gw` x `gh`, row-major, the frame's own
@@ -403,6 +411,7 @@ public:
     /// function. Threading the struct also means a crossing between a band run
     /// and a whole-frame stage has to copy every *live* field, not just `cur`.
     struct Chain {
+        Image factory_exposure; // overscan -> blurs only; whole-frame only; never retained on Pipeline
         Image cur;         // the running image: each stage's input and output
         Image log_e_film;  // film only: live from `log_and_curves` to `couplers`
     };
@@ -656,9 +665,10 @@ private:
     double overscan_gate_long_mm() const;
     bool overscan_layout(uint32_t frame_w, uint32_t frame_h, std::string& error);
     void overscan_params_block(std::vector<float>& P) const;
-    bool node_overscan(const Image& in, Image& out, std::string& error);
+    bool node_overscan(const Image& in, Image& out, std::string& error, Image* factory = nullptr);
     bool node_overscan_film_present(const Image& in, Image& out, std::string& error);
     bool node_overscan_light(const Image& in, Image& out, std::string& error);
+    bool node_diffusion(const Image& in, Image& out, std::string& error);
     bool node_lens_blur(const Image& in, Image& out, std::string& error);
     bool node_halation(const Image& in, Image& out, std::string& error);
     bool node_expose_log(const Image& in, Image& out, std::string& error);
@@ -673,6 +683,8 @@ private:
 
     // RFC-023's Scene Latitude Mapping (`scene_latitude.cpp`): pointwise,
     // before `node_upsample`, and not dispatched at all while it is off.
+    bool scene_curve_wanted() const;
+    bool node_scene_curve(const Image& in, Image& out, std::string& error);
     bool scene_latitude_wanted() const;
     bool node_scene_latitude(const Image& in, Image& out, std::string& error);
 

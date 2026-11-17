@@ -115,10 +115,9 @@ final class PanelResizeWiringTests: XCTestCase {
     func testNothingOnTheParametersRailIsWiderThanItsNarrowest() {
         let s = Session()
         let d = UserDefaults.standard
-        let tabKey = Session.uiKey + "parametersTab"
         let open = ["latitude", "camera", "filmFormat", "scenePlacement", "wb2", "exposure2", "curve", "colorbalance"]
             .map { Session.uiKey + "section." + $0 } + [Session.decoupleEffectsKey]
-        let keys = [tabKey] + open
+        let keys = open
         let saved = keys.map { d.object(forKey: $0) }
         let language = Localization.shared.language
         let scale = InterfaceScaleStore.shared.scale
@@ -137,7 +136,7 @@ final class PanelResizeWiringTests: XCTestCase {
             for setting in [LanguageSetting.english, .simplifiedChinese] {
                 Localization.shared.language = setting
                 for tab in ParametersTab.allCases {
-                    d.set(tab.rawValue, forKey: tabKey)
+                    s.showInspector(tab)
                     // Off, then on in each format: the row names the format.
                     let edges: [FilmEdgeFormat?] = tab == .preDev ? [nil] + FilmEdgeFormat.allCases.map { $0 } : [nil]
                     for format in edges {
@@ -155,6 +154,66 @@ final class PanelResizeWiringTests: XCTestCase {
                 }
             }
         }
+    }
+
+    func testPresetLibraryUsesTheRemainingPanelHeightWithOneScrollView() async throws {
+        let suite = "preset-layout-" + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let session = Session(clipboardDefaults: defaults)
+        for i in 0..<12 {
+            try session.storeDevelopPreset(DevelopPreset(name: "Preset " + String(i), source: Sidecar()))
+        }
+        session.showInspector(.presets)
+        let host = NSHostingView(rootView: RightPanel(session: session))
+        let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 320, height: 900),
+                              styleMask: [.titled], backing: .buffered, defer: false)
+        window.contentView = host
+        window.orderFront(nil)
+        defer { window.orderOut(nil) }
+        try await Task.sleep(for: .milliseconds(250))
+        host.layoutSubtreeIfNeeded()
+        func scrolls(in view: NSView) -> [NSScrollView] {
+            ((view as? NSScrollView).map { [$0] } ?? []) + view.subviews.flatMap { scrolls(in: $0) }
+        }
+        let views = scrolls(in: host)
+        XCTAssertEqual(views.count, 1, "the preset page must not nest a capped grid inside another scroll view")
+        let library = try XCTUnwrap(views.last)
+        XCTAssertGreaterThan(library.frame.height, 600, "the candidate library must fill the remaining inspector height")
+        window.setContentSize(CGSize(width: 320, height: 680))
+        try await Task.sleep(for: .milliseconds(150))
+        host.layoutSubtreeIfNeeded()
+        XCTAssertGreaterThan(library.frame.height, 380)
+        XCTAssertLessThan(library.frame.height, 600)
+    }
+
+    func testInspectorRestoresScrollAfterSwitchingTabs() async throws {
+        let session = Session()
+        session.showInspector(.postDev)
+        let host = NSHostingView(rootView: RightPanel(session: session))
+        let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 320, height: 160),
+                              styleMask: [.titled], backing: .buffered, defer: false)
+        window.contentView = host
+        window.orderFront(nil)
+        defer { window.orderOut(nil) }
+
+        func page(in view: NSView) -> NSScrollView? {
+            if let scroll = view as? NSScrollView { return scroll }
+            return view.subviews.compactMap { page(in: $0) }.first
+        }
+        try await Task.sleep(for: .milliseconds(200))
+        let scroll = try XCTUnwrap(page(in: host))
+        scroll.contentView.scroll(to: CGPoint(x: 0, y: 120))
+        scroll.reflectScrolledClipView(scroll.contentView)
+        try await Task.sleep(for: .milliseconds(100))
+        let before = scroll.contentView.bounds.minY
+        XCTAssertGreaterThan(before, 80)
+        session.showInspector(.effects)
+        try await Task.sleep(for: .milliseconds(100))
+        session.showInspector(.postDev)
+        try await Task.sleep(for: .milliseconds(200))
+        let reopened = try XCTUnwrap(page(in: host))
+        XCTAssertEqual(reopened.contentView.bounds.minY, before, accuracy: 1)
     }
 
     /// Everything about the store, on a **throwaway suite**.

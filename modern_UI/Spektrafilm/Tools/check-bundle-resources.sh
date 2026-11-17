@@ -30,7 +30,7 @@ root=${SRCROOT:-$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)}
 res="$root/Spektrafilm/Resources"
 
 missing=""
-for f in spektrafilm_constants.bin spektrafilm.metallib neutral_print_filters.json print_luts.json fonts/DSEG7ClassicMini-BoldItalic.ttf fonts/DSEG7ClassicMini-Italic.ttf fonts/DSEG7ClassicMini-Regular.ttf fonts/DSEG7Classic-Regular.ttf fonts/DSEG-LICENSE.txt; do
+for f in spektrafilm_constants.bin spektrafilm.metallib neutral_print_filters.json neutral_print_filters_colour.json profiles/kodak_portra_160nc.json profiles/kodak_portra_160vc.json profiles/kodak_portra_400nc.json profiles/kodak_portra_400vc.json print_luts.json fonts/DSEG7ClassicMini-BoldItalic.ttf fonts/DSEG7ClassicMini-Italic.ttf fonts/DSEG7ClassicMini-Regular.ttf fonts/DSEG7Classic-Regular.ttf fonts/DSEG-LICENSE.txt; do
   [ -f "$res/engine/$f" ] || missing="$missing engine/$f"
 done
 [ -d "$res/engine/profiles" ] || missing="$missing engine/profiles/"
@@ -41,6 +41,14 @@ if [ -n "$missing" ]; then
   echo "error: run \`engine/build.sh bundle\`, which rsyncs the tracked" >&2
   echo "error: \`engine/resources/\` into the app's Resources folder" >&2
   exit 1
+fi
+
+# Optional on older bundles: the engine computes the exact serial table on a miss.
+if [ -d "$res/engine/cam16" ]; then
+  (cd "$res/engine/cam16" && shasum -a 256 -c SHA256SUMS) || {
+    echo "error: CAM16 artifacts are incomplete or stale; run engine/build.sh bundle" >&2
+    exit 1
+  }
 fi
 
 licences=""

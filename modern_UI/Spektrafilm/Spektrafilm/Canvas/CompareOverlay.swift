@@ -22,7 +22,7 @@ struct CompareOverlay: View {
     var body: some View {
         GeometryReader { geo in
             let v = session.viewportSnapshot
-            if session.comparing, v.image.width > 1 {
+            if session.comparing && !session.showingOriginal, v.image.width > 1 {
                 let x = lineX(v)
                 let top = v.offset.y
                 let bottom = v.offset.y + v.image.height * v.scale
@@ -61,7 +61,7 @@ struct CompareOverlay: View {
         // Unlike the crop and mask overlays this one *does* take the mouse:
         // the handle is the control. The gesture is attached above rather
         // than here so the rest of the canvas keeps its pan.
-        .allowsHitTesting(session.comparing)
+        .allowsHitTesting(session.comparing && !session.showingOriginal)
     }
 
     /// Where "After" goes: its corner, unless the canvas's status badges are

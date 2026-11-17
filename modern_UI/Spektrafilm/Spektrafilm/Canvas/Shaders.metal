@@ -41,6 +41,8 @@ struct Layer2Uniforms {           // must match Adjustments.swift
     uint inputDecode;
 };
 
+struct HSLUniforms { float4 bands[8]; uint active; float vibrance; uint mixerActive; uint pad; float4 mixR; float4 mixG; float4 mixB; };
+
 struct GeometryUniform {           // must match Geometry.Uniform in Geometry.swift
     float2 centre;                // crop centre, normalised to the source
     float2 halfExtent;            // crop half-size, normalised
@@ -267,6 +269,30 @@ static inline float maskCoverage(constant MaskUniform &m, float2 uv, float3 rgb,
 /// the vignette stay in the kernel: a curve is a global statement about a
 /// tone scale and a vignette is a lens, and neither means anything applied to
 /// a region.
+// HSL on the encoded working-space RGB. Circular smooth interpolation avoids seams at red.
+static inline float3 layer2HSL(float3 source, constant HSLUniforms &u) {
+    if (u.active == 0) return source;
+    float3 c = saturate(source);
+    float hi = max(c.r, max(c.g, c.b)), lo = min(c.r, min(c.g, c.b));
+    float d = hi - lo;
+    if (d <= 1e-5) return source;
+    float l = (hi + lo) * 0.5;
+    float s = d / max(1e-5f, 1.0f - abs(2.0f*l - 1.0f));
+    float h = hi == c.r ? (c.g-c.b)/d : (hi == c.g ? (c.b-c.r)/d+2.0f : (c.r-c.g)/d+4.0f);
+    h = fract(h / 6.0f + 1.0f);
+    constexpr float anchors[9] = {0, 30, 60, 120, 180, 240, 270, 300, 360};
+    uint i = 0; float degrees = h * 360.0f;
+    while (i < 7 && degrees >= anchors[i+1]) ++i;
+    float t = smoothstep(anchors[i], anchors[i+1], degrees);
+    float3 a = mix(u.bands[i].xyz, u.bands[(i+1)%8].xyz, t);
+    if (all(a == float3(0))) return source;
+    h = fract(h + a.x + 1.0f);
+    s = a.y >= 0 ? mix(s, 1.0f, a.y) : s*(1.0f+a.y);
+    l = a.z >= 0 ? mix(l, 1.0f, a.z) : l*(1.0f+a.z);
+    float3 wheel = saturate(abs(fract(h + float3(0, 2.0f/3.0f, 1.0f/3.0f))*6.0f-3.0f)-1.0f);
+    return l + (wheel-0.5f)*(1.0f-abs(2.0f*l-1.0f))*s + (source - c);
+}
+
 static inline float3 layer2Tone(float3 c, constant Layer2Uniforms &u) {
     // 1. white balance (scan-side gains on encoded values)
     c *= u.wbGain;
@@ -321,6 +347,7 @@ kernel void layer2(texture2d<float, access::read> src [[texture(0)]],
                    constant MaskUniform *masks [[buffer(1)]],
                    constant uint &maskCount [[buffer(2)]],
                    constant int &maskOverlay [[buffer(3)]],
+                   constant HSLUniforms &hsl [[buffer(4)]],
                    uint2 gid [[thread_position_in_grid]])
 {
     if (gid.x >= dst.get_width() || gid.y >= dst.get_height()) return;
@@ -349,6 +376,15 @@ kernel void layer2(texture2d<float, access::read> src [[texture(0)]],
 
     if (u.enabled != 0) {
         c = layer2Tone(c, u);
+        // SpektraLab 2.2.0 colour math; retain FrameMatter's existing CB/HSL order and ProPhoto space.
+        if (hsl.vibrance != 0.0f) {
+            float mx = max(max(c.r, c.g), c.b), mn = min(min(c.r, c.g), c.b);
+            float sat = mx > 1e-4f ? saturate((mx - mn) / mx) : 0.0f;
+            float y = luma(c);
+            c = y + (c - y) * max(1.0f + hsl.vibrance * (1.0f - sat), 0.0f);
+        }
+        c = layer2HSL(c, hsl);
+        if (hsl.mixerActive != 0) { c = float3(dot(c, hsl.mixR.xyz), dot(c, hsl.mixG.xyz), dot(c, hsl.mixB.xyz)); }
         // 7. curves — luma, then RGB master, then per channel
         if (u.curvesActive != 0) {
             c = saturate(c);

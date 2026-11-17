@@ -20,6 +20,7 @@ inline const char* windows_unported_error(bool di, bool latitude, bool mask,
 }
 
 inline const char* windows_unported_error(const Params& p) {
+    if (!p.camera.scene_curve.empty()) return "scene curve is not implemented by the Windows Vulkan backend yet";
     if (p.print_render.aging.active) return "aging textures are not implemented by the Windows Vulkan backend yet";
     if (p.print_render.wide_leaks.active) return "wide light leaks are not implemented by the Windows Vulkan backend yet";
     return windows_unported_error(p.io.digital_intermediate, p.camera.scene_latitude.active,
@@ -30,6 +31,7 @@ inline const char* windows_unported_error(const Params& p) {
 // Validate an already schema-checked delta before it mutates the session.
 // A valid Windows session cannot already have any of these flags enabled.
 inline const char* windows_unported_delta_error(const Json& delta) {
+    if (!delta.at("scene_curve").as_string().empty()) return "scene curve is not implemented by the Windows Vulkan backend yet";
     if (delta.at("aging_active").as_bool()) return "aging textures are not implemented by the Windows Vulkan backend yet";
     if (delta.at("wide_leak_active").as_bool()) return "wide light leaks are not implemented by the Windows Vulkan backend yet";
     return windows_unported_error(delta.at("digital_intermediate").as_bool(),

@@ -144,9 +144,9 @@ enum SideUnit: String, CaseIterable, Identifiable, Sendable {
     }
 }
 
-/// RFC-015 §2.3's four exposure intents, as the Camera section's Tone pill
-/// offers them. The case names are the wire values.
+/// Adaptive plus RFC-015's preserved exposure intents. Case names are wire values.
 enum ExposureMethod: String, CaseIterable, Identifiable, Sendable {
+    case adaptive
     case balanced
     case center
     case protectHighlights = "protect_highlights"
@@ -157,6 +157,7 @@ enum ExposureMethod: String, CaseIterable, Identifiable, Sendable {
     /// What the pill shows: lowercase, as the user's drawing has it.
     var title: String {
         switch self {
+        case .adaptive: "adaptive"
         case .balanced: "balanced"
         case .center: "center"
         case .protectHighlights: "protect highlights"
@@ -168,7 +169,7 @@ enum ExposureMethod: String, CaseIterable, Identifiable, Sendable {
     ///
     /// `nil` is a sidecar written before this field existed. It still meters
     /// with the engine's `center_weighted`, so the pill says which meter is
-    /// actually running rather than pretending to be one of the four — and
+    /// actually running rather than pretending to be one of the offered intents — and
     /// that name is deliberately not in the menu, because choosing it is not a
     /// thing a user can do.
     static func title(forWire value: String?) -> String {
@@ -177,8 +178,8 @@ enum ExposureMethod: String, CaseIterable, Identifiable, Sendable {
     }
 }
 
-/// What the **AE Method** pill offers, which is the four intents plus
-/// `custom` — and `custom` is not a fifth meter. It is the meter switched
+/// What the **AE Method** pill offers, which is the metering intents plus
+/// `custom` — and `custom` is not another meter. It is the meter switched
 /// **off**.
 ///
 /// The PRD: "take the linearized baseline as the +0.0 baseline (also `As
@@ -490,8 +491,8 @@ struct FilmParams: Codable, Equatable, Sendable {
         case filmFormatMM, filmFrame, filmSide, sideLengthMM, grainActive, halationActive
         case printBrightnessStops, yFilterShift, mFilterShift, glareActive, scanFilm
         case extendedDynamicRange, preflashExposure, contrastMask, sceneLatitude, effects, printEffects
-        case digitalIntermediate, filmEdge, dateBack, scratches, lightLeaks, agingTextures
-        case sceneLatitudeOther, placementIsRight, pairSplit
+        case diffusion, doubleExposure, digitalIntermediate, filmEdge, dateBack, scratches, lightLeaks, agingTextures
+        case sceneLatitudeOther, placementIsRight, pairSplit, sceneCurve
     }
 
     // --- stock (shoot for film, print for paper) ---
@@ -507,12 +508,19 @@ struct FilmParams: Codable, Equatable, Sendable {
     /// synthesized `init(from:)` uses `decodeIfPresent`, which ignores the
     /// default below), the wire carries no `auto_exposure_method`, and the
     /// engine keeps its own default of `center_weighted`, so that edit renders
-    /// byte for byte as it always did. The four names are the intents:
-    /// `balanced`, `center`, `protect_highlights`, `protect_shadows`.
+    /// byte for byte as it always did. The named intents include
+    /// `adaptive`, `balanced`, `center`, `protect_highlights`, `protect_shadows`.
     ///
-    /// The default is for *new* frames, which the user asked to start
-    /// `balanced`.
+    /// The low-level default preserves balanced for existing callers and legacy recipes.
+    /// Only the explicit newPhoto factory adopts the product's adaptive default.
     var autoExposureMethod: String? = "balanced"
+    static var newPhoto: FilmParams {
+        var value = FilmParams.default
+        value.autoExposureMethod = "adaptive"
+        return value
+    }
+    var needsFaceEvidence: Bool { autoExposure && autoExposureMethod == "adaptive" }
+
     /// The engine's `camera.auto_exposure`, and the whole of what the AE
     /// Method pill's `Custom` means: with it false the meter contributes
     /// nothing and Film Exposure is measured from the linearized frame
@@ -640,6 +648,7 @@ struct FilmParams: Codable, Equatable, Sendable {
     /// RFC-024. Print layer.
     var contrastMask = ContrastMaskSettings()
     /// RFC-023. Shoot layer.
+    var sceneCurve = CurveSet() // Pre-film log exposure curve, separate from the post-print curve.
     var sceneLatitude = SceneLatitudeSettings()
     /// A half-frame pair has a placement per frame. `sceneLatitude` is always
     /// the one the Scene Placement section is showing — the picked frame's —
@@ -680,6 +689,8 @@ struct FilmParams: Codable, Equatable, Sendable {
     var filmEdge = FilmEdgeSettings()
     var dateBack = DateBackSettings()
     var scratches = ScratchSettings()
+    var diffusion = DiffusionSettings()
+    var doubleExposure = DoubleExposureSettings()
     var lightLeaks = LightLeakSettings()
     var agingTextures = AgingTextureSettings()
 
@@ -711,6 +722,8 @@ struct FilmParams: Codable, Equatable, Sendable {
         filmEdge = FilmEdgeSettings()
         dateBack = DateBackSettings()
         scratches = ScratchSettings()
+        diffusion = DiffusionSettings()
+        doubleExposure = DoubleExposureSettings()
         lightLeaks = LightLeakSettings()
         agingTextures = AgingTextureSettings()
     }
@@ -745,6 +758,7 @@ struct FilmParams: Codable, Equatable, Sendable {
         preflashExposure = try c.decodeIfPresent(Double.self, forKey: .preflashExposure) ?? 0
         contrastMask = try c.decodeIfPresent(ContrastMaskSettings.self, forKey: .contrastMask)
             ?? ContrastMaskSettings()
+        sceneCurve = try c.decodeIfPresent(CurveSet.self, forKey: .sceneCurve) ?? CurveSet()
         sceneLatitude = try c.decodeIfPresent(SceneLatitudeSettings.self, forKey: .sceneLatitude)
             ?? SceneLatitudeSettings()
         sceneLatitudeOther = try c.decodeIfPresent(SceneLatitudeSettings.self, forKey: .sceneLatitudeOther)
@@ -756,6 +770,8 @@ struct FilmParams: Codable, Equatable, Sendable {
         filmEdge = try c.decodeIfPresent(FilmEdgeSettings.self, forKey: .filmEdge) ?? FilmEdgeSettings()
         scratches = try c.decodeIfPresent(ScratchSettings.self, forKey: .scratches) ?? ScratchSettings()
         agingTextures = try c.decodeIfPresent(AgingTextureSettings.self, forKey: .agingTextures) ?? AgingTextureSettings()
+        diffusion = try c.decodeIfPresent(DiffusionSettings.self, forKey: .diffusion) ?? DiffusionSettings()
+        doubleExposure = try c.decodeIfPresent(DoubleExposureSettings.self, forKey: .doubleExposure) ?? DoubleExposureSettings()
         lightLeaks = try c.decodeIfPresent(LightLeakSettings.self, forKey: .lightLeaks) ?? LightLeakSettings(migrating: scratches)
         dateBack = try c.decodeIfPresent(DateBackSettings.self, forKey: .dateBack) ?? DateBackSettings()
     }
@@ -811,6 +827,7 @@ struct FilmParams: Codable, Equatable, Sendable {
             // Off under the Digital Intermediate (RFC-028): placement fits a
             // scene into a paper's range, and the DI keeps the film's whole
             // one. The pull-backs stay in the sidecar for when a paper returns.
+            ("scene_curve", .string(sceneCurve.sceneWire), .shoot),
             ("scene_latitude_active", .bool(firstPlacement.active && !(digitalIntermediate && !scanFilm)), .shoot),
             ("scene_latitude_norm", .string(firstPlacement.norm), .shoot),
             ("scene_latitude_highlight_knee", .double(firstPlacement.highlightKnee), .shoot),
@@ -866,6 +883,7 @@ struct FilmParams: Codable, Equatable, Sendable {
                        ("y_filter_neutral", .double(f.y), .print)]
         }
         fields += pairPlacementWire
+        fields += diffusion.wire
         fields += filmEdge.wire
         fields += scratches.wire(filmEdge: filmEdge)
         fields += lightLeaks.wire(filmEdge: filmEdge, digitalIntermediate: digitalIntermediate)

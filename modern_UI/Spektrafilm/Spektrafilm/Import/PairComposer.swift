@@ -25,6 +25,13 @@ import Foundation
 import ImageIO
 
 enum PairComposer {
+    /// Perspective is a single-RAW edit. Keep it saved on the source/hole, but never bake it into a pair.
+    static func decodeSettings(for hole: HalfFramePair.Hole) -> DecodeSettings {
+        var settings = hole.decode
+        settings.perspective = RawPerspective()
+        return settings
+    }
+
     /// The pair at `url` as a decode. A hole whose file is gone, or will not
     /// decode, is an empty hole rather than a failed pair.
     static func decode(_ url: URL, checkpoint: () throws -> Void = {}) throws -> DecodedImage {
@@ -35,7 +42,7 @@ enum PairComposer {
             guard let hole = pair[side], hole.exists else { continue }
             try checkpoint()
             // A recipe, not pixels: the RAW is not demosaiced until something renders it.
-            guard let d = try? ImageDecoder.decode(hole.url, settings: hole.decode, checkpoint: checkpoint)
+            guard let d = try? ImageDecoder.decode(hole.url, settings: decodeSettings(for: hole), checkpoint: checkpoint)
             else { continue }
             sources[side] = Source(hole: hole, decoded: d, framed: hole.geometry.outputSize(for: d.pixelSize))
             shots.set(Shot(isRAW: d.isRAW, lensCorrectionSupported: d.lensCorrectionSupported,
@@ -45,6 +52,8 @@ enum PairComposer {
         let full = CGRect(origin: .zero, size: layout.size)
         var linear = CIImage(color: .black).cropped(to: full)
         var display = CIImage(color: .black).cropped(to: full)
+        var faceDisplay = CIImage(color: .black).cropped(to: full)
+        var meterInputs: [HalfFramePair.Side: PairMeterInput] = [:]
         for side in HalfFramePair.Side.allCases {
             guard let s = sources[side] else { continue }
             try checkpoint()
@@ -63,6 +72,13 @@ enum PairComposer {
                 rendered.keep(picture, for: key)
             }
             linear = picture.transformed(by: .init(translationX: rectCI.minX, y: rectCI.minY)).composited(over: linear)
+            let faceFramed = Session.engineImage(s.decoded.faceDisplay, size: s.decoded.pixelSize, cut: s.hole.geometry)
+            meterInputs[side] = PairMeterInput(
+                linear: Session.engineImage(s.decoded.linear, size: s.decoded.pixelSize, cut: s.hole.geometry),
+                display: faceFramed, lifetime: s.decoded.lifetime)
+            faceDisplay = place(faceFramed, size: s.framed, placement: s.hole.placement,
+                                into: rect, pieceHeight: layout.size.height, aspect: pair.holeAspect)
+                .composited(over: faceDisplay)
             // The preview: the file's own embedded picture, framed and placed
             // the same way. The decode's display rendering is the fallback.
             let shown = embeddedPreview(s.hole.url, maxPixel: 2560)
@@ -75,7 +91,8 @@ enum PairComposer {
         return DecodedImage(linear: linear.cropped(to: full), display: display.cropped(to: full),
                             pixelSize: layout.size, isRAW: false, sourceURL: url,
                             sourceEXIF: (sources[.left] ?? sources[.right])?.decoded.sourceEXIF,
-                            asShotTemperature: nil, asShotTint: nil)
+                            asShotTemperature: nil, asShotTint: nil, faceDisplay: faceDisplay.cropped(to: full),
+                            pairMeterInputs: meterInputs)
     }
 
     /// The piece's pixel layout. The holes are as large as the smaller of the
@@ -165,13 +182,14 @@ enum PairComposer {
     static func renderKey(_ hole: HalfFramePair.Hole, size: CGSize, hole target: CGSize, aspect: Double) -> String {
         let attributes = try? FileManager.default.attributesOfItem(atPath: hole.path)
         let stamp = (attributes?[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
-        let d = hole.decode, g = hole.geometry, p = hole.placement
+        let d = decodeSettings(for: hole), g = hole.geometry, p = hole.placement
         return [hole.path, String(stamp), String((attributes?[.size] as? Int) ?? 0),
                 d.whiteBalance.rawValue, String(d.temperature), String(d.tint), String(d.lensCorrection),
                 "\(g.crop.x),\(g.crop.y),\(g.crop.width),\(g.crop.height),\(g.angle),\(g.quarterTurns),\(g.flipH),\(g.flipV)",
                 "\(p.scale),\(p.x),\(p.y),\(p.quarterTurns)",
                 "\(Int(size.width))x\(Int(size.height))", "\(Int(target.width))x\(Int(target.height))",
                 String(aspect)].joined(separator: "|")
+            + (d.rawInterpretation == .legacy ? "" : "|" + d.rawInterpretation.rawValue)
     }
 
     /// `image` (extent at the origin, `size` large) as pixels: half-float,

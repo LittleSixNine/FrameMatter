@@ -5,6 +5,7 @@
 #include "pipeline.hpp"
 #include "timer.hpp"
 #include "halation_psf.hpp"
+#include "diffusion_psf.hpp"
 #ifndef __APPLE__
 #include "windows_unported.hpp"
 #endif
@@ -154,7 +155,11 @@ bool Pipeline::build(const Params& params, std::string& error) {
                 "engine; it always evaluates the exact spectral integral";
         return false;
     }
-    if (params_.camera.diffusion_filter.active || params_.enlarger.diffusion_filter.active) {
+    if (params_.camera.diffusion_filter.active && params_.settings.striped) {
+        error = "camera diffusion requires the full-frame executor";
+        return false;
+    }
+    if (params_.enlarger.diffusion_filter.active) {
         error = "diffusion filters are not implemented by the native engine";
         return false;
     }
@@ -461,6 +466,7 @@ bool Pipeline::build(const Params& params, std::string& error) {
     node_count_ += params_.io.geometry.is_identity() ? 0 : 1;            // geometry
     node_count_ += params_.camera.auto_exposure ? 1 : 0;                 // auto_exposure
     node_count_ += 1;                                                    // crop_rescale
+    node_count_ += scene_curve_wanted() ? 1 : 0;
     node_count_ += scene_latitude_wanted() ? 1 : 0;                      // RFC-023
     node_count_ += 1;                                                    // upsample
     node_count_ += 1;                                                    // exposure
@@ -803,10 +809,14 @@ bool Pipeline::measure_exposure_ev(const Image& in, double& ev, std::string& err
     if (!is_known_exposure_method(method)) {
         error = "auto_exposure_method '" + method + "' is not implemented by the native engine "
                 "(balanced, center, protect_highlights, protect_shadows, center_weighted, "
-                "average and median are)";
+                "average, median and adaptive are)";
         return false;
     }
 
+    if (method == "adaptive") {
+        error = "adaptive exposure requires a session opened with face evidence";
+        return false;
+    }
     std::vector<double> Y;
     uint32_t sh = 0, sw = 0;
     if (!exposure_sample_y(in, stride, Y, sh, sw, error)) return false;
@@ -825,6 +835,7 @@ bool Pipeline::measure_exposure_ev(const Image& in, double& ev, std::string& err
 }
 
 double ExposureEvs::of(const std::string& method) const {
+    if (method == "adaptive" && adaptive) return adaptive->exposure_ev;
     if (method == "balanced") return balanced;
     if (method == "center") return center;
     if (method == "protect_highlights") return protect_highlights;
@@ -834,7 +845,8 @@ double ExposureEvs::of(const std::string& method) const {
     return center_weighted;
 }
 
-bool Pipeline::measure_meter_evs(const Image& in, ExposureEvs& out, std::string& error) {
+bool Pipeline::measure_meter_evs(const Image& in, ExposureEvs& out, std::string& error,
+                                 const std::vector<meter::FaceBox>* faces) {
     // The node's own upstream nodes, so the meter sees what the node would:
     // decoded, cropped and turned. `node_geometry` records the frame's long
     // edge for the film's pitch, and this is not the frame being rendered,
@@ -856,6 +868,11 @@ bool Pipeline::measure_meter_evs(const Image& in, ExposureEvs& out, std::string&
     uint32_t sh = 0, sw = 0;
     if (!exposure_sample_y(framed, /*stride=*/false, Y, sh, sw, error)) return false;
     out = exposure_evs_from(Y, sh, sw);
+    if (faces) {
+        const auto framed = meter::framed_faces(*faces, in.w, in.h, params_.io.geometry);
+        out.adaptive = meter::adaptive_exposure(Y, sw, sh, out.balanced, framed);
+        if (!out.adaptive->valid) { error = "adaptive meter received an invalid luminance sample"; return false; }
+    }
     return legacy_exposure_ev(Y, sh, sw, "center_weighted", out.center_weighted, error) &&
            legacy_exposure_ev(Y, sh, sw, "average", out.average, error) &&
            legacy_exposure_ev(Y, sh, sw, "median", out.median, error);
@@ -1914,6 +1931,7 @@ bool Pipeline::film_scale_and_expose(const Chain& in, Chain& out, std::string& e
     // spectral reconstruction exactly (§12.2), and this is the band-able
     // stage, so the node strips with it.
     if (scene_latitude_wanted()) { SPK_NODE(node_scene_latitude(cur, next, error)); cur = next; }
+    if (scene_curve_wanted()) { SPK_NODE(node_scene_curve(cur, next, error)); cur = next; }
     SPK_NODE(node_upsample(cur, next, error)); cur = next;
     SPK_NODE(node_exposure(cur, next, error)); cur = next;
     out = in;
@@ -1956,8 +1974,10 @@ bool Pipeline::film_overscan(const Chain& in, Chain& out, std::string& error) {
     // is its own stage -- metering and the highlight lift are statistics of
     // the *frame*, so they are taken before the canvas exists.
     Image cur = in.cur, next;
-    SPK_NODE(node_overscan(cur, next, error)); cur = next;
+    Image factory;
+    SPK_NODE(node_overscan(cur, next, error, &factory)); cur = next;
     out = in;
+    out.factory_exposure = factory;
     out.cur = cur;
     return true;
 }
@@ -1967,9 +1987,28 @@ bool Pipeline::film_blurs(const Chain& in, Chain& out, std::string& error) {
     // halation's two mixtures are where a channel can straddle the crossover,
     // and a `carried` demand sends the whole stage back to whole-frame.
     Image cur = in.cur, next;
+    SPK_NODE(node_diffusion(cur, next, error)); cur = next;
     SPK_NODE(node_lens_blur(cur, next, error)); cur = next;
     SPK_NODE(node_halation(cur, next, error)); cur = next;
+    if (in.factory_exposure.buf) {
+        auto& halation = params_.film_render.halation;
+        struct Restore {
+            HalationParams& value;
+            HalationParams saved;
+            ~Restore() { value = saved; }
+        } restore{halation, halation};
+        // Upstream 2.2.0 look policy, not measured material calibration.
+        halation.halation_amount = halation.scatter_amount = 1.0;
+        halation.halation_spatial_scale = halation.scatter_spatial_scale = 1.0;
+        for (int c = 0; c < 3; ++c) halation.halation_strength[c] *= 0.02;
+        Image factory;
+        if (!node_halation(in.factory_exposure, factory, error)) return false;
+        const double one[3] = {1, 1, 1};
+        if (!blur_.lincomb(cur, factory, one, one, next, error)) return false;
+        cur = next;
+    }
     out = in;
+    out.factory_exposure = Image{};
     out.cur = cur;
     return true;
 }
@@ -1992,6 +2031,7 @@ bool Pipeline::film_couplers(const Chain& in, Chain& out, std::string& error) {
     SPK_NODE(node_dir_couplers(in.cur, in.log_e_film, next, error));
     out = in;
     out.cur = next;
+    out.log_e_film = Image{};
     return true;
 }
 
@@ -2455,3 +2495,25 @@ bool Pipeline::run_print_striped(const Image& cmy, Image& out, Progress* progres
 #undef SPK_NODE
 
 }  // namespace spk
+
+namespace spk {
+bool Pipeline::node_diffusion(const Image& in, Image& out, std::string& error) {
+    diffusion::Psf psf;
+    if (!diffusion::build_psf(params_.camera.diffusion_filter, psf, error)) return false;
+    if (!(psf.p_s > 0)) { out = in; return true; }
+    // shortcut: existing Gaussian-mixture execution; use the upstream pyramid if full-size diffusion is too slow.
+    std::vector<Blur::Component> components;
+    Blur::Component direct{};
+    for (int c = 0; c < 3; ++c) direct.weight[c] = 1.0 - psf.p_s;
+    components.push_back(direct);
+    for (const auto& e : psf.exps) {
+        const double lambda = std::max(e.lambda_um / pixel_size_um_, 1e-6);
+        const double decay[3] = {lambda, lambda, lambda};
+        const double weight[3] = {psf.p_s * e.weight[0], psf.p_s * e.weight[1], psf.p_s * e.weight[2]};
+        std::vector<Blur::Component> blurred;
+        Blur::exponential_components(decay, weight, blurred);
+        components.insert(components.end(), blurred.begin(), blurred.end());
+    }
+    return blur_.mixture(in, components, out, error);
+}
+}

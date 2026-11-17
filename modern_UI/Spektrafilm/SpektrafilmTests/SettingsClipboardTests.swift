@@ -71,10 +71,12 @@ final class SettingsClipboardTests: XCTestCase {
     /// A frame whose every setting differs from a new frame's.
     private func source() -> Sidecar {
         var s = Sidecar()
+        s.decode.rawInterpretation = .shadowNeutralV1
         s.decode.whiteBalance = .custom
         s.decode.temperature = 3400
         s.decode.tint = 12
         s.decode.lensCorrection = true
+        s.decode.perspective.vertical = 5
         var p = FilmParams()
         p.filmStock = "kodak_gold_200"
         p.printStock = "fujifilm_crystal_archive_typeii"
@@ -155,11 +157,11 @@ final class SettingsClipboardTests: XCTestCase {
         XCTAssertEqual(SettingsClip(groups: [], settings: source(), sourceName: "src").applied(to: t), t)
     }
 
-    func testAllGroupsLeaveTheFrameItsCropGradeLensAndState() {
+    func testAllGroupsLeaveTheFrameItsCropLensAndState() {
         let t = target()
         let out = SettingsClip(groups: Set(ClipboardGroup.allCases), settings: source(), sourceName: "src").applied(to: t)
         XCTAssertEqual(out.geometry, t.geometry)
-        XCTAssertEqual(out.adjustments, t.adjustments)
+        XCTAssertEqual(out.adjustments, source().adjustments)
         XCTAssertEqual(out.decode.lensCorrection, t.decode.lensCorrection)
         XCTAssertEqual(out.state, t.state)
     }

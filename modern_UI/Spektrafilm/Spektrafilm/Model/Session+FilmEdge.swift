@@ -168,6 +168,12 @@ enum FilmCanvasEstimate {
         let px = gate.long / max(w, h)                        // mm per pixel
         // The film runs along the picture axis that is not the gate's across
         // size (the engine's `vertical`).
+        if let cine = format.cineDimensions {
+            let vertical = abs(w * px - cine.across) < abs(h * px - cine.across) && w != h
+            let film = ceil(cine.width / px)
+            let along = ceil(cine.advance / px) + 2
+            return vertical ? CGSize(width: film, height: along) : CGSize(width: along, height: film)
+        }
         let acrossMM = format == .f135FullWidth ? 35.0 : (format.gauge == "135" ? 24.0 : 56.0)
         let vertical = abs(w * px - acrossMM) < abs(h * px - acrossMM) && w != h
         let alongPx = vertical ? h : w
@@ -232,6 +238,10 @@ extension Session {
     nonisolated static func edgeText(for stock: Stock?, gauge: String = "135") -> String {
         guard let stock else { return "" }
         let own: [String: (String, String)] = [   // (135, 120)
+            "kodak_portra_160nc": ("KODAK 160NC", "KODAK 160NC-2"),
+            "kodak_portra_160vc": ("KODAK 160VC", "KODAK 160VC-2"),
+            "kodak_portra_400nc": ("KODAK 400NC", "KODAK 400NC-3"),
+            "kodak_portra_400vc": ("KODAK 400VC", "KODAK 400VC-3"),
             "kodak_gold_200": ("KODAK GB 200-7", "KODAK 200"),
             "kodak_portra_800": ("KODAK PORTRA 800-3", "KODAK PORTRA 800"),
             "kodak_portra_800_push1": ("KODAK PORTRA 800-3", "KODAK PORTRA 800"),
@@ -483,7 +493,7 @@ extension Session {
     /// The framing key the engine's frame must have been cut with for the
     /// session it holds to still be this frame (nil: the whole decode).
     var wantedEngineFraming: String? {
-        params.engineFramingKey
+        params.doubleExposure.active ? (params.engineFramingKey ?? "") + ";double=" + CacheKey.encodedConfiguration(params.doubleExposure) : params.engineFramingKey
     }
 
     /// The linear decode as the engine is to take it: whole, or cut by the

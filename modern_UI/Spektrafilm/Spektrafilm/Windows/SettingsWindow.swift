@@ -88,6 +88,8 @@ struct SettingsWindow: View {
                         diagnosticsSection
                         logsSection
                         bundleSection
+                    case .covers:
+                        FilmArtworkSettingsPage()
                     case .agents:
                         AgentsSettingsPage()
                     }
@@ -691,7 +693,7 @@ struct SettingsRows<Content: View>: View {
 // MARK: - pages, tabs and groups (Capture One's preferences, RFC-026)
 
 enum SettingsPage: String, CaseIterable, Identifiable {
-    case general, rendering, memory, diagnostics, agents
+    case general, rendering, memory, diagnostics, agents, covers
     var id: String { rawValue }
 
     @MainActor var title: String {
@@ -700,6 +702,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .rendering: L(.setTabRendering)
         case .memory: L(.setTabMemory)
         case .diagnostics: L(.setTabDiagnostics)
+        case .covers: L("Film Covers", zh: "胶片封面")
         case .agents: L(.setTabAgents)
         }
     }
@@ -710,6 +713,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .rendering: "slider.horizontal.3"
         case .memory: "memorychip"
         case .diagnostics: "stethoscope"
+        case .covers: "square.grid.3x3"
         case .agents: "terminal"
         }
     }

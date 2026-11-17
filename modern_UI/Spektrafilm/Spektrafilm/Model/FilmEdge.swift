@@ -5,7 +5,7 @@
 import Foundation
 
 /// RFC-032's **Film Edge** (overscan) and RFC-031's **Date Back**, as the app
-/// keeps them: the wire's twenty fields (API-SPEC §13) plus what the host
+/// keeps them: the wire fields (API-SPEC §13) plus what the host
 /// resolves for the engine. Both are shoot layer and not live: every mark is
 /// exposure on the negative, so an edit re-develops it.
 
@@ -26,12 +26,19 @@ enum FilmEdgeFormat: String, CaseIterable, Identifiable, Codable, Sendable {
     case f6x12 = "120_6x12"
     case f6x17 = "120_6x17"
 
+    case super8 = "8_super"
+    case cine16 = "16_super"
+    case cine35 = "35_4perf"
+    case cine65 = "65_5perf"
+    case cine65x15 = "65_15perf"
+
     var id: String { rawValue }
 
-    enum Group: String, CaseIterable, Sendable { case film135, film120, panoramic }
+    enum Group: String, CaseIterable, Sendable { case film135, film120, panoramic, cine }
 
     var group: Group {
         switch self {
+        case .super8, .cine16, .cine35, .cine65, .cine65x15: .cine
         case .f135, .f135Half: .film135
         case .f645, .f6x6, .f6x7, .f6x8, .f6x9: .film120
         case .xpan, .f135FullWidth, .f6x12, .f6x17: .panoramic
@@ -42,6 +49,11 @@ enum FilmEdgeFormat: String, CaseIterable, Identifiable, Codable, Sendable {
     /// held level (RFC-032 §29; the engine's own table in `overscan.cpp`).
     var gateMM: (long: Double, short: Double) {
         switch self {
+        case .super8: (5.79, 4.01)
+        case .cine16: (12.35, 7.5)
+        case .cine35: (24.89, 18.67)
+        case .cine65: (52.63, 23.01)
+        case .cine65x15: (70.41, 52.63)
         case .f135: (36, 24)
         case .f135Half: (24, 18)
         case .f645: (56, 41.5)
@@ -58,15 +70,29 @@ enum FilmEdgeFormat: String, CaseIterable, Identifiable, Codable, Sendable {
 
     /// The film this format runs on, as the stock catalogue names gauges
     /// (`Stock.formats`): half frame and XPan are cameras for 135 film.
-    var gauge: String { self == .f135 || self == .f135Half || self == .xpan || self == .f135FullWidth ? "135" : "120" }
+    var gauge: String {
+        if group == .cine { return rawValue }
+        return isPerforated ? "135" : "120"
+    }
 
-    /// The film's width across, mm (the engine's `kFormats`; D2: 35.00).
-    var filmWidthMM: Double { gauge == "135" ? 35 : 61 }
+    /// Film width, gate across the strip, and one overscanned frame along the strip, in mm.
+    var cineDimensions: (width: Double, across: Double, advance: Double)? {
+        switch self {
+        case .super8: (7.976, 5.79, 7.976 * 2 / 3)
+        case .cine16: (15.95, 12.35, 15.95 * 9 / 16)
+        case .cine35: (35, 24.89, 4 * 4.74)
+        case .cine65: (64.97, 52.63, 5 * 4.75)
+        case .cine65x15: (64.97, 52.63, 15 * 4.75)
+        default: nil
+        }
+    }
+
+    var filmWidthMM: Double { cineDimensions?.width ?? (isPerforated ? 35 : 61) }
 
     /// What the engine will take today: every format, since the long ones
     /// landed. Kept so a format drawn ahead of the engine has somewhere to say so.
     var isAvailable: Bool { true }
-    var isPerforated: Bool { self == .f135 || self == .f135Half || self == .xpan || self == .f135FullWidth }
+    var isPerforated: Bool { group == .cine || self == .f135 || self == .f135Half || self == .xpan || self == .f135FullWidth }
 
     /// Which date faces the engine draws on this format (API-SPEC §13, "Where
     /// a face is drawn"). Anywhere else a date is silently not drawn, so the
@@ -77,7 +103,7 @@ enum FilmEdgeFormat: String, CaseIterable, Identifiable, Codable, Sendable {
     func draws(_ face: DateBackFace) -> Bool {
         switch group {
         case .film135, .film120: true
-        case .panoramic: false
+        case .panoramic, .cine: false
         }
     }
 
@@ -103,6 +129,9 @@ enum FilmEdgeHoles: String, CaseIterable, Identifiable, Codable, Sendable {
 
 struct FilmEdgeSettings: Codable, Equatable, Sendable {
     var active = false
+    /// Explicit optional upstream factory-exposure look; old and new frames keep the legacy path.
+    var slitFilmPerforations = false
+    var independentLetteringHalation = false
     var format = FilmEdgeFormat.f135
     var view = FilmEdgeView.strip
     var gate = FilmEdgeGate.auto
@@ -153,6 +182,8 @@ struct FilmEdgeSettings: Codable, Equatable, Sendable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let d = FilmEdgeSettings()
         active = try c.decodeIfPresent(Bool.self, forKey: .active) ?? d.active
+        slitFilmPerforations = try c.decodeIfPresent(Bool.self, forKey: .slitFilmPerforations) ?? false
+        independentLetteringHalation = try c.decodeIfPresent(Bool.self, forKey: .independentLetteringHalation) ?? false
         format = (try? c.decodeIfPresent(FilmEdgeFormat.self, forKey: .format)) ?? d.format
         view = (try? c.decodeIfPresent(FilmEdgeView.self, forKey: .view)) ?? d.view
         gate = (try? c.decodeIfPresent(FilmEdgeGate.self, forKey: .gate)) ?? d.gate
@@ -193,6 +224,7 @@ struct FilmEdgeSettings: Codable, Equatable, Sendable {
 
     /// True when the engine draws the film: the switch, on a format it has.
     var effective: Bool { active && format.isAvailable }
+    var hasFactoryMarkings: Bool { format.group != .cine && !(format.gauge == "120" && slitFilmPerforations) }
 
     /// `overscan_active` always, so turning it off reaches the engine; the
     /// rest only while it is on, so a frame without a film edge keeps the
@@ -203,9 +235,11 @@ struct FilmEdgeSettings: Codable, Equatable, Sendable {
         ]
         guard effective else { return fields }
         fields += [
+            ("overscan_factory_separate_halation", .bool(independentLetteringHalation), .shoot),
             ("overscan_format", .string(format.rawValue), .shoot),
             ("overscan_mode", .string(view.rawValue), .shoot),
-            ("overscan_gate", .string(gate.rawValue), .shoot),
+            ("overscan_gate", .string(format.group == .cine ? "auto" : gate.rawValue), .shoot),
+            ("overscan_perforation", .string(slitFilmPerforations && format.gauge == "120" ? "ks65" : "none"), .shoot),
             ("overscan_holes", .string(holes.rawValue), .shoot),
             ("overscan_camera_seed", .double(Double(cameraSeed.clamped(to: Self.seedRange))), .shoot),
             ("overscan_frame_seed", .double(Double(frameSeed.clamped(to: Self.seedRange))), .shoot),

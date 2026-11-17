@@ -1,51 +1,4 @@
-//  EditorWindow.swift — the window's three regions, exactly as the
-//  2026-09-17 drawing has them:
-//
-//     ┌─────────┬──────────────────────────┬─────────┐
-//     │ header  │      ▁▁▁▁ bar ▁▁▁▁       │ header  │
-//     ├─────────┤                          ├─────────┤
-//     │  left   │          canvas          │  right  │
-//     │  rail   │                          │  rail   │
-//     │  254    ├──────────────────────────┤   288   │
-//     │         │        filmstrip         │         │
-//     └─────────┴──────────────────────────┴─────────┘
-//
-//  Flush: no outer margin, no gutter, no corner radius. Where the previous
-//  design left a 6 pt trench of ground between four floating cards, this one
-//  puts a **1 pt hairline** (`Hairline`, `#b5b6b6`).
-//
-//  **v3 (2026-09-18) changed two things in this file.**
-//
-//  The rail dividers run the **full window height** — v3 draws them at
-//  x 254.41 and x 1631.93 from the top edge to the bottom, canvas included.
-//  The older rule said a line was needed only beside the filmstrip, where
-//  rail and strip are the same colour, and that between rail and canvas the
-//  ground colour was itself the separator. v3 overrules it, and the reason is
-//  visible in the drawing: with the tool bar now `card`-coloured and flush,
-//  the top row is one surface across all three columns, so without a divider
-//  the rails have no edge at all for their first 38 pt. Both lines are
-//  **overlays** on the rails, not siblings in the `HStack` — a sibling would
-//  push the canvas 1 pt and make every recorded column width wrong.
-//
-//  And **the bar stopped floating**. It is a plain 38 pt rectangle filling
-//  the centre column's top, flush with both rails and with the window's top
-//  edge — `barTop`, `barInset` and `barRadius` are all 0 — and its height is
-//  the rail header's, so the three regions share one top row. There is no
-//  ground strip behind it any more.
-//
-//  **The window buttons did not move.** They sit at `y 19`, which is the
-//  centre of a rail header *and* very nearly the centre of the bar — one row,
-//  two occupants. So folding the left rail does not relocate them; it only
-//  changes which view reserves the space (`Theme.Metric.trafficLightClearance`
-//  in the header, `barLeadingWithButtons` on the bar).
-//
-//  Folding is the two `sidebar.left` / `sidebar.right` buttons now, not the
-//  hover tabs on the canvas edge (PRD: "moved to become sidebar.left and
-//  sidebar.right … these two buttons must also remain on the screen at any
-//  given time"). Each lives at the far end of its own rail's header and moves
-//  onto the bar when that rail is folded, which is the only place left that is
-//  always on screen. The **bottom** tab is untouched — "except the bottom
-//  gallery view remains unchanged".
+//  The filmstrip and toolbar span the editor. Only the inspector changes width.
 
 import SwiftUI
 import UniformTypeIdentifiers
@@ -78,6 +31,12 @@ struct EditorWindow: View {
         )
         .ignoresSafeArea()
         .preferredColorScheme(.dark)
+        .onExitCommand {
+            if session.tool == .crop { session.cancelCrop() }
+            else if !session.endPlacement(), !session.rightCollapsed {
+                session.toggleInspector(session.inspectorTab)
+            }
+        }
         .onDrop(of: [.fileURL], isTargeted: nil) { providers in
             Task { @MainActor in
                 var urls: [URL] = []
@@ -103,104 +62,38 @@ struct EditorWindow: View {
         }
     }
 
-    /// The Print state: the four cards, exactly as drawn.
-    ///
-    /// `session.topCollapsed` is deliberately not read here. The bar is not a
-    /// card that folds any more (PRD §1): it is the row that hosts the window
-    /// buttons, so it has to be present for the window to have a corner. The
-    /// stored property stays for the session's state and for a launch that
-    /// reads it back, but no view consults it.
-    /// The panels' widths, which are the user's now (PRD: "the collapse tabs
-    /// should be non-fixed, and there should be one narrowest and widest for
-    /// both").
-    ///
-    /// `@State` and not on `Session`: a panel width is chrome, and `Session` is
-    /// the document — its `uiKey` namespace is for state that has to come back
-    /// with a frame. `PanelWidthStore` writes its own keys, so the lifetime
-    /// here only has to be the window's, which is what `@State` is.
-    @State private var leftWidth = PanelWidthStore(name: "editor.left",
-                                                   range: Theme.Metric.leftPanelRange)
     @State private var rightWidth = PanelWidthStore(name: "editor.right",
                                                     range: Theme.Metric.rightPanelRange)
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var printLayout: some View {
-        HStack(spacing: 0) {
-            if !session.leftCollapsed {
-                LeftPanel(session: session)
-                    .frame(width: session.snapshotPanelWidths ? leftWidth.range.standard
-                                                              : leftWidth.width)
-                    // The grip is an **overlay**, not a sibling: a 6 pt view
-                    // in the HStack would push the canvas 6 pt right on a
-                    // fresh install and move every snapshot. It sits on the
-                    // rail's own trailing edge, where the drawing has nothing
-                    // but the colour change.
-                    // v3's full-height divider, on the rail's own trailing
-                    // edge. Above the grip in the overlay order so the line is
-                    // never drawn over by it; the grip still takes the mouse,
-                    // because a 1 pt rectangle is not a hit target.
-                    .overlay(alignment: .trailing) {
-                        PanelResizeHandle(side: .trailingEdge, range: leftWidth.range,
-                                          width: $leftWidth.width)
-                    }
-                    .overlay(alignment: .trailing) { VerticalHairline().allowsHitTesting(false) }
-                    .transition(.move(edge: .leading))
-            }
-            centreColumn
-            if !session.rightCollapsed {
+        let width = session.snapshotPanelWidths ? rightWidth.range.standard : rightWidth.width
+        return VStack(spacing: 0) {
+            TopBar(session: session)
+            Hairline(tier: .region)
+            HStack(spacing: 0) {
+                CanvasArea(session: session)
                 RightPanel(session: session)
-                    .frame(width: session.snapshotPanelWidths ? rightWidth.range.standard
-                                                              : rightWidth.width)
+                    .environment(\.colorBalanceWidth, ColorBalanceLayout.interior(panelWidth: width))
+                    .frame(width: width)
                     .overlay(alignment: .leading) {
-                        PanelResizeHandle(side: .leadingEdge, range: rightWidth.range,
-                                          width: $rightWidth.width)
+                        PanelResizeHandle(side: .leadingEdge, range: rightWidth.range, width: $rightWidth.width)
                     }
                     .overlay(alignment: .leading) { VerticalHairline().allowsHitTesting(false) }
-                    // The colour balance triangle sizes its wheels from the
-                    // rail, and the rail is the user's.
-                    .environment(\.colorBalanceWidth,
-                                 ColorBalanceLayout.interior(panelWidth: rightWidth.width))
-                    .transition(.move(edge: .trailing))
+                    .frame(width: session.rightCollapsed ? 0 : width, alignment: .trailing)
+                    .clipped()
+                    .allowsHitTesting(!session.rightCollapsed)
+                    .accessibilityHidden(session.rightCollapsed)
+                InspectorTabs(session: session)
             }
-        }
-        .transition(.opacity)
-    }
-
-    /// Bar strip, canvas, filmstrip — the column between the two rails.
-    ///
-    /// **v3: the bar is a row of its own**, closed by a hairline, rather than
-    /// a pill floating in a strip of ground. A maximised frame therefore
-    /// starts directly under a surface instead of under a pill with ground
-    /// showing round it, and the hairline under the bar is the same wall the
-    /// rails' sections are separated by — the top row reads as a room, not as
-    /// a shelf.
-    private var centreColumn: some View {
-        VStack(spacing: 0) {
-            TopBar(session: session)
-                .frame(height: Theme.Metric.topBarHeight)
-                // `barInset` and `barTop` are 0 in v3, so these two are
-                // no-ops — kept so that a drawing which floats the bar again
-                // is three token values rather than a re-plumbing of this
-                // stack. The background is the bar's own `card`, not the
-                // ground: there is nothing behind it to show through.
-                .padding(.horizontal, Theme.Metric.barInset)
-                .padding(.vertical, Theme.Metric.barTop)
-            Hairline(tier: .region)
-            CanvasArea(session: session)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.18), value: session.rightCollapsed)
             if !session.filmstripCollapsed {
                 Hairline(tier: .region)
-                // **No vertical hairlines here any more.** They used to be
-                // the filmstrip's own, drawn only where rail and strip share
-                // a colour; v3's dividers run the whole window height and are
-                // drawn once by each rail, so a second pair here would be a
-                // 1 pt line drawn twice at the same x — visible as a slightly
-                // heavier segment beside the strip, which is exactly the kind
-                // of seam a full-height divider exists to remove.
                 Filmstrip(session: session)
                     .frame(height: Theme.Metric.filmstripHeight)
                     .transition(.move(edge: .bottom))
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -208,6 +101,10 @@ struct EditorWindow: View {
 /// it) with the four collapse tabs on its edges.
 struct CanvasArea: View {
     @Bindable var session: Session
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    private var showsNavigator: Bool {
+        session.selection != nil && !session.zoomLocked && session.viewportSnapshot.imageOverflowsCanvas
+    }
     @Environment(\.snapshotMode) private var snapshotMode
 
     var body: some View {
@@ -258,6 +155,18 @@ struct CanvasArea: View {
         // gallery view remains unchanged" — and is still the pill that
         // appears when the pointer comes near the canvas's lower edge.
         .overlay(alignment: .bottom) { HoverEdgeTab(edge: .bottom, collapsed: $session.filmstripCollapsed) }
+        .overlay(alignment: .topLeading) {
+            ZStack {
+                if showsNavigator {
+                    NavigatorSection(session: session)
+                        .id(session.selection)
+                        .padding(CanvasBadges.inset)
+                        .transition(.opacity)
+                }
+            }
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.22), value: showsNavigator)
+            .allowsHitTesting(showsNavigator)
+        }
         .overlay(alignment: .topTrailing) {
             // The finished picture's histogram heads the stack: it describes
             // the pixels on this canvas, as the tier badge under it does, so
@@ -310,11 +219,19 @@ struct CanvasArea: View {
             }
         }
         .overlay(alignment: .bottomLeading) {
-            if let w = session.stockWarning {
-                Text(w).font(Theme.Font.caption).foregroundStyle(Theme.text).lineLimit(2)
-                    .padding(6).background(Theme.card.opacity(0.85), in: RoundedRectangle(cornerRadius: 6)).padding(8)
-                    .frame(maxWidth: 360, alignment: .leading)
+            VStack(alignment: .leading, spacing: 6) {
+                if let warning = session.stockWarning {
+                    Text(warning).font(Theme.Font.caption).foregroundStyle(Theme.text).lineLimit(2)
+                        .padding(6).background(Theme.card.opacity(0.85), in: RoundedRectangle(cornerRadius: 6))
+                        .frame(maxWidth: 360, alignment: .leading)
+                }
+                CanvasZoomControls(session: session)
             }
+            .padding(CanvasBadges.inset)
+        }
+        .overlay(alignment: .bottomTrailing) {
+            OriginalPreviewButton(session: session)
+                .padding(CanvasBadges.inset)
         }
     }
 
@@ -325,6 +242,52 @@ struct CanvasArea: View {
             .frame(height: CanvasBadges.height)
             .shadow(color: .black.opacity(0.6), radius: 1.5)
     }
+}
+
+private struct OriginalPreviewButton: View {
+    @Bindable var session: Session
+    @Environment(\.controlActiveState) private var activeState
+
+    var body: some View {
+        let available = session.selection != nil
+        let help = L("Hold to view original", zh: "按住查看原图")
+        Label(L(.actionOriginal), systemImage: "eye")
+            .font(Theme.Font.caption)
+            .foregroundStyle(session.showingOriginal ? Theme.accent : Theme.text)
+            .padding(.horizontal, 9)
+            .frame(height: 32)
+            .background(Theme.card.opacity(0.92), in: Capsule())
+            .contentShape(Capsule())
+            .overlay {
+                OriginalPressTarget(session: session)
+                    .accessibilityHidden(true)
+            }
+            .onChange(of: activeState) { _, state in
+                if state == .inactive { session.holdOriginalButton(false) }
+            }
+            .onDisappear { session.holdOriginalButton(false) }
+            .accessibilityAddTraits(.isButton)
+            .accessibilityLabel(L(.actionOriginal))
+            .accessibilityValue(session.showingOriginal ? L(.actionOriginal) : L(.actionDeveloped))
+            .accessibilityAction { session.holdOriginalButton(!session.showingOriginal) }
+            .disabled(!available)
+            .rowEnabled(available)
+            .help(help)
+    }
+}
+
+private struct OriginalPressTarget: NSViewRepresentable {
+    let session: Session
+
+    final class Target: NSView {
+        weak var session: Session?
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+        override func mouseDown(with event: NSEvent) { session?.holdOriginalButton(true) }
+        override func mouseUp(with event: NSEvent) { session?.holdOriginalButton(false) }
+    }
+
+    func makeNSView(context: Context) -> Target { Target() }
+    func updateNSView(_ target: Target, context: Context) { target.session = session }
 }
 
 /// Snapshot stand-in: the renderer draws offscreen into an image at the

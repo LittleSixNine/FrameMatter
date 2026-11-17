@@ -11,6 +11,7 @@
 
 import Metal
 import XCTest
+import CoreImage
 
 @MainActor
 final class SettingsClipboardSessionTests: XCTestCase {
@@ -37,6 +38,35 @@ final class SettingsClipboardSessionTests: XCTestCase {
             addTeardownBlock { try? FileManager.default.removeItem(at: dir) }
             return url
         }
+    }
+
+    func testNamedPresetSurvivesANewSessionAndAppliesOnlyToCurrentPhoto() throws {
+        let suite = "FrameMatter.preset-test." + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let source = Session(clipboardDefaults: defaults)
+        let urls = try copies(of: "_smoke_1mp.tif", count: 2)
+        source.selection = urls[0]
+        source.sidecar.adjustments.exposure = 1.25
+        source.sidecar.geometry.quarterTurns = 1
+        try source.saveDevelopPreset(named: "  Warm  ")
+        XCTAssertThrowsError(try source.saveDevelopPreset(named: "warm"))
+        XCTAssertNil(source.clipboard)
+
+        let target = Session(clipboardDefaults: defaults)
+        target.selection = urls[1]
+        target.reloadDevelopPresets()
+        let preset = try XCTUnwrap(target.developPresets.first)
+        XCTAssertEqual(preset.name, "Warm")
+        target.applyDevelopPreset(preset)
+        XCTAssertEqual(target.sidecar.adjustments.exposure, 1.25)
+        XCTAssertEqual(target.sidecar.geometry, .default)
+        XCTAssertNil(target.clipboard)
+        target.undo()
+        XCTAssertEqual(target.sidecar.adjustments.exposure, 0)
+        target.removeDevelopPreset(preset)
+        source.reloadDevelopPresets()
+        XCTAssertTrue(source.developPresets.isEmpty)
     }
 
     // MARK: - §5.1 the develop race
@@ -300,4 +330,201 @@ final class SettingsClipboardSessionTests: XCTestCase {
         }
         XCTFail("timed out waiting for \(what)")
     }
+    func testPresetScopesAndLegacyMigration() throws {
+        var target = Sidecar()
+        target.params.exposureCompensationEV = 2
+        target.params.doubleExposure.path = "/target/photo.tif"
+        target.geometry.quarterTurns = 1
+        var source = Sidecar()
+        source.adjustments.exposure = 0.75
+        source.params.exposureCompensationEV = -3
+        source.params.doubleExposure.path = "/source/private.tif"
+        var preset = DevelopPreset(name: "Grade", source: source)
+        preset.includedGroups = [.postDev]
+        preset.includesEffects = false
+        preset.includesSecondPhoto = false
+        let result = preset.applied(to: target)
+        XCTAssertEqual(result.adjustments.exposure, 0.75)
+        XCTAssertEqual(result.params.exposureCompensationEV, 2)
+        XCTAssertEqual(result.params.doubleExposure.path, "/target/photo.tif")
+        XCTAssertEqual(result.geometry, target.geometry)
+        let old = DevelopPreset(name: "Old", source: source)
+        let decoded = try JSONDecoder().decode(DevelopPreset.self, from: JSONEncoder().encode(old))
+        XCTAssertEqual(decoded.clip.groups, DevelopPreset.groups)
+        XCTAssertEqual(decoded.applied(to: target).adjustments.exposure, 0.75)
+    }
+
+    func testPresetUpdateFavoritesAndCategoriesPersist() throws {
+        let name = "preset-store-" + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        let session = Session(clipboardDefaults: defaults)
+        var preset = DevelopPreset(name: "Warm", source: Sidecar())
+        preset.category = "Portrait"
+        preset.favorite = true
+        try session.storeDevelopPreset(preset)
+        preset.settings.adjustments.exposure = 0.5
+        try session.storeDevelopPreset(preset)
+        XCTAssertEqual(session.developPresets.count, 1)
+        XCTAssertEqual(session.developPresets.first?.settings.adjustments.exposure, 0.5)
+        let reloaded = Session(clipboardDefaults: defaults)
+        reloaded.reloadDevelopPresets()
+        XCTAssertEqual(reloaded.developPresets.first?.favorite, true)
+        XCTAssertEqual(reloaded.developPresets.first?.category, "Portrait")
+        var duplicate = preset
+        duplicate.id = UUID()
+        XCTAssertThrowsError(try session.storeDevelopPreset(duplicate))
+        duplicate.category = "Travel"
+        try session.storeDevelopPreset(duplicate)
+        XCTAssertEqual(session.developPresets.count, 2)
+    }
+
+    func testPresetBatchWritesTheSelectedPhotosOnly() throws {
+        let urls = try copies(of: "_smoke_1mp.tif", count: 3)
+        let session = Session()
+        session.open(urls: urls)
+        session.click(urls[0])
+        session.togglePick(urls[1])
+        var source = Sidecar()
+        source.adjustments.exposure = 0.8
+        var preset = DevelopPreset(name: "Batch", source: source)
+        preset.includedGroups = [.postDev]
+        preset.includesSecondPhoto = false
+        session.applyDevelopPreset(preset, toSelected: true)
+        XCTAssertEqual(session.sidecar.adjustments.exposure, 0.8)
+        XCTAssertEqual(Sidecar.load(for: urls[1])?.adjustments.exposure, 0.8)
+        XCTAssertNil(Sidecar.load(for: urls[2]))
+        session.undo()
+        XCTAssertNotEqual(session.sidecar.adjustments.exposure, 0.8)
+    }
+
+    func testPresetPreviewUsesAnAcceptedEngineTier() async throws {
+        let gpu = try XCTUnwrap(MTLCreateSystemDefaultDevice())
+        let image = CIImage(color: CIColor(red: 0.2, green: 0.3, blue: 0.4))
+            .cropped(to: CGRect(x: 0, y: 0, width: 96, height: 64))
+        let frame = try ImageDecoder.engineFrame(from: image, device: gpu)
+        let client = EngineClient(device: gpu)
+        var delta = FilmParams.default.fullDelta
+        delta["preview_long_edge"] = .double(Double(DevelopPreset.previewLongEdge))
+        let open = try await client.open(frame, paramsDelta: delta)
+        let render = try await client.render(.reprint, RenderRequest(sessionID: open.sessionID))
+        let texture = try XCTUnwrap(render.texture)
+        let thumbnail = try XCTUnwrap(DevelopPreset.previewImage(texture: texture, adjustments: Adjustments(), device: gpu))
+        let bytes = Array(try XCTUnwrap(thumbnail.dataProvider?.data) as Data)
+        let center = 90 * thumbnail.bytesPerRow + 120 * 8
+        XCTAssertNotEqual(Array(bytes.prefix(8)), Array(bytes[center..<(center + 8)]), "the preview must contain a photograph, not just the canvas surround")
+        await client.stop()
+    }
+
+    func testPresetPreviewResolvesBorderCropAndDateFromTargetPhoto() throws {
+        var target = Sidecar()
+        target.params.dateBack.active = true
+        var source = target
+        source.params.filmEdge.active = true
+        source.params.filmEdge.format = .f6x6
+        var preset = DevelopPreset(name: "Square", source: source)
+        preset.settings = source
+        preset.includesEffects = true
+        var shooting = ShootingData()
+        shooting.captureDay = .init(year: 2024, month: 6, day: 9)
+        let size = CGSize(width: 1200, height: 800)
+        let preview = DevelopPreset.previewSettings(preset.applied(to: target), target: target,
+            size: size, shooting: shooting, stock: nil)
+        let cut = preview.geometry.outputSize(for: size)
+        XCTAssertEqual(cut.width, cut.height, accuracy: 1)
+        XCTAssertTrue(preview.params.filmEdge.active)
+        XCTAssertTrue(preview.params.dateBack.active)
+        XCTAssertEqual(preview.params.dateBack.text, target.params.dateBack.resolvedDateText(shooting: shooting))
+        XCTAssertFalse(preview.params.dateBack.text.isEmpty)
+        XCTAssertEqual(preview.params.dateBack.camera, .f6x6)
+        XCTAssertEqual(preview.params.dateBack.frameScale, 2.0 / 3, accuracy: 0.001)
+        var bordered = preview
+        bordered.heldCrop = target.geometry
+        var withoutBorder = bordered
+        withoutBorder.params.filmEdge.active = false
+        let restored = DevelopPreset.previewSettings(withoutBorder, target: bordered,
+            size: size, shooting: shooting, stock: nil)
+        XCTAssertEqual(restored.geometry, target.geometry)
+    }
+
+    func testPresetPreviewRendersFilmBorderAndDatePixels() async throws {
+        let gpu = try XCTUnwrap(MTLCreateSystemDefaultDevice())
+        let image = CIImage(color: CIColor(red: 0.2, green: 0.3, blue: 0.4))
+            .cropped(to: CGRect(x: 0, y: 0, width: 800, height: 533))
+        let frame = try ImageDecoder.engineFrame(from: image, device: gpu)
+        let client = EngineClient(device: gpu)
+        var source = Sidecar()
+        source.params.filmEdge.active = true
+        source.params.dateBack.active = true
+        source.params.dateBack.customText = "24 06 09"
+        let prepared = DevelopPreset.previewSettings(source, target: source,
+            size: CGSize(width: 800, height: 533), shooting: ShootingData(), stock: nil)
+        var delta = prepared.params.fullDelta
+        delta["preview_long_edge"] = .double(Double(DevelopPreset.previewLongEdge))
+        delta["grain_active"] = .bool(false)
+        delta["glare_active"] = .bool(false)
+        let opened = try await client.open(frame, paramsDelta: delta)
+        let withDate = try await client.render(.reprint, RenderRequest(sessionID: opened.sessionID))
+        let texture = try XCTUnwrap(withDate.texture)
+        XCTAssertGreaterThan(texture.width, 800, "film border must extend the picture")
+        let thumbnail = try XCTUnwrap(DevelopPreset.previewImage(texture: texture, adjustments: prepared.adjustments, device: gpu))
+        _ = try await client.call(.setParams, SetParamsRequest(sessionID: opened.sessionID,
+            paramsDelta: ["date_imprint_active": .bool(false)])) as SetParamsResponse
+        let withoutDate = try await client.render(.reprint, RenderRequest(sessionID: opened.sessionID))
+        let other = try XCTUnwrap(DevelopPreset.previewImage(texture: XCTUnwrap(withoutDate.texture), adjustments: prepared.adjustments, device: gpu))
+        XCTAssertNotEqual(thumbnail.dataProvider?.data as Data?, other.dataProvider?.data as Data?, "date must reach thumbnail pixels")
+        await client.stop()
+    }
+
+    func testPresetPreviewCacheIgnoresLibraryMetadataButTracksEffectsAndPhotoState() throws {
+        let url = FileManager.default.temporaryDirectory.appending(path: "preset-cache-" + UUID().uuidString)
+        try Data([0]).write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+        var target = Sidecar()
+        var preset = DevelopPreset(name: "Original", source: target)
+        preset.settings = target
+        preset.includesEffects = true
+        let original = PresetPreviewCache.key(for: preset, target: target, url: url)
+        preset.name = "Renamed"
+        preset.category = "Favorites"
+        preset.favorite = true
+        XCTAssertEqual(original, PresetPreviewCache.key(for: preset, target: target, url: url))
+        target.adjustments.exposure = 1
+        XCTAssertEqual(original, PresetPreviewCache.key(for: preset, target: target, url: url),
+            "a target edit overwritten by the preset must not invalidate its preview")
+        preset.settings.params.filmEdge.active.toggle()
+        XCTAssertNotEqual(original, PresetPreviewCache.key(for: preset, target: target, url: url))
+        preset.settings.params.filmEdge.active.toggle()
+        target.params.dateBack.active = true
+        XCTAssertNotEqual(original, PresetPreviewCache.key(for: preset, target: target, url: url))
+        target.params.dateBack.active = false
+        try Data([0, 1]).write(to: url)
+        XCTAssertNotEqual(original, PresetPreviewCache.key(for: preset, target: target, url: url))
+    }
+
+    func testPresetPreviewCacheKeepsPreviousImageWhileNewEffectIsMissing() {
+        let cache = PresetPreviewCache()
+        let image = NSImage(size: CGSize(width: 240, height: 180))
+        var preset = DevelopPreset(name: "Preview", source: Sidecar())
+        let url = URL(fileURLWithPath: "/tmp/preset-preview-a.tif")
+        let previous = PresetPreviewCache.previousKey(for: preset, url: url)
+        cache.store(image, for: previous)
+        preset.settings.params.dateBack.active = true
+        XCTAssertNil(cache.image(for: PresetPreviewCache.key(for: preset, target: Sidecar(), url: url)))
+        XCTAssertTrue(cache.image(for: PresetPreviewCache.previousKey(for: preset, url: url)) === image)
+        XCTAssertNil(cache.image(for: PresetPreviewCache.previousKey(for: preset,
+            url: URL(fileURLWithPath: "/tmp/preset-preview-b.tif"))))
+    }
+
+    func testPresetPreviewQueuePrioritisesVisibleCardsAndOnlyPreloadsNextRow() {
+        let presets = (0..<20).map { DevelopPreset(name: String($0), source: Sidecar()) }
+        XCTAssertEqual(PresetPreviewCache.requested(presets, onScreen: []).map { $0.id },
+            presets.prefix(4).map { $0.id })
+        let requested = PresetPreviewCache.requested(presets, onScreen: [presets[10].id, presets[11].id])
+        XCTAssertEqual(requested.map { $0.id }, Array(presets[10...13]).map { $0.id })
+        let last = PresetPreviewCache.requested(presets, onScreen: [presets[19].id])
+        XCTAssertEqual(last.map { $0.id }, [presets[19].id])
+        XCTAssertTrue(PresetPreviewCache.requested([], onScreen: []).isEmpty)
+    }
+
 }
