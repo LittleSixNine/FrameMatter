@@ -5,6 +5,8 @@ import Metal
 
 struct DevelopPresetsSection: View {
     @Bindable var session: Session
+    @AppStorage("filmArtwork.choices") private var artworkChoices = "{}"
+    @AppStorage("filmArtwork.alternate") private var alternateArtwork = false
     @State private var search = ""
     @State private var category = "__all"
     @State private var favoritesOnly = false
@@ -186,6 +188,21 @@ struct DevelopPresetsSection: View {
                         }.aspectRatio(1.25, contentMode: .fit)
                             .clipShape(RoundedRectangle(cornerRadius: 5))
                             .overlay(RoundedRectangle(cornerRadius: 5).stroke(session.activeDevelopPresetID == preset.id ? Theme.accent : .clear, lineWidth: 2))
+                            .overlay(alignment: .bottomLeading) {
+                                if (preset.includedGroups ?? DevelopPreset.groups).contains(.filmAndPaper),
+                                   let artwork = FilmArtwork.selected(for: preset.settings.params.filmStock,
+                                                                      choices: artworkChoices, alternate: alternateArtwork),
+                                   let url = artwork.url, let image = NSImage(contentsOf: url) {
+                                    let filmName = session.catalog.stock(artwork.stockID)?.name ?? artwork.title
+                                    Image(nsImage: image).resizable().scaledToFill()
+                                        .frame(width: 32, height: 36)
+                                        .clipShape(RoundedRectangle(cornerRadius: 2))
+                                        .shadow(color: .black.opacity(0.4), radius: 3, x: 0, y: 2)
+                                        .padding(7)
+                                        .help(filmName)
+                                        .accessibilityLabel(filmName)
+                                }
+                            }
                             .overlay(alignment: .topTrailing) {
                                 if session.activeDevelopPresetID == preset.id {
                                     Image(systemName: "checkmark.circle.fill")
@@ -200,7 +217,7 @@ struct DevelopPresetsSection: View {
                         .help(previewErrors[preset.id] ?? L("Apply to current photo", zh: "应用到当前照片"))
                         .accessibilityLabel(preset.name)
                         .accessibilityAddTraits(session.activeDevelopPresetID == preset.id ? .isSelected : [])
-                    HStack(alignment: .top, spacing: 3) {
+                    HStack(alignment: .center, spacing: 6) {
                         Text(preset.name).font(Theme.Font.caption).lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
                         Button {
                             var changed = preset
