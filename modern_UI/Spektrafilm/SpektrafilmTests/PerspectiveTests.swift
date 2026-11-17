@@ -70,7 +70,11 @@ final class PerspectiveTests: XCTestCase {
         let session=Session()
         XCTAssertThrowsError(try session.applyAgentEdit(["adjustments":["exposure":1],"decode":["perspective":["vertical":5]]]))
         XCTAssertEqual(session.adjustments.exposure,0)
-        XCTAssertFalse(session.clipboardGroups.contains(.perspective))
+        let name = "perspective-defaults-" + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        let cleanSession = Session(clipboardDefaults: defaults)
+        XCTAssertFalse(cleanSession.clipboardGroups.contains(.perspective))
     }
     func testPairIgnoresPerspectiveWithoutErasingTheSingleFrameSetting() {
         var hole=HalfFramePair.Hole(url:URL(fileURLWithPath:"/tmp/source.ARW"))

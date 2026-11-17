@@ -81,7 +81,7 @@
    "targetPrint": null,
    "hasPreviewLUT": false,
    "pairedFilm": null,
-   "cover": "fujifilm_provia_100f.jpg",
+   "cover": null,
    "formats": [
     "135",
     "120"
@@ -96,7 +96,7 @@
    "targetPrint": null,
    "hasPreviewLUT": false,
    "pairedFilm": null,
-   "cover": "fujifilm_velvia_100.jpg",
+   "cover": null,
    "formats": [
     "135",
     "120"
@@ -111,7 +111,7 @@
    "targetPrint": "fujifilm_crystal_archive_typeii",
    "hasPreviewLUT": false,
    "pairedFilm": null,
-   "cover": "fujifilm_xtra_400.jpg",
+   "cover": null,
    "formats": [
     "135",
     "120"
@@ -176,7 +176,7 @@
    "targetPrint": null,
    "hasPreviewLUT": false,
    "pairedFilm": null,
-   "cover": "kodak_ektachrome_100.jpg",
+   "cover": null,
    "formats": [
     "135",
     "120",
@@ -230,7 +230,7 @@
    "targetPrint": "kodak_portra_endura",
    "hasPreviewLUT": false,
    "pairedFilm": null,
-   "cover": "kodak_gold_200.jpg",
+   "cover": null,
    "formats": [
     "135",
     "120"
@@ -260,7 +260,37 @@
    "targetPrint": "kodak_portra_endura",
    "hasPreviewLUT": false,
    "pairedFilm": null,
-   "cover": "kodak_portra_160.jpg",
+   "cover": null,
+   "formats": [
+    "135",
+    "120"
+   ]
+  },
+  {
+   "id": "kodak_portra_160nc",
+   "name": "Kodak Portra 160NC",
+   "stage": "filming",
+   "use": "still",
+   "type": "negative",
+   "targetPrint": "kodak_portra_endura",
+   "hasPreviewLUT": false,
+   "pairedFilm": null,
+   "cover": null,
+   "formats": [
+    "135",
+    "120"
+   ]
+  },
+  {
+   "id": "kodak_portra_160vc",
+   "name": "Kodak Portra 160VC",
+   "stage": "filming",
+   "use": "still",
+   "type": "negative",
+   "targetPrint": "kodak_portra_endura",
+   "hasPreviewLUT": false,
+   "pairedFilm": null,
+   "cover": null,
    "formats": [
     "135",
     "120"
@@ -275,7 +305,37 @@
    "targetPrint": "kodak_portra_endura",
    "hasPreviewLUT": false,
    "pairedFilm": null,
-   "cover": "kodak_portra_400.jpg",
+   "cover": null,
+   "formats": [
+    "135",
+    "120"
+   ]
+  },
+  {
+   "id": "kodak_portra_400nc",
+   "name": "Kodak Portra 400NC",
+   "stage": "filming",
+   "use": "still",
+   "type": "negative",
+   "targetPrint": "kodak_portra_endura",
+   "hasPreviewLUT": false,
+   "pairedFilm": null,
+   "cover": null,
+   "formats": [
+    "135",
+    "120"
+   ]
+  },
+  {
+   "id": "kodak_portra_400vc",
+   "name": "Kodak Portra 400VC",
+   "stage": "filming",
+   "use": "still",
+   "type": "negative",
+   "targetPrint": "kodak_portra_endura",
+   "hasPreviewLUT": false,
+   "pairedFilm": null,
+   "cover": null,
    "formats": [
     "135",
     "120"
@@ -290,7 +350,7 @@
    "targetPrint": "kodak_portra_endura",
    "hasPreviewLUT": false,
    "pairedFilm": null,
-   "cover": "kodak_portra_800.jpg",
+   "cover": null,
    "formats": [
     "135",
     "120"
@@ -305,7 +365,7 @@
    "targetPrint": "kodak_portra_endura",
    "hasPreviewLUT": false,
    "pairedFilm": null,
-   "cover": "kodak_portra_800_push1.jpg",
+   "cover": null,
    "formats": [
     "135",
     "120"
@@ -320,7 +380,7 @@
    "targetPrint": "kodak_portra_endura",
    "hasPreviewLUT": false,
    "pairedFilm": null,
-   "cover": "kodak_portra_800_push2.jpg",
+   "cover": null,
    "formats": [
     "135",
     "120"
@@ -400,7 +460,7 @@
    "targetPrint": "kodak_portra_endura",
    "hasPreviewLUT": false,
    "pairedFilm": null,
-   "cover": "kodak_ultramax_400.jpg",
+   "cover": null,
    "formats": [
     "135"
    ]

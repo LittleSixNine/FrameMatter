@@ -491,7 +491,7 @@ struct FilmParams: Codable, Equatable, Sendable {
         case filmFormatMM, filmFrame, filmSide, sideLengthMM, grainActive, halationActive
         case printBrightnessStops, yFilterShift, mFilterShift, glareActive, scanFilm
         case extendedDynamicRange, preflashExposure, contrastMask, sceneLatitude, effects, printEffects
-        case digitalIntermediate, filmEdge, dateBack, scratches, lightLeaks, agingTextures
+        case diffusion, doubleExposure, digitalIntermediate, filmEdge, dateBack, scratches, lightLeaks, agingTextures
         case sceneLatitudeOther, placementIsRight, pairSplit, sceneCurve
     }
 
@@ -689,6 +689,8 @@ struct FilmParams: Codable, Equatable, Sendable {
     var filmEdge = FilmEdgeSettings()
     var dateBack = DateBackSettings()
     var scratches = ScratchSettings()
+    var diffusion = DiffusionSettings()
+    var doubleExposure = DoubleExposureSettings()
     var lightLeaks = LightLeakSettings()
     var agingTextures = AgingTextureSettings()
 
@@ -720,6 +722,8 @@ struct FilmParams: Codable, Equatable, Sendable {
         filmEdge = FilmEdgeSettings()
         dateBack = DateBackSettings()
         scratches = ScratchSettings()
+        diffusion = DiffusionSettings()
+        doubleExposure = DoubleExposureSettings()
         lightLeaks = LightLeakSettings()
         agingTextures = AgingTextureSettings()
     }
@@ -766,6 +770,8 @@ struct FilmParams: Codable, Equatable, Sendable {
         filmEdge = try c.decodeIfPresent(FilmEdgeSettings.self, forKey: .filmEdge) ?? FilmEdgeSettings()
         scratches = try c.decodeIfPresent(ScratchSettings.self, forKey: .scratches) ?? ScratchSettings()
         agingTextures = try c.decodeIfPresent(AgingTextureSettings.self, forKey: .agingTextures) ?? AgingTextureSettings()
+        diffusion = try c.decodeIfPresent(DiffusionSettings.self, forKey: .diffusion) ?? DiffusionSettings()
+        doubleExposure = try c.decodeIfPresent(DoubleExposureSettings.self, forKey: .doubleExposure) ?? DoubleExposureSettings()
         lightLeaks = try c.decodeIfPresent(LightLeakSettings.self, forKey: .lightLeaks) ?? LightLeakSettings(migrating: scratches)
         dateBack = try c.decodeIfPresent(DateBackSettings.self, forKey: .dateBack) ?? DateBackSettings()
     }
@@ -877,6 +883,7 @@ struct FilmParams: Codable, Equatable, Sendable {
                        ("y_filter_neutral", .double(f.y), .print)]
         }
         fields += pairPlacementWire
+        fields += diffusion.wire
         fields += filmEdge.wire
         fields += scratches.wire(filmEdge: filmEdge)
         fields += lightLeaks.wire(filmEdge: filmEdge, digitalIntermediate: digitalIntermediate)

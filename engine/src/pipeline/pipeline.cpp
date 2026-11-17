@@ -5,6 +5,7 @@
 #include "pipeline.hpp"
 #include "timer.hpp"
 #include "halation_psf.hpp"
+#include "diffusion_psf.hpp"
 #ifndef __APPLE__
 #include "windows_unported.hpp"
 #endif
@@ -154,7 +155,11 @@ bool Pipeline::build(const Params& params, std::string& error) {
                 "engine; it always evaluates the exact spectral integral";
         return false;
     }
-    if (params_.camera.diffusion_filter.active || params_.enlarger.diffusion_filter.active) {
+    if (params_.camera.diffusion_filter.active && params_.settings.striped) {
+        error = "camera diffusion requires the full-frame executor";
+        return false;
+    }
+    if (params_.enlarger.diffusion_filter.active) {
         error = "diffusion filters are not implemented by the native engine";
         return false;
     }
@@ -1982,6 +1987,7 @@ bool Pipeline::film_blurs(const Chain& in, Chain& out, std::string& error) {
     // halation's two mixtures are where a channel can straddle the crossover,
     // and a `carried` demand sends the whole stage back to whole-frame.
     Image cur = in.cur, next;
+    SPK_NODE(node_diffusion(cur, next, error)); cur = next;
     SPK_NODE(node_lens_blur(cur, next, error)); cur = next;
     SPK_NODE(node_halation(cur, next, error)); cur = next;
     if (in.factory_exposure.buf) {
@@ -2489,3 +2495,25 @@ bool Pipeline::run_print_striped(const Image& cmy, Image& out, Progress* progres
 #undef SPK_NODE
 
 }  // namespace spk
+
+namespace spk {
+bool Pipeline::node_diffusion(const Image& in, Image& out, std::string& error) {
+    diffusion::Psf psf;
+    if (!diffusion::build_psf(params_.camera.diffusion_filter, psf, error)) return false;
+    if (!(psf.p_s > 0)) { out = in; return true; }
+    // shortcut: existing Gaussian-mixture execution; use the upstream pyramid if full-size diffusion is too slow.
+    std::vector<Blur::Component> components;
+    Blur::Component direct{};
+    for (int c = 0; c < 3; ++c) direct.weight[c] = 1.0 - psf.p_s;
+    components.push_back(direct);
+    for (const auto& e : psf.exps) {
+        const double lambda = std::max(e.lambda_um / pixel_size_um_, 1e-6);
+        const double decay[3] = {lambda, lambda, lambda};
+        const double weight[3] = {psf.p_s * e.weight[0], psf.p_s * e.weight[1], psf.p_s * e.weight[2]};
+        std::vector<Blur::Component> blurred;
+        Blur::exponential_components(decay, weight, blurred);
+        components.insert(components.end(), blurred.begin(), blurred.end());
+    }
+    return blur_.mixture(in, components, out, error);
+}
+}

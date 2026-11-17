@@ -68,8 +68,10 @@ enum OsP : int {
     P_PERF_LEAK_COVERAGE = 274,
     P_PERF_LEAK_SOFTNESS = 275,
     P_PERF_LEAK_SEED = 276,
-    P_COUNT = 277
+    P_PERF_DT = 277, P_PERF_SHAPE, P_PERF_ROWS, P_PERF_RMIN, P_PERF_RMAX, P_PERF_JIT, P_NB_PREV, P_NB_NEXT,
+    P_COUNT
 };
+constexpr double kStripeG = 2.83, kStripeGW = 0.33, kStripeR = 3.73, kStripeRW = 0.65, kStripePeriod = 38.0;
 constexpr int kMaxLeaks = 12;
 // How far past each long edge of the film a strip scan reaches, mm.
 constexpr double kCarrierMM = 0.40;
@@ -132,12 +134,103 @@ constexpr Format kFormats[] = {
     {"135_full_67", 35.0, 35.0, 69.5, true, "square"}, // 135 through a 6×7-width aperture: the whole strip is exposed
     {"120_6x12", 61.0, 56.0, 112.0, false, "square"},
     {"120_6x17", 61.0, 56.0, 168.0, false, "square"},
+    // API-SPEC §24 (2026-11-15; Super 8, 16 mm, 35 mm and 65 mm): motion-
+    // picture camera negatives, as a lab's overscan scan shows them. `perforated`
+    // stays false (it means "a 135 still layout": its edge print, DX, stripes);
+    // their holes are `kCine`'s. Nothing is printed on them.
+    {"8_super",   7.976, 5.79, 4.01, false, "rounded"},    // SMPTE 149 film; the owner's reference frame (decided)
+    // 16 mm 1R-2994 (single-perf) camera negative, Super 16 (SMPTE 201M "type W")
+    // aperture: film 15.95 mm (0.628 in, SMPTE 109); the image 12.35 nominal across
+    // (table 1, A), 7.42 +0.15/-0 along (B) -- 7.50, which the owner's scan
+    // (research/v2.4.1/16mm_film.png, 122.0 px/mm off its 7.605 mm pitch) measures
+    // (12.31 x 7.50 mm; its frame lines 0.09-0.10 mm, where 7.42 would leave 0.19).
+    {"16_super",  15.95, 12.35, 7.50, false, "square"},
+    {"35_4perf",  35.0, 24.89, 18.67, false, "square"},    // the full (silent / Super 35) camera aperture, 0.980 x 0.735 in
+    {"65_5perf",  64.97, 52.63, 23.01, false, "square"},   // 65 mm 5-perf camera aperture, 2.072 x 0.906 in
+    {"65_15perf", 64.97, 52.63, 70.41, false, "square"},   // 15-perf, the film running across: 2.772 x 2.072 in
 };
-constexpr const char* kFormatNames = "135, 135_half, 120_645, 120_6x6, 120_6x7, 120_6x8, 120_6x9, 135_xpan, 135_full_67, 120_6x12, 120_6x17";
+constexpr const char* kFormatNames = "135, 135_half, 120_645, 120_6x6, 120_6x7, 120_6x8, 120_6x9, 135_xpan, 135_full_67, 120_6x12, 120_6x17, 8_super, 16_super, 35_4perf, 65_5perf, 65_15perf";
 constexpr const char* kGateFamilies[] = {"square", "rounded", "eared", "shouldered", "kicked"};
 const Format* find_format(const std::string& name) {
     for (const Format& f : kFormats) if (name == f.name) return &f;
     return nullptr;
+}
+
+// API-SPEC §21.3: 65 mm KS perforations (SMPTE 145) on film slit to 120's 61 mm.
+constexpr double kKsPitch = 4.75, kKsAlong = 1.981, kKsAcross = 2.794, kKsRadius = 0.51;
+constexpr double kKsEdge = 2.97 - (64.97 - 61.0) / 2.0;   // 0.985 mm from the slit edge
+// API-SPEC §24: the cine gauges' film. One row each; every number is a constant
+// here, so a decision the owner changes is one entry. Sources: SMPTE 149
+// (Super 8), BH-1866 (35 mm), SMPTE 145 (65 mm KS, as `ks65`), and
+// for 16 mm SMPTE 109 (1R-2994: pitch 0.2994 in = 7.605 mm, the short pitch
+// Kodak's 16 mm camera negatives are perforated to; hole 0.0720 in across x
+// 0.0500 in along = 1.829 x 1.270 mm, corners 0.010 in = 0.25 mm, 0.0355 in =
+// 0.902 mm from the edge) and SMPTE 201M-1996 (the type W image: centred
+// 9.00 mm from the reference -- the perforated -- edge, so 2.825 mm to its near
+// side). E = an estimate to hold against a real scan.
+struct Cine {
+    const char* name;
+    double pitch, hole_along, hole_across, hole_edge, hole_r;
+    int shape;              // 0: KS, a rounded rectangle; 1: Bell & Howell
+    // 0: both edges; 1: the t-low edge only -- the picture's right on a film running down it (Super 8);
+    // 2: the t-high edge only -- the picture's left (16 mm, as the owner's scan has it)
+    int rows;
+    int perfs;              // perforations a frame: the advance
+    int aspect_long, aspect_short;   // the canvas's named aspect: the frame and a sliver of each neighbour
+    double guided;          // > 0: the gate this far from the perforated edge; 0: centred on the film
+    double mech;            // the camera's own sizes at this gauge: gate radii, its penumbra and roughness (E)
+    double t_tol;           // the gate's place across the film, +- mm (pin-registered) (E)
+    double reg;             // the frame's registration on the perforations, +- mm: the camera's (E)
+    double adv_err;         // the advance's error, sigma mm: the frame's, and each neighbour's own (E)
+    double r_min, r_max, jit;   // the hole's corner-radius clamp and its punch tolerances' scale
+    // The owner's decision, 2026-11-12: one frame, no neighbour's picture -- the canvas is one frame's
+    // advance along the film, the frame line split between its two ends. Super 8 and 16 mm keep their
+    // neighbours' slivers.
+    bool single_frame;
+    // The hole centred on the frame line, not on the frame: 16 mm's single perforation sits between two
+    // pictures (SMPTE 201M; the owner's scan). An even count does this anyway (the frame line midway).
+    bool at_line;
+};
+constexpr Cine kCine[] = {
+    // Super 8: one hole a frame, centred on it, on the picture's right; the gate 1.47 from that edge
+    {"8_super", 4.234, 1.143, 0.914, 0.51, 0.13, 0, 1, 1, 3, 2, 1.47, 0.25, 0.025, 0.08, 0.02, 0.08, 0.18, 0.5, false, false},
+    // 16 mm single-perf (Super 16): one hole a frame at the frame line, on the picture's left; the gate
+    // 2.825 from that edge, 0.69 from the other. The canvas 16:9: each neighbour's picture is 0.63 mm
+    // of its 8.97 (7.0 %; the owner's scan, itself 16:9, shows 5.9 % above and 7.3 % below).
+    {"16_super", 7.605, 1.270, 1.829, 0.902, 0.25, 0, 2, 1, 16, 9, 2.825, 0.35, 0.04, 0.04, 0.015, 0.18, 0.32, 0.75, false, true},
+    // 35 mm 4-perf camera negative: Bell & Howell holes (corners eased 0.127), short pitch
+    {"35_4perf", 4.740, 1.854, 2.794, 2.01, 0.127, 1, 0, 4, 3, 2, 0.0, 0.5, 0.05, 0.03, 0.01, 0.05, 0.20, 1.0, true, false},
+    // 65 mm camera negative: ks65's KS holes and pitch
+    {"65_5perf", kKsPitch, kKsAlong, kKsAcross, 2.97, kKsRadius, 0, 0, 5, 20, 9, 0.0, 0.5, 0.05, 0.03, 0.01, 0.3, 0.6, 1.0, true, false},
+    {"65_15perf", kKsPitch, kKsAlong, kKsAcross, 2.97, kKsRadius, 0, 0, 15, 4, 3, 0.0, 0.5, 0.05, 0.03, 0.01, 0.3, 0.6, 1.0, true, false},
+};
+const Cine* find_cine(const Format* f) {
+    if (!f) return nullptr;
+    for (const Cine& c : kCine) if (std::strcmp(f->name, c.name) == 0) return &c;
+    return nullptr;
+}
+// The camera's scale at a cine gauge smaller than 35 mm: its leak's sizes, fog,
+// spool leaks and scan offsets (`small`); 1 on every other format.
+double cine_small(const Cine* cine) { return cine ? std::min(1.0, 2.0 * cine->mech) : 1.0; }
+// The film's width and the gate's place across it: the first draws of the
+// layout's own streams (camera 1, frame 1), shared by the layout and a leak
+// with the film edge off so the two agree. A cine film is guided by its
+// perforations: its width is the film's, its gate within `t_tol`; the draws are
+// made all the same. Every other format: exactly the arithmetic it always had.
+void film_and_gate(const Format* fmt, const Cine* cine, double gate_across, Rng& rc, Rng& rf, double& film_w,
+                   double& gate_t0) {
+    if (!cine) {
+        film_w = fmt->film_w + (fmt->perforated ? 0.0 : rc.uni(-0.15, 0.15));
+        const double t_off = (fmt->perforated ? rc.uni(-0.10, 0.10) : rc.uni(-0.45, 0.45)) + rf.normal() * 0.025;
+        gate_t0 = 0.5 * (film_w - gate_across) + t_off;
+        return;
+    }
+    (void)rc.uni();
+    film_w = fmt->film_w;
+    const double t_off = rc.uni(-cine->t_tol, cine->t_tol) + rf.normal() * 0.025 * cine_small(cine);
+    const double guided = cine->guided <= 0.0 ? 0.5 * (film_w - gate_across)
+                        : cine->rows == 2 ? film_w - cine->guided - gate_across : cine->guided;
+    gate_t0 = guided + t_off;
 }
 
 // --- the film edge, per stock (reference_film/, measured 2026-10-03) --------
@@ -169,7 +262,17 @@ struct EdgeLook {
     double ev;          // its exposure, stops over 18 % grey
     bool light_numbers; // Kodak layout: regular-weight numbers and name tail (C200)
     const char* code;   // Fuji 120: the code after the stock name ("EFCDCD" on Pro 400H), or ""
+    bool stripes = false; // Fujifilm's 135 stripes for a stock whose family does not carry them (see below)
+    // Kodak 135: two solid blocks after the name on the top band, cap-high on its baseline
+    // (Portra 160NC/VC, 400NC/VC; the owner's 160NC strip, 2026-11-15, 25.8 px/mm from the
+    // 4.75 mm pitch): 1.09 mm wide, 0.43 mm apart, the first 0.58 mm after the name's last letter.
+    bool name_blocks = false;
 };
+// Fujifilm's factory edge stripes (green 2.83 mm, red 3.73 mm from each edge) are the colour
+// negatives' edge (the owner, 2026-11-11): every stock with Fujifilm's negative 135 layout carries
+// them, so a Fujifilm negative added later needs only its table row; a stock of another family
+// carries them only by its own flag. Never the slides' layout (Velvia, Provia, Acros), never 120.
+constexpr bool edge_stripes_135(Edge135 family, bool flag) { return family == Edge135::FujiNeg || flag; }
 // Colours: the references' marks against their own rebate, as (R, G, B) of
 // the brightest third of the ink, normalised to the largest. Kodak negatives
 // read tan to peach -- Portra 800 (1, .74, .35), UltraMax (1, .80, .57),
@@ -193,6 +296,16 @@ constexpr EdgeLook kEdgeLooks[] = {
     {"kodak_portra_800_push2", Edge135::Kodak, Edge120::Kodak, {1.0, 0.40, 0.26}, 5.3, false, ""},
     {"kodak_ultramax_400",    Edge135::Kodak, Edge120::Kodak, {1.0, 0.40, 0.26}, 5.3, false, ""},
     {"kodak_ektar_100",       Edge135::Kodak, Edge120::Kodak, {1.0, 0.40, 0.26}, 5.3, false, ""},
+    // Portra 160NC, 160VC, 400NC, 400VC (the 2006-2011 line; the product's own profiles, from
+    // E-190): the owner's 160NC strips, 135 ("KODAK 160NC", ink (1, .83, .60) on both bands) and
+    // 120 6x6 ("KODAK 160NC-2", (1, .61, .43): another scanner's balance). Kodak's layout on both,
+    // the blocks after the name on 135, and the Kodak negatives' printer light, which renders
+    // (1, .72, .45) through 160NC: inside the two strips' spread. The other three have no strip of
+    // their own and share 160NC's (the owner: one design for the four).
+    {"kodak_portra_160nc",    Edge135::Kodak, Edge120::Kodak, {1.0, 0.40, 0.26}, 5.3, false, "", false, true},
+    {"kodak_portra_160vc",    Edge135::Kodak, Edge120::Kodak, {1.0, 0.40, 0.26}, 5.3, false, "", false, true},
+    {"kodak_portra_400nc",    Edge135::Kodak, Edge120::Kodak, {1.0, 0.40, 0.26}, 5.3, false, "", false, true},
+    {"kodak_portra_400vc",    Edge135::Kodak, Edge120::Kodak, {1.0, 0.40, 0.26}, 5.3, false, "", false, true},
     // E100: the 120 reference (white marks); no 135 reference, so its 135
     // layout stays Kodak's and is unverified.
     {"kodak_ektachrome_100",  Edge135::Kodak, Edge120::Kodak, {1.0, 0.62, 0.70}, 5.7, false, ""},
@@ -274,6 +387,7 @@ struct Group {
     std::vector<Op> ops;
     double exposure[3] = {0, 0, 0};   // raw exposure at full coverage, per layer
     double blur_mm = 0.0;
+    double tail_mm = 0.0, tail_w = 0.0;  // Wider scatter of the date-back light through the base.
 };
 
 // Seven segments, a b c d e f g, as the data back's LCD: glyph units, digit
@@ -636,6 +750,16 @@ bool Pipeline::overscan_layout(uint32_t frame_w, uint32_t frame_h, std::string& 
         error = "overscan: unknown carrier '" + o.carrier + "' (none, black, open)";
         return false;
     }
+    if (o.perforation != "none" && o.perforation != "ks65") {
+        error = "overscan: unknown perforation '" + o.perforation + "' (none, ks65)";
+        return false;
+    }
+    const bool ks65 = o.perforation == "ks65";
+    if (ks65 && std::strncmp(fmt->name, "120_", 4) != 0) {
+        error = "overscan: perforation 'ks65' is 120 cut from 65 mm cine film; it needs a 120 format, and a 135 format "
+                "sets its own holes (overscan_format = '" + o.format + "')";
+        return false;
+    }
     if (params_.settings.striped) {
         error = "overscan: not supported by the striped executor yet (RFC-032 §27); render with striped = false";
         return false;
@@ -664,6 +788,8 @@ bool Pipeline::overscan_layout(uint32_t frame_w, uint32_t frame_h, std::string& 
     OverscanLayout& L = overscan_;
     L = OverscanLayout{};
     L.format = fmt->name;
+    const Cine* cine = find_cine(fmt);
+    const double small = cine_small(cine);
     L.px = pixel_size_um_ / 1000.0;
     L.frame_w = frame_w;
     L.frame_h = frame_h;
@@ -686,12 +812,8 @@ bool Pipeline::overscan_layout(uint32_t frame_w, uint32_t frame_h, std::string& 
     Rng rc(stream(cam, kCamera, 1)), rf(stream(frm ^ (cam << 32), kFrame, 1));
 
     // --- film and gate ---------------------------------------------------
-    L.film_w = fmt->film_w + (fmt->perforated ? 0.0 : rc.uni(-0.15, 0.15));
-    // Camera centring + weave. A 120 gate sits up to ~0.5 mm off the film's
-    // middle (reference_film/120: rebates of 2.26/3.28, 2.48/2.60, 2.51/2.99,
-    // 2.4/3.1 and 1.9/2.64 mm); a 135 gate is held by the perforations.
-    const double t_off = (fmt->perforated ? rc.uni(-0.10, 0.10) : rc.uni(-0.45, 0.45)) + rf.normal() * 0.025;
-    L.gate_t0 = 0.5 * (L.film_w - L.gate_across) + (L.format == "135_full_67" ? 0.0 : t_off);
+    film_and_gate(fmt, cine, L.gate_across, rc, rf, L.film_w, L.gate_t0);
+    if (L.format == "135_full_67") L.gate_t0 = 0.5 * (L.film_w - L.gate_across);
     L.gate_s0 = 0.0;
     for (int side = 0; side < 4; ++side)
         for (int k = 0; k < 3; ++k) {
@@ -704,7 +826,7 @@ bool Pipeline::overscan_layout(uint32_t frame_w, uint32_t frame_h, std::string& 
     // shadow's radius is gap / (2 N). EXIF gives N; f/5.6 when unknown.
     const double gate_gap = rc.uni(0.18, 0.40);
     const double N = o.f_number > 0.5 ? o.f_number : 5.6;
-    L.penumbra = gate_gap / (2.0 * N);
+    L.penumbra = gate_gap / (2.0 * N) * (cine ? cine->mech : 1.0);
 
     // --- the gate's shape: its own stream, so a new family never moves the
     // fog, the perforation phase or anything else this camera already draws.
@@ -721,6 +843,17 @@ bool Pipeline::overscan_layout(uint32_t frame_w, uint32_t frame_h, std::string& 
             family = fams[size_t(rg.uni(0.0, double(fams.size()))) % fams.size()];
         }
         if (L.format != "135_full_67") gate_shape(L, family, fmt->perforated, rg);
+        if (cine) {
+            // A machined aperture plate at the gauge's own scale: the family's radii, roughness and
+            // edge wobble times `mech` (Super 8's rounded 0.42-0.62 mm become 0.105-0.155, SMPTE's
+            // 0.13; a still camera's 12 um wobble). Its nicks are drawn and kept on
+            // 35 and 65 mm; on a gauge under 35 mm they would be most of a corner, so Super 8 and
+            // 16 mm have none (the draws are made all the same).
+            for (double& r : L.gate_r) r *= cine->mech;
+            L.rough_amp *= cine->mech;
+            if (cine->mech < 0.5) L.quads.clear();
+            for (auto& side : L.wob_a) for (double& a : side) a *= cine->mech;
+        }
     }
     L.holes_light = o.holes == "white";
     L.carrier_open = o.carrier == "open";
@@ -737,6 +870,43 @@ bool Pipeline::overscan_layout(uint32_t frame_w, uint32_t frame_h, std::string& 
         // (perf_phase -3.2) and the name starts 6 mm in. Drawn within +-0.7 mm
         // of that, not across the whole pitch; the advance error stays the frame's.
         L.perf_phase = std::clamp(-3.3 + rc.uni(-0.7, 0.7) + rf.normal() * 0.08, -4.1, -2.6);
+    }
+
+    L.holes = L.perforated;
+    if (cine) {
+        // API-SPEC §24: the cine film's own holes, sprocket-locked: the camera's pins hold the frame on
+        // them, so the frame line falls midway between two holes (an even count a frame), the hole is
+        // centred on the frame (Super 8) or on the frame line (16 mm, `at_line`), give or take the
+        // camera's registration (camera 29) and this frame's advance (frame 30). The neighbours, the
+        // same picture again, each one advance away with its own error. Streams of their own, after
+        // every draw above: nothing else moves.
+        Rng rk(stream(cam, kCamera, 29)), rn(stream(frm ^ (cam << 32), kFrame, 30));
+        L.holes = true;
+        L.cine = true;
+        L.perf_pitch = cine->pitch; L.perf_w = cine->hole_along; L.perf_h = cine->hole_across;
+        L.perf_edge = cine->hole_edge; L.perf_r = cine->hole_r;
+        L.perf_shape = cine->shape; L.perf_rows = cine->rows;
+        L.perf_rmin = cine->r_min; L.perf_rmax = cine->r_max; L.perf_jit = cine->jit;
+        const double reg = rk.uni(-cine->reg, cine->reg), jitter = rn.normal() * cine->adv_err;
+        const double centre = L.gate_s0 + 0.5 * L.gate_along;
+        const bool line = cine->at_line || cine->perfs % 2 == 0;
+        L.perf_phase = centre - 0.5 * cine->hole_along + (line ? 0.5 * cine->pitch : 0.0) + reg + jitter;
+        const double adv = cine->perfs * cine->pitch;
+        L.nb_prev = adv + rn.normal() * cine->adv_err;
+        L.nb_next = adv + rn.normal() * cine->adv_err;
+        if (cine->single_frame) { L.nb_prev = 0.0; L.nb_next = 0.0; }   // drawn, so the stream is as before
+    }
+    if (ks65) {
+        // API-SPEC §21.3: 65 mm KS holes, whole, on both edges of the slit film.
+        // 120 is not sprocket-locked, so the phase is the frame's; the
+        // slitter's wander shifts both rows alike and is the camera's (one
+        // roll per camera, as the engine treats the machine). Streams of their
+        // own, so every draw a 120 frame already makes stays where it is.
+        L.holes = true;
+        L.perf_pitch = kKsPitch; L.perf_w = kKsAlong; L.perf_h = kKsAcross; L.perf_edge = kKsEdge; L.perf_r = kKsRadius;
+        Rng rk(stream(cam, kCamera, 23)), rp(stream(frm ^ (cam << 32), kFrame, 24));
+        L.perf_dt = rk.uni(-0.25, 0.25);
+        L.perf_phase = -rp.uni(0.0, kKsPitch);
     }
 
     // --- canvas ------------------------------------------------------------
@@ -761,6 +931,16 @@ bool Pipeline::overscan_layout(uint32_t frame_w, uint32_t frame_h, std::string& 
         t_lo = L.format == "135_full_67" ? 0.0 : L.gate_t0 - 1.1;
         t_hi = L.format == "135_full_67" ? L.film_w : L.gate_t0 + L.gate_across + 1.1;
     }
+    if (cine) {
+        // The frame and a sliver of each neighbour, the canvas at the gauge's named aspect (Super 8 3:2,
+        // 16 mm 16:9); a single-frame gauge's canvas is one frame's advance, the frame line split
+        // between its two ends (the owner, 2026-11-12). The draws above are made.
+        const bool long_across = fmt->across > fmt->along;
+        const double canvas_along = cine->single_frame ? cine->perfs * cine->pitch
+                                  : long_across ? L.film_w * cine->aspect_short / cine->aspect_long
+                                                : L.film_w * cine->aspect_long / cine->aspect_short;
+        margin_along = std::max(0.0, 0.5 * (canvas_along - L.gate_along));
+    }
     if (L.format == "135_full_67") margin_along = 0.0;
     const uint32_t m_px = uint32_t(std::lround(margin_along / L.px));
     const uint32_t along_px = uint32_t(L.vertical ? frame_h : frame_w) + 2 * m_px;
@@ -783,7 +963,7 @@ bool Pipeline::overscan_layout(uint32_t frame_w, uint32_t frame_h, std::string& 
     const bool full_width = L.format == "135_full_67";
     if (full_width) L.scan_rot = 0.0;
     const double random_ds = rf.normal() * 0.08, random_dt = rf.normal() * 0.06;
-    const double ds = full_width ? 0.0 : random_ds, dt = full_width ? 0.0 : random_dt;
+    const double ds = full_width ? 0.0 : random_ds * small, dt = full_width ? 0.0 : random_dt * small;
     const double cu = 0.5 * L.canvas_w * L.px, cv = 0.5 * L.canvas_h * L.px;
     const double c = std::cos(L.scan_rot), sn = std::sin(L.scan_rot);
     // canvas (u, v) -> film (s, t): the scan rotation R, then for a vertical film
@@ -806,6 +986,7 @@ bool Pipeline::overscan_layout(uint32_t frame_w, uint32_t frame_h, std::string& 
     // 135 fogs from the cassette lips (light piping in the base); 120 from the
     // backing paper's edges, which reaches across the whole rebate band.
     L.fog_width = fmt->perforated ? rc.uni(0.8, 1.8) : rc.uni(1.2, 2.6);
+    if (cine) L.fog_width = (0.8 + (L.fog_width - 1.2) / 1.4) * small;
     // Gate flare (the gate's bevel), camera-dependent.
     L.flare_amp = rc.uni(0.10, 0.35);
     L.flare_width = rc.uni(0.03, 0.08);
@@ -824,6 +1005,7 @@ bool Pipeline::overscan_layout(uint32_t frame_w, uint32_t frame_h, std::string& 
         lk.amp = o.leaks * kMidGrey * std::pow(2.0, rf.uni(0.5, 2.5));
         lk.sig_s = rf.uni(1.2, 4.0);
         lk.sig_t = rf.uni(0.4, 1.3);
+        if (cine) { lk.sig_s *= small; lk.sig_t *= small; }
         L.leaks.push_back(lk);
     }
 
@@ -834,6 +1016,17 @@ bool Pipeline::overscan_layout(uint32_t frame_w, uint32_t frame_h, std::string& 
     light_weights(*colour_, *blob_, film_sensitivity_edge_, ref, 2800.0, false, front, L.fog_rgb);
     light_weights(*colour_, *blob_, film_sensitivity_edge_, ref, 2700.0, true, rear, L.date_rgb);
     light_weights(*colour_, *blob_, film_sensitivity_edge_, ref, 4500.0, false, edge_t, L.edge_rgb);
+    // Fujifilm's red and green factory edge stripes: one layer each (green-
+    // sensitive for the green line, red-sensitive for the red), on every 135-
+    // gauge format (135, half, XPan, 135_sprocket) for a Fujifilm negative's edge
+    // (`edge_stripes_135`; API-SPEC §21.4; the owner, 2026-11-11).
+    const EdgeLook& striped = edge_look_for(params_.film.info.stock);
+    if (fmt->perforated && edge_stripes_135(striped.k135, striped.stripes)) {
+        const double g_t[3] = {0.0, 1.0, 0.0}, r_t[3] = {1.0, 0.0, 0.0};
+        L.stripes = true;
+        light_weights(*colour_, *blob_, film_sensitivity_edge_, ref, 4500.0, false, g_t, L.stripe_g_rgb);
+        light_weights(*colour_, *blob_, film_sensitivity_edge_, ref, 4500.0, false, r_t, L.stripe_r_rgb);
+    }
 
     // --- the hole: the cmy that cancels this film's base (least squares) ----
     {
@@ -979,7 +1172,15 @@ void Pipeline::overscan_params_block(std::vector<float>& P) const {
         P[b] = float(L.leaks[k].s); P[b + 1] = float(L.leaks[k].side); P[b + 2] = float(L.leaks[k].amp);
         P[b + 3] = float(L.leaks[k].sig_s); P[b + 4] = float(L.leaks[k].sig_t);
     }
-    P[P_PERFORATED] = L.perforated ? 1.0f : 0.0f;
+    P[P_PERFORATED] = L.holes ? 1.0f : 0.0f;   // the holes, a 135 layout's or ks65's (API-SPEC §21.3)
+    P[P_PERF_DT] = float(L.perf_dt);
+    if (L.cine) {   // API-SPEC §24; 0 (today's arithmetic) on every other format
+        P[P_PERF_SHAPE] = float(L.perf_shape);
+        P[P_PERF_RMIN] = float(L.perf_rmin); P[P_PERF_RMAX] = float(L.perf_rmax); P[P_PERF_JIT] = float(L.perf_jit);
+        P[P_NB_PREV] = float(L.nb_prev); P[P_NB_NEXT] = float(L.nb_next);
+    }
+    // the cine row(s): the holes' and, with the film edge off, an edge burn's (0 elsewhere)
+    P[P_PERF_ROWS] = float(L.perf_rows);
     P[P_PERF_PITCH] = float(L.perf_pitch); P[P_PERF_W] = float(L.perf_w); P[P_PERF_H] = float(L.perf_h);
     P[P_PERF_EDGE] = float(L.perf_edge); P[P_PERF_R] = float(L.perf_r); P[P_PERF_PHASE] = float(L.perf_phase);
     for (int c = 0; c < 3; ++c) P[P_HOLE_C + c] = float(L.hole_cmy[c]);
@@ -1061,7 +1262,7 @@ bool rasterise(const OverscanLayout& L, const Group& g, std::vector<float>& cov,
                     grow(op.s + a * ex - b * ey, op.t + a * ey + b * ex);
         }
     }
-    const double pad = 3.0 + 3.0 * g.blur_mm / L.px;
+    const double pad = 3.0 + 3.0 * std::max(g.blur_mm, g.tail_mm) / L.px;
     x0 = std::max(0, int(std::floor(xmin - pad)));
     y0 = std::max(0, int(std::floor(ymin - pad)));
     const int x1 = std::min(int(L.canvas_w), int(std::ceil(xmax + pad)));
@@ -1132,8 +1333,8 @@ bool rasterise(const OverscanLayout& L, const Group& g, std::vector<float>& cov,
     // tier of a 45 MP frame, sigma ~5 px), and the loops cost 95 ms each at
     // -O2 and ~1.2 s each in the Debug build's -O0 -- the whole of "Film Edge
     // is slow" (2026-10-03). vImage is optimised whatever the build setting.
-    const double sigma = g.blur_mm / L.px;
-    if (sigma > 0.3) {
+    auto soften = [&](std::vector<float>& cov, double sigma) {
+        if (!(sigma > 0.3)) return true;
         const int r = int(std::ceil(3.0 * sigma));
         std::vector<float> k(size_t(2 * r + 1));
         double sum = 0.0;
@@ -1148,7 +1349,16 @@ bool rasterise(const OverscanLayout& L, const Group& g, std::vector<float>& cov,
             vImageConvolve_PlanarF(&dst, &src, nullptr, 0, 0, k.data(), taps, 1, 0.0f, kvImageEdgeExtend)
                 != kvImageNoError)
             return false;
-    }
+        return true;
+    };
+    if (!(g.tail_w > 0.0)) return soften(cov, g.blur_mm / L.px);
+    // A camera imprint (2026-11-10): the LED's light through the base,
+    // a narrow core (`blur_mm`) and a wider tail carrying `tail_w` of it --
+    // the two layers summed here on the host, where the masks are softened.
+    std::vector<float> tail = cov;
+    if (!soften(cov, g.blur_mm / L.px) || !soften(tail, g.tail_mm / L.px)) return false;
+    const float wc = float(1.0 - g.tail_w), wt = float(g.tail_w);
+    for (size_t i = 0; i < cov.size(); ++i) cov[i] = wc * cov[i] + wt * tail[i];
     return true;
 }
 
@@ -1252,6 +1462,10 @@ int dx_extract_for(const std::string& stock) {
         // digits are the DX number). The strip shows the code's clock track;
         // its data track is cropped off, so this was not read back.
         {"ilford_hp5_plus_400", 1753},
+        {"kodak_portra_400", 1277}, {"kodak_portra_800", 1278}, {"kodak_portra_800_push1", 1278},
+        {"kodak_portra_160nc", 1275}, {"kodak_portra_160vc", 1275},
+        {"kodak_portra_400nc", 1277}, {"kodak_portra_400vc", 1277},
+
     };
     for (const auto& e : kDx) if (stock == e.id) return e.dx;
     return -1;
@@ -1717,6 +1931,11 @@ void imprint_groups(const OverscanLayout& L, const Params& params, double frame_
                         top.ops.push_back(rest);
                     }
                     top.ops.push_back(tx);
+                    if (look.name_blocks && !light) {
+                        double b0 = s0 + text_width(tx.font, tx.size_mm, tx.text, tx.tracking_mm, 1.0) + 0.58;
+                        for (int k = 0; k < 2; ++k, b0 += 1.09 + 0.43)
+                            top.ops.push_back(rect(b0, base_t - cap_t, b0 + 1.09, base_t));
+                    }
                 }
                 // The bottom band: the DX code, then the frame number -- "13"
                 // at caps 1.40 mm on a baseline 0.14 mm from the edge, or "12A"
@@ -1911,7 +2130,34 @@ void imprint_groups(const OverscanLayout& L, const Params& params, double frame_
         }
         out.push_back(top);
         out.push_back(bot);
-    } else if (L.valid) {
+        if (L.stripes) {
+            // Fujifilm's edge stripes (API-SPEC §21.4), on both edges
+            // in the perforation rows: a solid green line and a red one broken
+            // every half of 38 mm (one frame, 8 perforations), on the 19 mm
+            // grid the rest of the print keeps. The holes are punched through
+            // them. Factory print, so scaled by `edge_gain` with the rest.
+            Group green = group_for(L.stripe_g_rgb, e_edge, 0.022);
+            Group red = group_for(L.stripe_r_rgb, e_edge, 0.022);
+            for (int side = 0; side < 2; ++side) {
+                auto band_t = [&](double from_edge, double width, double& t0, double& t1) {
+                    const double c = side == 0 ? from_edge : W - from_edge;
+                    t0 = c - 0.5 * width; t1 = c + 0.5 * width;
+                };
+                double t0, t1;
+                band_t(kStripeG, kStripeGW, t0, t1);
+                green.ops.push_back(rect(s_min, t0, s_max, t1));
+                band_t(kStripeR, kStripeRW, t0, t1);
+                const int k_lo = int(std::floor((s_min - grid0) / kStripePeriod)) - 1;
+                const int k_hi = int(std::ceil((s_max - grid0) / kStripePeriod)) + 1;
+                for (int k = k_lo; k <= k_hi; ++k) {
+                    const double a = grid0 + k * kStripePeriod;
+                    red.ops.push_back(rect(a, t0, a + 0.5 * kStripePeriod, t1));
+                }
+            }
+            out.push_back(green);
+            out.push_back(red);
+        }
+    } else if (L.valid && !L.holes) {
         // 120. Not sprocket-locked, so where the marks land relative to the
         // frame is the frame's draw. The print is the film's, at a fixed
         // distance from its edge, whatever the gate (except a shouldered
@@ -2198,7 +2444,10 @@ void imprint_groups(const OverscanLayout& L, const Params& params, double frame_
     g.factory = false;
     const double e = kMidGrey * std::pow(2.0, d.exposure_ev);
     for (int c = 0; c < 3; ++c) g.exposure[c] = L.date_rgb[c] * e;
-    g.blur_mm = 0.015;
+    // Upstream MZ-S date imprint fit, in film millimetres.
+    g.blur_mm = 0.018;
+    g.tail_mm = 0.09;
+    g.tail_w = 0.30;
     const double k = std::clamp(d.size, 0.2, 1.0);
     // A face's glyphs, laid out in glyph space (x right, y up from the
     // baseline) and mapped to film mm by `place(x, y) -> (s, t)`.

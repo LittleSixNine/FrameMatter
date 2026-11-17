@@ -267,25 +267,30 @@ Localization/ English · 简体中文 (enum display names stay English; tests pi
 Diagnostics/  Log · JobLog · MemoryArena · MemorySampler · DiskCacheStore
 ```
 
-### 7.1 The window (v4, 2026-09-26)
+### 7.1 The editor window
 
-Three regions and a filmstrip. Which rail a control is on says what moving it
-costs.
+The toolbar and filmstrip span the window. The canvas shares the middle row with one
+resizable inspector and a permanent tab strip on the far right. Open a tab to
+switch in place, or press the active tab again to give its width back to the canvas.
+Each visited page retains its scroll position and its sections use their existing layout keys.
 
-| region | sections | runs in |
-|---|---|---|
-| **Film and Print** (left) | Navigator · Half-Frame Pair (on a pair) · Settings Clipboard · Film · Film Edge · Date Back · Print · Crop · Enlarger | the engine; Crop is geometry (below) — except under a film edge, where it is the negative (§7.11) |
-| **Parameters ▸ Pre-Dev** (right) | Latitude · Input / Camera · Film Format · Scene Placement | the engine, except Camera's white balance and lens correction, which are the **decode**. On a pair these are the picked frame's (§7.12) |
-| **Parameters ▸ Post-Dev** (right) | White Balance · Exposure · Curve · Color Balance | **Layer 2**, one draw |
-| canvas, top right | histogram · tier badges | reads, never writes |
-| filmstrip | one cell per frame | — |
+| tab | controls |
+|---|---|
+| Presets | Searchable thumbnail presets, categories and favorites, selectable save scope, updates and batch application |
+| Pre-Dev | Latitude, input / camera, perspective, film format, scene placement, scene curve, tone mask when enabled |
+| Film | Film and paper stocks, grain, enlarger |
+| Post-Dev | White balance, exposure, HSL, channel mixer, curves, colour balance, local masks when enabled |
+| Effects | Film edge, light leaks, date back, scratches, dust and aging textures |
+| Crop | Crop, straighten, rotate and flip for a single frame, or placement and pair controls on a half-frame pair |
+
+When the photo outgrows the canvas, its navigator appears in the upper left. Returning to fit or below fit fades it out.
 
 Costs, precisely:
 
 | change | costs |
 |---|---|
 | Camera Temperature · Tint · Lens Correction | a re-decode (`CIRAWFilter`), then a render |
-| anything else on Film and Print or Pre-Dev | a `params_delta` and a render |
+| other film, print and Pre-Dev parameters | a `params_delta` and a render |
 | Post-Dev | one draw |
 | Crop · Straighten · turns · flips | one draw — geometry sits **after** the engine; `Exporter` applies it to the returned print |
 | Original (⎵ held) | one draw — shows the decode instead of the print |
@@ -644,7 +649,7 @@ orientation, resource checks and local-only provenance.
   outside are opened (one file is "edit this"); the strip's own thumbnail is
   ignored; a file of the open folder goes on the canvas with the folder still
   around it.
-- **Select all and Sync** (⌘A, Settings Clipboard ▸ Sync to N) write the ticked
+- **Select all and Sync** (⌘A, Presets ▸ Copy and Sync Adjustments ▸ Sync to N) write the ticked
   groups from the current frame to the picked set through the clipboard's own
   rules; there is no batch undo.
 

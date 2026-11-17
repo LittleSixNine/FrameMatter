@@ -454,7 +454,7 @@ final class OpenPathTests: XCTestCase {
         try await waitUntil("the native render to land", timeout: 180) {
             session.renderer.showsFullRender && !session.fullPending
         }
-        XCTAssertEqual(CGFloat(session.renderer.base?.width ?? 0), 6000, accuracy: 1,
+        XCTAssertEqual(CGFloat(session.renderer.base?.width ?? 0), session.sourceImageSize.width, accuracy: 1,
                        "the canvas settled somewhere other than the frame's own resolution")
     }
 

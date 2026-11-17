@@ -271,6 +271,11 @@ struct OverscanLayout {
     double A[4] = {1, 0, 0, 1};           // canvas mm (about its centre) -> film mm
     double cu = 0, cv = 0, cs = 0, ct = 0;
     double scan_rot = 0;
+    bool holes = false, cine = false;
+    int perf_shape = 0, perf_rows = 0;
+    double perf_dt = 0, perf_rmin = 0, perf_rmax = 0, perf_jit = 0, nb_prev = 0, nb_next = 0;
+    bool stripes = false;
+    double stripe_g_rgb[3]{}, stripe_r_rgb[3]{};
     bool perforated = false;
     double perf_pitch = 0, perf_w = 0, perf_h = 0, perf_edge = 0, perf_r = 0, perf_phase = 0;
     double fog_amp = 0, fog_width = 0.5, fog_period = 8.0;
@@ -663,6 +668,7 @@ private:
     bool node_overscan(const Image& in, Image& out, std::string& error, Image* factory = nullptr);
     bool node_overscan_film_present(const Image& in, Image& out, std::string& error);
     bool node_overscan_light(const Image& in, Image& out, std::string& error);
+    bool node_diffusion(const Image& in, Image& out, std::string& error);
     bool node_lens_blur(const Image& in, Image& out, std::string& error);
     bool node_halation(const Image& in, Image& out, std::string& error);
     bool node_expose_log(const Image& in, Image& out, std::string& error);

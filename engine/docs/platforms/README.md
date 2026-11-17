@@ -9,4 +9,4 @@
 
 Windows 专属界面、构建脚本与四份 Windows 指南已按维护者要求移入 `pravite/`，不随当前源码分发。它们的本地入口保留原作者标识；公开 CI 不再构建或上传 Windows 成品。
 
-移植过程记录和待办计划仅保存在本地：`pravite/开发记录/engine/docs/platforms/PORT_NOTES.md`、`pravite/开发记录/engine/docs/platforms/PORT_PLAN.md`。旧路径映射见本地 `pravite/开发记录/README.md`，这些记录不随公开源码分发。
+移植过程记录和待办计划仅保存在本地：`pravite/04-开发与故障记录/开发记录/engine/docs/platforms/PORT_NOTES.md`、`pravite/04-开发与故障记录/开发记录/engine/docs/platforms/PORT_PLAN.md`。旧路径映射见本地 `pravite/04-开发与故障记录/开发记录/README.md`，这些记录不随公开源码分发。

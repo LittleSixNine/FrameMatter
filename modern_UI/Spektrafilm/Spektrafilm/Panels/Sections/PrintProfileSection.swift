@@ -113,8 +113,15 @@ struct PrintProfileSection: View {
         return out
     }
 
+    private var selectedTitle: String {
+        if session.params.scanFilm || filmIsPositive { return L(.printNone) }
+        if session.params.digitalIntermediate { return L(.printDigitalIntermediate) }
+        return session.catalog.stock(session.params.printStock)?.name ?? session.params.printStock
+    }
+
     var body: some View {
-        PanelSection(L(.sectionPrint), key: "print", menu: { AnyView(menu) }) {
+        PanelSection(L("Paper", zh: "相纸"), key: "print", initiallyExpanded: false,
+                     menu: { AnyView(menu) }, note: selectedTitle) {
             VStack(alignment: .leading, spacing: 0) {
                 StockList(rows: rows,
                           selected: session.params.scanFilm || filmIsPositive
@@ -205,7 +212,6 @@ struct PrintProfileSection: View {
             // better than a live-looking item that silently does not fire.
             .disabled(filmIsPositive
                       || session.catalog.stock(session.params.filmStock)?.targetPrint == nil)
-            // Also the Solve capsule above; kept here under its longer name.
             Button(L(.actionProcess)) { session.solveNow() }
                 .disabled(!session.canSolve)
             Divider()

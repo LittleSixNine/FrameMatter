@@ -81,12 +81,35 @@ final class FrontendPolicyTests: XCTestCase {
             UserDefaults.standard.removeObject(forKey: Session.uiKey + "rightCollapsed")
         }
         let session = Session()
-        XCTAssertFalse(session.leftCollapsed)
         XCTAssertFalse(session.rightCollapsed)
 
         // They still fold for as long as the window lives.
-        session.leftCollapsed = true
-        XCTAssertTrue(session.leftCollapsed)
+        session.toggleInspector(.film)
+        XCTAssertTrue(session.rightCollapsed)
+    }
+
+    func testInspectorNavigationAndCropUseTheSameCanvasTool() {
+        let s = Session()
+        XCTAssertEqual(ParametersTab.allCases, [.presets, .preDev, .film, .postDev, .effects, .crop])
+        XCTAssertEqual(s.inspectorTab, .film)
+        s.toggleInspector(.film)
+        XCTAssertTrue(s.rightCollapsed)
+        s.toggleInspector(.postDev)
+        XCTAssertFalse(s.rightCollapsed)
+        s.toggleInspector(.crop)
+        XCTAssertEqual(s.tool, .crop)
+        s.cancelCrop()
+        XCTAssertEqual(s.inspectorTab, .postDev)
+        s.showInspector(.crop)
+        s.toggleInspector(.effects)
+        XCTAssertEqual(s.tool, .select)
+        XCTAssertEqual(s.inspectorTab, .effects)
+        s.showInspector(.crop)
+        s.toggleInspector(.crop)
+        XCTAssertTrue(s.rightCollapsed)
+        XCTAssertEqual(s.tool, .select)
+        s.toggleInspector(.crop)
+        XCTAssertEqual(s.tool, .crop)
     }
 
     /// When a frame gets a native render: whenever it is bigger than the

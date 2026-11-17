@@ -35,7 +35,7 @@ final class UpstreamToolsTests: XCTestCase {
         XCTAssertEqual(readback["adjustments"]?["vibrance"],0)
         XCTAssertEqual(readback["adjustments"]?["channelMixer"]?["red"]?["red"],0)
         XCTAssertEqual(old.params.sceneCurve.sceneWire,"")
-        let legacy = old.params.wire.filter {$0.name != "scene_curve" && $0.name != "overscan_factory_separate_halation"}.map {"\($0.name)=\($0.value)"}.joined(separator:";")
+        let legacy = old.params.wire.filter {$0.name != "diffusion_filter_active" && $0.name != "scene_curve" && $0.name != "overscan_factory_separate_halation"}.map {"\($0.name)=\($0.value)"}.joined(separator:";")
         XCTAssertEqual(Session.printStamp(old.params),legacy)
     }
     func testCurveShootDeltaClipboardAndAtomicPatch() throws {

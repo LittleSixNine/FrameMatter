@@ -18,7 +18,7 @@ final class FactoryLetteringTests: XCTestCase {
     func testShootDeltaResetsAndOffKeepsLegacyStamp() {
         var p = FilmParams.default
         p.filmEdge.active = true
-        let legacyWire = p.wire.filter { $0.name != "overscan_factory_separate_halation" && $0.name != "scene_curve" }
+        let legacyWire = p.wire.filter { !["overscan_factory_separate_halation", "overscan_perforation", "scene_curve", "diffusion_filter_active"].contains($0.name) }
         let legacy = legacyWire.map { "\($0.name)=\($0.value)" }.joined(separator: ";") + ";overscan_framing="
         XCTAssertEqual(Session.printStamp(p), legacy)
         var on = p

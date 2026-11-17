@@ -133,17 +133,8 @@ struct EditorCommands: Commands {
             Button(L("Redo", zh: "重做")) { session.redo() }.keyboardShortcut("z", modifiers: [.command, .shift]).disabled(!session.canRedo)
         }
         CommandGroup(replacing: .pasteboard) {
-            Button(L("Copy Settings", zh: "复制设置")) { session.copySettings() }
-                // Capture One's adjustment clipboard uses ⇧⌘C / ⇧⌘V. Keep
-                // plain ⌘C / ⌘V available for the system pasteboard.
-                .keyboardShortcut("c", modifiers: [.command, .shift]).disabled(!session.canCopySettings)
-            Button(L("Paste Settings", zh: "粘贴设置")) { session.pasteSettings() }
-                .keyboardShortcut("v", modifiers: [.command, .shift]).disabled(!session.canPasteSettings)
-            Divider()
             Button(L("Select All Photos", zh: "全选照片")) { session.selectAllFrames() }
                 .keyboardShortcut("a", modifiers: .command).disabled(!session.canSelectAllFrames)
-            Button(L("Sync Settings", zh: "同步设置")) { session.syncSettings() }
-                .disabled(!session.canSyncSettings)
         }
         CommandMenu(L("View", zh: "显示")) {
             // Greyed out in the crop tool, where the view is fitted to the
@@ -161,11 +152,8 @@ struct EditorCommands: Commands {
             Button(L("Zoom to 100 %", zh: "缩放到 100%")) { session.zoomTo(fraction: 1) }
                 .keyboardShortcut(".", modifiers: []).disabled(session.zoomLocked)
             Divider()
-            Button(L("Toggle Side Panels", zh: "显示／隐藏侧栏")) {
-                withAnimation(.easeOut(duration: 0.18)) {
-                    let c = !(session.leftCollapsed && session.rightCollapsed)
-                    session.leftCollapsed = c; session.rightCollapsed = c
-                }
+            Button(L("Toggle Inspector", zh: "显示／隐藏侧栏")) {
+                session.toggleInspector(session.inspectorTab)
             }.keyboardShortcut("b", modifiers: .command)
             Button(L("Toggle Filmstrip", zh: "显示／隐藏胶片条")) { withAnimation { session.filmstripCollapsed.toggle() } }.keyboardShortcut("f", modifiers: [.command, .shift])
             Divider()
@@ -256,7 +244,7 @@ struct EditorCommands: Commands {
         CommandMenu(L("Tool", zh: "工具")) {
             Button(L("Select", zh: "选择")) { session.tool = .select }.keyboardShortcut("v", modifiers: [])
             Button(L("Hand", zh: "抓手")) { session.tool = .hand }.keyboardShortcut("h", modifiers: [])
-            Button(L("Crop", zh: "裁剪")) { session.tool = .crop }.keyboardShortcut("c", modifiers: [])
+            Button(L("Crop", zh: "裁剪")) { session.showInspector(.crop) }.keyboardShortcut("c", modifiers: [])
         }
     }
 }
@@ -303,17 +291,7 @@ struct SnapshotRequest {
     /// `--settings general|rendering|memory|diagnostics|agents` — capture
     /// that page of Settings (RFC-026's paged window).
     var settings: SettingsPage?
-    /// `--folded left|right|both` — capture with a rail folded.
-    ///
-    /// The 2026-09-17 PRD makes one requirement about state rather than
-    /// layout: the two `sidebar` buttons "must also remain on the screen at
-    /// any given time, but moves according to a good way". A folded rail has
-    /// no header to hold its own button, so the bar takes it — and that is a
-    /// thing that can only be *seen*, in the state the harness otherwise goes
-    /// out of its way to reset (`session.leftCollapsed = false`, so that a
-    /// panel folded days ago cannot silently remove a region from the
-    /// measurement). This asks for the state on purpose.
-    var foldLeft = false
+    /// All historical --folded spellings now collapse the single inspector.
     var foldRight = false
     /// `--film-edge` — capture with the film edge on. `--pair-layer film|left|right`
     /// — capture a half-frame pair with that layer picked.
@@ -335,8 +313,7 @@ struct SnapshotRequest {
         if let j = args.firstIndex(of: "--wait"), args.count > j + 1, let w = Double(args[j + 1]) { r.wait = w }
         if let j = args.firstIndex(of: "--folded"), args.count > j + 1 {
             let which = args[j + 1]
-            r.foldLeft = which == "left" || which == "both"
-            r.foldRight = which == "right" || which == "both"
+            r.foldRight = ["left", "right", "both"].contains(which)
         }
         if let j = args.firstIndex(of: "--zoom"), args.count > j + 1, let z = Double(args[j + 1]) { r.zoom = CGFloat(z) }
         if let j = args.firstIndex(of: "--mask"), args.count > j + 1 {
@@ -483,7 +460,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // session happened to leave folded: the collapse flags persist in
         // UserDefaults, and a filmstrip collapsed days ago silently removed a
         // whole card from the measurement.
-        session.leftCollapsed = req.foldLeft
         session.rightCollapsed = req.foldRight
         session.filmstripCollapsed = false
         // The same trap, one door along: a **rail width** persists too, and a

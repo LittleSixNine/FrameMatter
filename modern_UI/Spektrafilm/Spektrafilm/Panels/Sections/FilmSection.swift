@@ -17,9 +17,10 @@ struct FilmSection: View {
     static let wellRows = 9
 
     @Bindable var session: Session
+    @AppStorage("filmArtwork.listMode") private var listMode = false
 
     var body: some View {
-        PanelSection(L(.sectionFilm), key: "film",
+        PanelSection(L(.sectionFilm), key: "film", initiallyExpanded: false,
                      // The reset arrow's scope is a *named* stock, and a film
                      // name is a profile name — the spec keeps those as they
                      // are, so only the sentence around it is translated. It
@@ -29,11 +30,25 @@ struct FilmSection: View {
                          var p = session.params; p.filmStock = "kodak_portra_400"; session.params = p
                          session.applyFilmStageRule()
                      },
-                     menu: { AnyView(menu) }) {
-            StockList(rows: stockRows,
-                      selected: session.params.filmStock,
-                      visibleRows: Self.wellRows) { id in
-                select(id)
+                     menu: { AnyView(menu) },
+                     note: session.catalog.stock(session.params.filmStock)?.name ?? session.params.filmStock) {
+            VStack(spacing: 8) {
+                HStack {
+                    Spacer()
+                    Button { listMode = false } label: {
+                        Image(systemName: "square.grid.3x3").foregroundStyle(listMode ? Theme.secondaryText : Theme.accent)
+                    }.help(L("Cover grid", zh: "封面网格"))
+                        .accessibilityLabel(L("Cover grid", zh: "封面网格"))
+                    Button { listMode = true } label: {
+                        Image(systemName: "list.bullet").foregroundStyle(listMode ? Theme.accent : Theme.secondaryText)
+                    }.help(L("List", zh: "列表"))
+                        .accessibilityLabel(L("List", zh: "列表"))
+                }.buttonStyle(.plain)
+                if listMode {
+                    StockList(rows: stockRows, selected: session.params.filmStock, visibleRows: Self.wellRows, select: select)
+                } else {
+                    FilmArtworkGrid(session: session, select: select)
+                }
             }
         }
     }

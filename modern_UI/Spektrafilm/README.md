@@ -47,58 +47,25 @@ are missing.
 
 ---
 
-## 1. Layout — how the drawing became numbers
+## 1. Editor layout
 
-`reference_layout/Main/sample_frontend.svg` (2026-09-17) is a 3840×2160
-canvas: a 1920×1080 window at 2×. Every metric in `Theme/Theme.swift` is the
-SVG value ÷ 2, with the SVG line quoted beside it. The three regions, and the
-one thing that floats:
-
-| region | SVG rect | points |
-|---|---|---|
-| left rail | −2.6, 0.6, 509.9 × 2160 | x 0, **254** wide, full height |
-| right rail | 3263.9, 0, 576.1 × 2160 | x 1632, **288** wide, full height |
-| filmstrip | 507.4, 1895.3, 2756.5 × 264.7 | y 948, **132** tall, centre column only |
-| tool bar | 529, 9.4, 2721 × 61.8, `rx 28` | y 5, **31** tall, r 14, inset 9 |
-
-Ground `#5f5f5f` — the canvas surround **and** every well, pill and slider
-track — rail `#2c2d2b`, text `#faf8f4`, one accent `#eca650`, and a 1 pt
-`#b5b5b6` hairline where the previous drawing had a gutter. Type: 12 pt bold
-for section titles, 10.5 pt semibold for labels and list rows, 10.5 pt
-monospaced-digit values, 9 pt sublabels.
-
-No outer margin, no gutter, no corner radius: the three regions are flush with
-the window and with each other. The one thing that still floats is the tool
-bar, a rounded pill on the ground over the canvas.
-
-The rails are the **user's** width, between bounds
-(`Controls/PanelResize.swift`), each standard at the drawing's own — so a fresh
-install measures the drawing. A folded rail leaves the `HStack`, so the centre
-grows into its place, and the `sidebar.left` / `sidebar.right` button that
-folded it moves onto the bar, which is the only place left that is always on
-screen. `⌘\` folds both rails; `⇧⌘F` the filmstrip.
-
-The derivation of every token — the rectangle or line in the SVG it came from,
-and the six that are a judgement rather than a measurement — is
-`../design/TOKENS-main-2026-09-17.md`.
-
-**The test for this** is `swift Tools/measure-layout.swift <capture> 2`: it
-reads a capture and prints the three regions' edges, the bar's rectangle and
-every hairline, in points. Run it after any change to `Theme.Metric` or
-`EditorWindow`. `Tools/snapshot.sh` also takes a fourth capture with both
-rails folded, which is the only way to see the two `sidebar` buttons in the
-state the PRD is actually about.
+The full-width toolbar and filmstrip surround the canvas and its right inspector.
+The six tabs stay visible when the panel is collapsed. Click any tab to open
+it, click the active tab or press ⌘B to collapse it, and drag its inner edge
+to resize. Each tab retains its own scroll position and section disclosures.
+See [the window layout](../../ARCHITECTURE.md#71-the-editor-window) for the
+section map. The lower-left canvas controls set zoom and toggle the split comparison.
+Hold Original in the lower right to preview the decode. Release to return to the print or split.
+⇧⌘F toggles the filmstrip.
 
 ---
 
 ## 2. What is on screen, and what it talks to
 
 ```
-Windows/EditorWindow      the three regions; CanvasArea with the filmstrip's tab
-Windows/TopBar            select · pan · crop  …  before/after · [100 %] · −· + · fullscreen
-                          flush, 38 pt, no radius (v3)
-Panels/LeftPanel          window buttons · "Develop" · import/export/sidebar.left,
-                          then the sections
+Windows/EditorWindow      toolbar, canvas, right inspector and filmstrip
+Windows/TopBar            import, export, select, process and status, plus the canvas zoom and split controls
+Panels/RightPanel         six tool tabs, collapsible sections and resizable inspector
   Sections/Camera         "Input / Camera": Metering (auto_exposure) · Film Exposure ·
                           Temperature · Tint · Vignetting (client) · Lens Correction (decode)
   Sections/Film           film list grouped Positive/Negative · Film Format / Side /
@@ -110,7 +77,6 @@ Panels/LeftPanel          window buttons · "Develop" · import/export/sidebar.l
   Sections/Crop           Aspect · Straighten · Rotate
   Sections/Enlarger       Brightness (stops) · Yellow · Magenta — offsets from the solve
                           (not in the drawing; kept, collapsed, last)
-Panels/RightPanel         "Edit", sidebar.right, then the Layer 2 sections
   Sections/RightSections  Histogram · White Balance · Exposure · Curve · Color Balance
 Panels/Filmstrip          thumbnails, selection frame, chevrons
 Canvas/MetalCanvasView    MTKView + gestures     Canvas/Renderer   Metal state, Layer 2, histogram
@@ -495,7 +461,7 @@ Two habits that made the last rework cheap and are worth keeping:
 
 ## Grain card
 
-Grain is a collapsible card on the left rail, between Film and Film Edge.
+Grain is a collapsible card in the Film tab, below the film and paper selectors.
 Its header enables grain, resets only grain settings, and offers the existing
 sub-layer model (disabled for monochrome film, which uses one layer).
 Strength, Particle Area (µm²) and Softness (Gaussian sigma in output pixels)
@@ -569,3 +535,16 @@ optical softness; for a 135 in-picture LCD imprint the existing reference
 height is 1.3 mm × size. At size 0.5, H is 0.65 mm. Spacing scales with H,
 and raster pixel counts follow image resolution and the film-format pixel
 pitch. These are typography controls, not universal camera calibrations.
+
+
+### Preset library
+
+The Presets tab is a full-height library with one header, inset search and independent favorite/category filters, a compact current-preset row and a two-column candidate grid filling the remaining height. The candidate grid is the page's only scroll area. It uses the editor's existing dark palette. Thumbnails are rendered from the current photograph, including film borders and date imprints. Visible cards render first, followed by one row of preloading. A bounded in-memory cache survives panel switches; names, categories and favorites do not invalidate render results. Effect changes keep the previous image visible until its replacement is ready. Switching photographs never reuses the previous photograph as a placeholder.
+Search and category/favorite filters select the library entries. The plus button saves
+an edit with a name, category and explicit parameter groups. Applying a preset replaces
+only its saved scope. Exposure, white balance and a double-exposure source photograph
+are optional. The active preset can be updated in place or saved as a new entry.
+Multi-selection enables applying the preset to the selected photographs through the
+existing sidecar write path, reporting any write failures. Copy/paste/sync settings
+controls were removed from the editor and menus. Previously saved presets retain their
+original parameter scope when read.

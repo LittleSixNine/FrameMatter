@@ -40,12 +40,7 @@ final class LayoutTests: XCTestCase {
             let host = NSHostingView(rootView: EditorWindow(session: session).environment(\.snapshotMode, true))
             host.frame = CGRect(origin: .zero, size: size)
             host.layoutSubtreeIfNeeded()
-            // Flush: the left rail starts at the window's edge and the right
-            // one ends at it. There is no outer margin to subtract — and the
-            // full-height dividers are overlays, so they take none either.
-            let centreX = m.leftPanelWidth
-            let centreW = size.width - m.leftPanelWidth - m.rightPanelWidth
-            XCTAssertEqual(centreX, 254, "\(name)")
+            let centreW = size.width - InspectorTabs.width - m.rightPanelWidth
             XCTAssertGreaterThan(centreW, 500, "\(name): centre column too narrow")
             // The bar is a row of its own now, and the hairline under it is
             // 1 pt of the column's height rather than air around a pill.
@@ -229,7 +224,6 @@ final class LayoutTests: XCTestCase {
         let m = Theme.Metric.self
         for (name, size) in Self.sizes {
             let session = Session()
-            session.leftCollapsed = true
             session.rightCollapsed = true
             let host = NSHostingView(rootView: EditorWindow(session: session).environment(\.snapshotMode, true))
             host.frame = CGRect(origin: .zero, size: size)
@@ -268,9 +262,9 @@ final class LayoutTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(m.leftPanelRange.widest, m.leftPanelWidth)
     }
 
-    func testMinimumWindowStillFitsBothRails() {
+    func testMinimumWindowFitsTheInspectorAndItsTabs() {
         let m = Theme.Metric.self
-        let canvas = m.minWindow.width - m.leftPanelWidth - m.rightPanelWidth
+        let canvas = m.minWindow.width - InspectorTabs.width - m.rightPanelWidth
         XCTAssertGreaterThanOrEqual(canvas, 400)
     }
 

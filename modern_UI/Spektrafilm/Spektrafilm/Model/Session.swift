@@ -400,21 +400,34 @@ final class Session: CanvasHost {
     // wrote, and it opened this one with both panels and the filmstrip folded
     // away for no reason the user could see.
     nonisolated static let uiKey = "ui2."
-    // **The two rails always open expanded**, and are deliberately not
-    // restored from the last session.
-    //
-    // A fresh install already opened expanded — `bool(forKey:)` is `false` for
-    // a key that was never written — so this is not about the default value.
-    // It is about *persistence*: folding a rail is a momentary thing you do to
-    // see the picture, and writing it to disk means one such moment decides
-    // how the app looks every time it is opened afterwards. The comment above
-    // describes the previous build shipping exactly that bug from stale keys;
-    // restoring our own is the same outcome by a tidier route.
-    //
-    // They still fold, and the fold still lasts as long as the window does.
-    // It just does not outlive it.
-    var leftCollapsed = false
+    var inspectorTab: ParametersTab = .film
+    private var previousInspectorTab: ParametersTab = .film
     var rightCollapsed = false
+
+    func showInspector(_ tab: ParametersTab) {
+        if inspectorTab != .crop { previousInspectorTab = inspectorTab }
+        inspectorTab = tab
+        rightCollapsed = false
+        if tab == .crop {
+            if pair != nil {
+                if !pairPlacing { togglePairPlacing() }
+            } else if tool != .crop { tool = .crop }
+        } else {
+            if tool == .crop { commitCrop() }
+            if pairPlacing { _ = endPlacement() }
+        }
+    }
+
+    func toggleInspector(_ tab: ParametersTab) {
+        if !rightCollapsed && inspectorTab == tab {
+            rightCollapsed = true
+            if tool == .crop { commitCrop() }
+            if pairPlacing { _ = endPlacement() }
+        } else {
+            showInspector(tab)
+        }
+    }
+
     var topCollapsed = UserDefaults.standard.bool(forKey: Session.uiKey + "topCollapsed") { didSet { UserDefaults.standard.set(topCollapsed, forKey: Session.uiKey + "topCollapsed") } }
     var filmstripCollapsed = UserDefaults.standard.bool(forKey: Session.uiKey + "filmstripCollapsed") { didSet { UserDefaults.standard.set(filmstripCollapsed, forKey: Session.uiKey + "filmstripCollapsed") } }
     /// Snapshot mode only: hold both rails at `PanelWidthRange.standard`.
@@ -434,6 +447,9 @@ final class Session: CanvasHost {
             if tool == .crop, pair != nil { tool = oldValue; togglePairPlacing(); return }
             // Entering the crop tool shows the whole frame; leaving it fits
             // the crop. The renderer does both from this one flag.
+            if oldValue == .crop, inspectorTab == .crop, !rightCollapsed {
+                inspectorTab = previousInspectorTab
+            }
             renderer.editingCrop = tool == .crop
             // Entering the tool pivots on the crop's centre without moving
             // anything, so no viewport change announces it — take the mirror
@@ -525,7 +541,9 @@ final class Session: CanvasHost {
     var isFit = true
     /// Mirrors `Renderer.showOriginal` so the canvas badge can react: the
     /// renderer is a plain class, not `@Observable`.
-    var showingOriginal = false
+    private var originalKeyHeld = false
+    private var originalButtonHeld = false
+    var showingOriginal: Bool { originalKeyHeld || originalButtonHeld }
 
     /// The status badges in the canvas's top-right corner, top to bottom.
     ///
@@ -860,6 +878,10 @@ final class Session: CanvasHost {
     /// The settings clipboard (RFC-027): what ⇧⌘C took, with the groups it was
     /// taken with. In memory; a relaunch starts empty.
     private(set) var clipboard: SettingsClip?
+    private(set) var developPresets: [DevelopPreset] = []
+    var activeDevelopPresetID: UUID?
+    private static let presetPrefix = "editor.developPreset."
+
 
     /// The Settings Clipboard section's seven boxes: which groups the *next*
     /// copy or sync takes. Persisted, and all seven by default, which is what ⇧⌘V
@@ -1645,6 +1667,7 @@ final class Session: CanvasHost {
         wantsDevelop = false
         developTask?.cancel(); developTask = nil
         renderer.dropFullRender()
+        activeDevelopPresetID = nil
         sidecar = Sidecar.load(for: url) ?? Sidecar.newPhoto
         // The file this frame's edits live in: from here on, a write made
         // outside this window reaches the canvas (issue #29).
@@ -1679,8 +1702,11 @@ final class Session: CanvasHost {
         // against what is on screen, and `load` corrects it when the decode
         // lands (`refreshLogicalSize` refits, because the view was fitted).
         let expectedPrintKey = requestedPrintKey(for: url, tier: .live)
-        if expectedPrintKey == nil || renderer.store.printEntry(for: url)?.cacheKey != expectedPrintKey {
-            renderer.store.invalidatePrint(for: url)
+        if let resident = renderer.store.printEntry(for: url) {
+            let residentFilmMatches = sidecar.params.cutsFrame && resident.stamp == Self.printStamp(sidecar.params)
+            if !residentFilmMatches && (expectedPrintKey == nil || resident.cacheKey != expectedPrintKey) {
+                renderer.store.invalidatePrint(for: url)
+            }
         }
         if let cached = renderer.store.print(for: url) {
             renderer.setLive(cached, logical: printLogicalSize(for: cached, params: sidecar.params, frame: nativeSourceSize)
@@ -2282,7 +2308,7 @@ final class Session: CanvasHost {
             // that "decoded" would be describing a picture the user is not
             // looking at.
             status = renderer.store.print(for: url) == nil
-                ? "\(url.lastPathComponent)  ·  decoded — press Solve to develop it."
+                ? "\(url.lastPathComponent)  ·  \(Int(d.pixelSize.width))×\(Int(d.pixelSize.height))  ·  \(colourSummary)"
                 : "\(url.lastPathComponent)  ·  showing its last print."
             return
         }
@@ -2517,9 +2543,11 @@ final class Session: CanvasHost {
                     let display = Session.engineImage(d.faceDisplay, size: d.pixelSize, cut: cut)
                     return try d.lifetime.faceEvidence(display: display, key: faceKey)
                 }
+                let doubleExposure = params.doubleExposure
                 var frame = try await Task.detached(priority: .userInitiated) {
                     var image = Session.engineImage(d.linear, size: d.pixelSize, cut: cut)
                     if let stops, let layout { image = PairComposer.exposed(image, layout: layout, stops: stops) }
+                    image = try doubleExposure.compose(image)
                     let faces = needsFaces ? try makeFaces() : nil
                     return try ImageDecoder.engineFrame(from: image, device: device, facesJSON: faces)
                 }.value
@@ -3626,11 +3654,21 @@ final class Session: CanvasHost {
     func straightenPreview(_ line: StraightenLine?) { straightenPreview = line }
     func stepFrame(_ delta: Int) { selectRelative(delta) }
     func toggledOriginal(_ on: Bool) {
-        // Not over a film edge, for the reason `canCompare` gives.
-        if on && filmEdgeShowsFilm { return }
+        guard originalKeyHeld != on else { return }
+        originalKeyHeld = on
+        updateOriginalPreview()
+    }
+
+    func holdOriginalButton(_ on: Bool) {
+        guard originalButtonHeld != on else { return }
+        originalButtonHeld = on
+        updateOriginalPreview()
+    }
+
+    private func updateOriginalPreview() {
+        let on = showingOriginal
         if on { leaveCropTool() }
         renderer.showOriginal = on || filmEdgeFraming
-        showingOriginal = on
         // Asking for the original is evidence that it is wanted: a frame
         // opened from the print cache only has the display cache's preview,
         // or nothing at all.
@@ -3666,19 +3704,12 @@ final class Session: CanvasHost {
         let hundred = m.addItem(withTitle: "Zoom to 100 %", action: #selector(zoomHundred), keyEquivalent: "")
         hundred.target = self; hundred.isEnabled = !zoomLocked
         m.addItem(.separator())
-        let copy = m.addItem(withTitle: "Copy Settings", action: #selector(copyMenu), keyEquivalent: "")
-        copy.target = self; copy.isEnabled = canCopySettings
-        let paste = m.addItem(withTitle: "Paste Settings", action: #selector(pasteMenu), keyEquivalent: "")
-        paste.target = self; paste.isEnabled = canPasteSettings
-        m.addItem(.separator())
         m.addItem(withTitle: "Reset Crop", action: #selector(resetCrop), keyEquivalent: "").target = self
         m.addItem(withTitle: "Export…", action: #selector(exportMenu), keyEquivalent: "").target = self
         return m
     }
     @objc private func zoomFit() { zoomToFit() }
     @objc private func zoomHundred() { zoomTo(fraction: 1) }
-    @objc private func copyMenu() { copySettings() }
-    @objc private func pasteMenu() { pasteSettings() }
     @objc private func resetCrop() { geometry = .default }
     @objc private func exportMenu() { showExport = true }
 
@@ -3770,10 +3801,24 @@ final class Session: CanvasHost {
     /// still the truth is a question about *data* rather than about which
     /// callback happened to run last.
     nonisolated static func printStamp(_ p: FilmParams) -> String {
-        let stamp = p.wire.filter { ($0.name != "overscan_factory_separate_halation" || $0.value != .bool(false)) && ($0.name != "scene_curve" || $0.value != .string("")) }.map { "\($0.name)=\($0.value)" }.joined(separator: ";")
+        var stamp = p.wire.filter { field in
+            switch field.name {
+            case "overscan_factory_separate_halation": return field.value != .bool(false)
+            case "overscan_perforation": return field.value != .string("none")
+            case "diffusion_filter_active": return field.value != .bool(false)
+            case "scene_curve": return field.value != .string("")
+            default: return true
+            }
+        }.map { "\($0.name)=\($0.value)" }.joined(separator: ";")
+        if p.dateBack.effective(filmEdge: p.filmEdge) { stamp += ";date_scatter=2" }
+        if p.filmEdge.effective && p.filmEdge.format.gauge == "135" &&
+            ["fujifilm_xtra_400", "fujifilm_pro_400h"].contains(p.filmStock) {
+            stamp += ";fuji_stripes=1"
+        }
         // With a film edge the crop is in the negative (`Session+FilmEdge`),
         // so the print is a different picture for every framing. Off, the
         // stamp is exactly what it always was.
+        if p.doubleExposure.active { stamp += ";double=" + CacheKey.encodedConfiguration(p.doubleExposure) }
         if p.filmEdge.effective { return stamp + ";overscan_framing=\(p.filmEdge.framing)" }
         return p.cutsFrame ? stamp + ";date_framing=\(p.dateBack.framing)" : stamp
     }
@@ -4084,6 +4129,64 @@ final class Session: CanvasHost {
         return selection.map { [$0] } ?? []
     }
 
+    func reloadDevelopPresets() {
+        developPresets = clipboardDefaults.dictionaryRepresentation().compactMap { key, value in
+            guard key.hasPrefix(Self.presetPrefix), let data = value as? Data,
+                  let preset = try? JSONDecoder().decode(DevelopPreset.self, from: data),
+                  key == Self.presetPrefix + preset.id.uuidString else { return nil }
+            return preset
+        }.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    }
+
+    func saveDevelopPreset(named raw: String) throws {
+        let name = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard selection != nil, !batchExporting, !name.isEmpty else {
+            throw CocoaError(.validationMissingMandatoryProperty)
+        }
+        reloadDevelopPresets()
+        guard !developPresets.contains(where: { $0.name.localizedCaseInsensitiveCompare(name) == .orderedSame }) else {
+            throw NSError(domain: "FrameMatter.Presets", code: 1, userInfo: [
+                NSLocalizedDescriptionKey: L("A preset already has that name.", zh: "已有同名预设，请换一个名称。")
+            ])
+        }
+        let preset = DevelopPreset(name: name, source: sidecar)
+        let data = try JSONEncoder().encode(preset)
+        clipboardDefaults.set(data, forKey: Self.presetPrefix + preset.id.uuidString)
+        reloadDevelopPresets()
+    }
+
+    func storeDevelopPreset(_ preset: DevelopPreset) throws {
+        let name = preset.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { throw CocoaError(.validationMissingMandatoryProperty) }
+        reloadDevelopPresets()
+        guard !developPresets.contains(where: { $0.id != preset.id && ($0.category ?? "") == (preset.category ?? "") && $0.name.localizedCaseInsensitiveCompare(name) == .orderedSame }) else {
+            throw NSError(domain: "FrameMatter.Presets", code: 1, userInfo: [NSLocalizedDescriptionKey: L("A preset already has that name.", zh: "此分类已有同名预设。")])
+        }
+        var saved = preset
+        saved.name = name
+        let data = try JSONEncoder().encode(saved)
+        clipboardDefaults.set(data, forKey: Self.presetPrefix + saved.id.uuidString)
+        reloadDevelopPresets()
+    }
+
+    func applyDevelopPreset(_ preset: DevelopPreset, toSelected: Bool = false) {
+        guard let current = selection, !batchExporting else { return }
+        let targets = toSelected ? pasteTargets : [current]
+        var failures = 0
+        for url in targets where url != current {
+            if pasteOffline(preset.clip, to: url, preset: preset) == .failed { failures += 1 }
+        }
+        if targets.contains(current) { _ = pasteLive(preset.clip, preset: preset) }
+        activeDevelopPresetID = preset.id
+        status = L("Applied preset", zh: "已应用预设") + " · " + preset.name + " · \(targets.count - failures)/\(targets.count)"
+        if failures > 0 { status += L(" · Some photos failed to save", zh: " · 部分照片保存失败") }
+    }
+
+    func removeDevelopPreset(_ preset: DevelopPreset) {
+        clipboardDefaults.removeObject(forKey: Self.presetPrefix + preset.id.uuidString)
+        reloadDevelopPresets()
+    }
+
     /// Take the ticked groups from the frame on the canvas (RFC-027 §3).
     func copySettings() {
         guard let url = selection, !clipboardGroups.isEmpty else { return }
@@ -4111,13 +4214,16 @@ final class Session: CanvasHost {
     /// The paste on the frame on the canvas: one undo step, then each side
     /// effect the individual setters would have had.
     @discardableResult
-    private func pasteLive(_ clip: SettingsClip) -> Bool {
+    private func pasteLive(_ clip: SettingsClip, preset: DevelopPreset? = nil) -> Bool {
         let prior = sidecar
-        let next = clip.applied(to: prior, perspectiveAllowed: canCorrectPerspective)
+        let next = preset?.applied(to: prior, perspectiveAllowed: canCorrectPerspective) ?? clip.applied(to: prior, perspectiveAllowed: canCorrectPerspective)
         guard next != sidecar else { return false }
         pushUndo()
         let decodeChanged = next.decode != sidecar.decode
+        filmEdgeWillChange(from: prior.params, to: next.params)
+        let framed = sidecar
         sidecar = next
+        if preset?.includesEffects == true { sidecar.geometry = framed.geometry; sidecar.heldCrop = framed.heldCrop }
         pushLayer2(next.adjustments)
         if clip.groups.contains(.filmEffects) { recomputeFilmFormat(beforeOpen: true) }
         // The clip carries a Tone, so the label follows the paste the same way
@@ -4162,9 +4268,9 @@ final class Session: CanvasHost {
     /// look and `select` would show it first, so it goes (PRD R2).
     private enum SettingsWriteResult { case unchanged, written, failed }
 
-    private func pasteOffline(_ clip: SettingsClip, to url: URL) -> SettingsWriteResult {
+    private func pasteOffline(_ clip: SettingsClip, to url: URL, preset: DevelopPreset? = nil) -> SettingsWriteResult {
         let current = Sidecar.load(for: url) ?? Sidecar.newPhoto
-        var next = clip.applied(to: current, perspectiveAllowed: ImageDecoder.rawExtensions.contains(url.pathExtension.lowercased()))
+        var next = preset?.applied(to: current, perspectiveAllowed: ImageDecoder.rawExtensions.contains(url.pathExtension.lowercased())) ?? clip.applied(to: current, perspectiveAllowed: ImageDecoder.rawExtensions.contains(url.pathExtension.lowercased()))
         guard next != current else { return .unchanged }
         next.state = .stale
         do {
@@ -4872,6 +4978,7 @@ extension Session {
         // A zoom still in flight is kept, not thrown away with the mode.
         commitPlacement()
         pairPlacing = false
+        if inspectorTab == .crop, !rightCollapsed { inspectorTab = previousInspectorTab }
         return true
     }
 

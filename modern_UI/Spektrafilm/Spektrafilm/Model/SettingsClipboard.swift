@@ -57,7 +57,7 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
             // The film format sets the physical scale of grain and halation.
             ["params.filmFormatMM", "params.filmFrame", "params.filmSide", "params.sideLengthMM",
              "params.grainActive", "params.halationActive", "params.glareActive", "params.effects",
-             "params.filmEdge.independentLetteringHalation"]
+             "params.diffusion", "params.doubleExposure", "params.filmEdge.independentLetteringHalation", "params.filmEdge.slitFilmPerforations"]
         case .printEffects:
             // Pre-flash is gated by the Print Effects switch already.
             ["params.printEffects", "params.preflashExposure"]
@@ -200,6 +200,9 @@ struct SettingsClip: Equatable, Sendable {
             out.params.halationActive = s.params.halationActive
             out.params.glareActive = s.params.glareActive
             out.params.effects = s.params.effects
+            out.params.diffusion = s.params.diffusion
+            out.params.doubleExposure = s.params.doubleExposure
+            out.params.filmEdge.slitFilmPerforations = s.params.filmEdge.slitFilmPerforations
             out.params.filmEdge.independentLetteringHalation = s.params.filmEdge.independentLetteringHalation
         }
         if groups.contains(.printEffects) {
@@ -227,5 +230,56 @@ struct SettingsClip: Equatable, Sendable {
             out.masks = s.masks
         }
         return out
+    }
+}
+
+/// Presets carry a reusable look. Frame-specific crop, borders, stamps and wear
+/// stay with the target, using the same transfer rules as Copy Adjustments.
+struct DevelopPreset: Identifiable, Codable {
+    static let previewLongEdge = 800
+    var id: UUID
+    var name: String
+    var settings: Sidecar
+    var category: String?
+    var favorite: Bool?
+    var includedGroups: Set<ClipboardGroup>?
+    var includesEffects: Bool?
+    var includesSecondPhoto: Bool?
+
+    static let groups: Set<ClipboardGroup> = [.filmAndPaper, .exposure, .whiteBalance, .filmEffects,
+                                              .printEffects, .scenePlacement, .postDev]
+    var clip: SettingsClip {
+        SettingsClip(groups: includedGroups ?? Self.groups, settings: settings, sourceName: name)
+    }
+
+    init(name: String, source: Sidecar) {
+        id = UUID()
+        self.name = name
+        settings = SettingsClip(groups: Self.groups, settings: source, sourceName: name).applied(to: Sidecar())
+    }
+
+    func applied(to target: Sidecar, perspectiveAllowed: Bool = true) -> Sidecar {
+        var result = clip.applied(to: target, perspectiveAllowed: perspectiveAllowed)
+        if (includedGroups ?? Self.groups).contains(.filmAndPaper) { result.noFilm = false }
+        if includesEffects == false { result.params.diffusion = target.params.diffusion }
+        if includesEffects == true {
+            result.params.diffusion = settings.params.diffusion
+            result.params.lightLeaks = settings.params.lightLeaks
+            result.params.agingTextures = settings.params.agingTextures
+            result.params.scratches = settings.params.scratches
+            var edge = settings.params.filmEdge
+            edge.cameraSeed = target.params.filmEdge.cameraSeed
+            edge.frameSeed = target.params.filmEdge.frameSeed
+            edge.frameNumber = target.params.filmEdge.frameNumber
+            edge.edgeText = target.params.filmEdge.edgeText
+            edge.framing = target.params.filmEdge.framing
+            edge.pair = target.params.filmEdge.pair
+            result.params.filmEdge = edge
+        }
+        // Old presets retain their saved scope; new ones explicitly decide whether a second photo travels.
+        if let include = includesSecondPhoto {
+            result.params.doubleExposure = include ? settings.params.doubleExposure : target.params.doubleExposure
+        }
+        return result
     }
 }

@@ -157,6 +157,10 @@ const SchemaField kFields[] = {
     // before `preview_long_edge` like every native field. SHOOT layer: both
     // are exposure on the negative, so an edit re-develops it.
     {"overscan_factory_separate_halation", "film_render.overscan.factory_separate_halation", B, SHOOT, false, 0, 0, false},
+    {"diffusion_filter_active",          "camera.diffusion_filter.active",          B, SHOOT, false, 0, 0, false},
+    {"diffusion_filter_family",          "camera.diffusion_filter.filter_family",   S, SHOOT, false, 0, 0, false},
+    {"diffusion_filter_strength",        "camera.diffusion_filter.strength",        F, SHOOT, true, 0.0, 2.0, false},
+    {"diffusion_filter_spatial_scale",   "camera.diffusion_filter.spatial_scale",   F, SHOOT, true, 0.25, 4.0, false},
     {"overscan_active",          "film_render.overscan.active",           B, SHOOT, false, 0, 0, false},
     {"overscan_format",          "film_render.overscan.format",           S, SHOOT, false, 0, 0, false},
     {"overscan_mode",            "film_render.overscan.mode",             S, SHOOT, false, 0, 0, false},
@@ -168,6 +172,7 @@ const SchemaField kFields[] = {
     {"overscan_f_number",        "film_render.overscan.f_number",         F, SHOOT, true, 0.0, 64.0, false},
     {"overscan_gate",            "film_render.overscan.gate",             S, SHOOT, false, 0, 0, false},
     {"overscan_holes",           "film_render.overscan.holes",            S, SHOOT, false, 0, 0, false},
+    {"overscan_perforation",     "film_render.overscan.perforation",            S, SHOOT, false, 0, 0, false},
     {"aging_active", "print_render.aging.active", B, PRINT, false, 0, 0, false},
     {"aging_texture", "print_render.aging.texture", S, PRINT, false, 0, 0, false},
     {"aging_strength", "print_render.aging.strength", F, PRINT, true, 0, 1, false},
@@ -334,7 +339,9 @@ double* float_slot(Params& p, const std::string& path) {
     if (path == "film_render.grain.amount") return &p.film_render.grain.amount;
     if (path == "film_render.grain.particle_area_um2") return &p.film_render.grain.particle_area_um2;
     if (path == "film_render.grain.blur") return &p.film_render.grain.blur;
+    if (path == "camera.diffusion_filter.strength") return &p.camera.diffusion_filter.strength;
     if (path == "film_render.overscan.fog") return &p.film_render.overscan.fog;
+    if (path == "camera.diffusion_filter.spatial_scale") return &p.camera.diffusion_filter.spatial_scale;
     if (path == "film_render.overscan.leaks") return &p.film_render.overscan.leaks;
     if (path == "film_render.overscan.f_number") return &p.film_render.overscan.f_number;
     if (path == "film_render.date_imprint.exposure_ev") return &p.film_render.date_imprint.exposure_ev;
@@ -377,6 +384,7 @@ bool* bool_slot(Params& p, const std::string& path) {
     if (path == "camera.scene_latitude.active") return &p.camera.scene_latitude.active;
     if (path == "camera.scene_latitude.b_active") return &p.camera.scene_latitude.b_active;
     if (path == "film_render.overscan.factory_separate_halation") return &p.film_render.overscan.factory_separate_halation;
+    if (path == "camera.diffusion_filter.active") return &p.camera.diffusion_filter.active;
     if (path == "film_render.overscan.active") return &p.film_render.overscan.active;
     if (path == "film_render.overscan.pair") return &p.film_render.overscan.pair;
     if (path == "film_render.date_imprint.active") return &p.film_render.date_imprint.active;
@@ -398,6 +406,7 @@ std::string* str_slot(Params& p, const std::string& path) {
     if (path == "camera.scene_latitude.norm") return &p.camera.scene_latitude.norm;
     if (path == "print_render.contrast_mask.scheme") return &p.print_render.contrast_mask.scheme;
     if (path == "film_render.scratches.leak_style") return &p.film_render.scratches.leak_style;
+    if (path == "camera.diffusion_filter.filter_family") return &p.camera.diffusion_filter.filter_family;
     if (path == "film_render.overscan.format") return &p.film_render.overscan.format;
     if (path == "film_render.overscan.mode") return &p.film_render.overscan.mode;
     if (path == "film_render.overscan.edge_text") return &p.film_render.overscan.edge_text;
@@ -409,6 +418,7 @@ std::string* str_slot(Params& p, const std::string& path) {
     if (path == "film_render.date_imprint.corner") return &p.film_render.date_imprint.corner;
     if (path == "film_render.overscan.gate") return &p.film_render.overscan.gate;
     if (path == "film_render.overscan.holes") return &p.film_render.overscan.holes;
+    if (path == "film_render.overscan.perforation") return &p.film_render.overscan.perforation;
     if (path == "film_render.overscan.carrier") return &p.film_render.overscan.carrier;
     return nullptr;
 }

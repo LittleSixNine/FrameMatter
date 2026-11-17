@@ -856,14 +856,23 @@ final class Renderer: NSObject {
         // logical-over-texture ratio: a 5504 px detail texture and a 1600 px
         // live one already occupy the same rectangle because they are both
         // sampled by uv, not by pixel.
-        let output = max(viewport.image.width, 1)
-        u.imageSize = SIMD2(Float(viewport.image.width), Float(viewport.image.height))
-        u.offset = SIMD2(Float(viewport.offset.x * backingScale), Float(viewport.offset.y * backingScale))
-        u.scale = Float(viewport.scale * backingScale)
+        var display = viewport
+        // A film border can change the print's aspect ratio. Fit the bare decode
+        // for this draw and keep the print's zoom and pan ready for release.
+        if showOriginal, shown === original, !editingCrop {
+            let decodedOutput = geometry.outputSize(for: CGSize(width: shown.width, height: shown.height))
+            if !Self.sameShape(display.image, decodedOutput) {
+                display.resize(viewport: display.viewport, image: decodedOutput)
+            }
+        }
+        let output = max(display.image.width, 1)
+        u.imageSize = SIMD2(Float(display.image.width), Float(display.image.height))
+        u.offset = SIMD2(Float(display.offset.x * backingScale), Float(display.offset.y * backingScale))
+        u.scale = Float(display.scale * backingScale)
         // Source texture pixels actually spanned by the output, so the
         // sampler choice survives both the detail-tier swap and the crop.
         let spanned = editingCrop ? CGFloat(shown.width) : CGFloat(shown.width) * geometry.crop.width
-        u.magnification = Float(viewport.scale * backingScale * output / max(spanned, 1))
+        u.magnification = Float(display.scale * backingScale * output / max(spanned, 1))
         u.geometry = geometry.uniform(for: CGSize(width: shown.width, height: shown.height))
         u.editingCrop = editingCrop ? 1 : 0
         u.compare = compareMode.rawValue

@@ -64,4 +64,4 @@ wiring job. `params.wire()` omits their rows while the host cannot do them
 
 ## Local development history
 
-The working log and protocol request history are archived locally at `pravite/开发记录/desktop/NOTES.md` and `pravite/开发记录/desktop/PROTOCOL-REQUESTS.md`. They are not distributed with the source. `HOST-PROTOCOL.md` remains the public interface contract; use the local `pravite/开发记录/README.md` for old-to-new path mappings.
+The working log and protocol request history are archived locally at `pravite/04-开发与故障记录/开发记录/desktop/NOTES.md` and `pravite/04-开发与故障记录/开发记录/desktop/PROTOCOL-REQUESTS.md`. They are not distributed with the source. `HOST-PROTOCOL.md` remains the public interface contract; use the local `pravite/04-开发与故障记录/开发记录/README.md` for old-to-new path mappings.

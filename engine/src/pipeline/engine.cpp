@@ -588,6 +588,33 @@ spk_engine* spk_engine_create(const char* resources_dir, void* device) {
         }
     }
 
+    // The product's own colour films (`engine/resources_product/neutral_print_filters_colour.json`,
+    // laid beside spektrafilm's table by both bundle steps): their packs, fitted through this engine
+    // the way the reference fits its own (2026-11-15, Portra 160NC/VC and 400NC/VC). A row only
+    // fills a film the table does not name -- spektrafilm's rows are never replaced -- and the
+    // black-and-white packs stay out of it: the host sends those on the wire per paper grade, and a
+    // database row would override the grade.
+    const std::string colour_text = read_text_file(engine->resources_dir + "/neutral_print_filters_colour.json");
+    if (!colour_text.empty()) {
+        Json colour_filters;
+        std::string parse_error;
+        if (!Json::parse(colour_text, colour_filters, parse_error)) {
+            g_error = "neutral_print_filters_colour.json: " + parse_error;
+            return nullptr;
+        }
+        if (!engine->neutral_filters.is_object()) engine->neutral_filters = Json::object();
+        for (const auto& [paper, by_illuminant] : colour_filters.fields()) {
+            Json paper_rows = engine->neutral_filters.has(paper) ? engine->neutral_filters.at(paper) : Json::object();
+            for (const auto& [illuminant, rows] : by_illuminant.fields()) {
+                Json ill_rows = paper_rows.has(illuminant) ? paper_rows.at(illuminant) : Json::object();
+                for (const auto& [film, row] : rows.fields())
+                    if (!ill_rows.has(film)) ill_rows.set(film, row);
+                paper_rows.set(illuminant, std::move(ill_rows));
+            }
+            engine->neutral_filters.set(paper, std::move(paper_rows));
+        }
+    }
+
     if (!engine->print_luts.init(engine->resources_dir, error)) { g_error = error; return nullptr; }
 #ifdef __APPLE__
     // Legacy resource sets can omit these; selecting a DSEG face checks it explicitly.

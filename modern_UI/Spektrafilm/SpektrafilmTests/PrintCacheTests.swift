@@ -16,6 +16,7 @@ final class PrintCacheTests: XCTestCase {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let url = dir.appending(path: source.lastPathComponent)
         try FileManager.default.copyItem(at: source, to: url)
+        try Sidecar().save(for: url)
         addTeardownBlock { try? FileManager.default.removeItem(at: dir) }
         return url
     }
@@ -106,6 +107,7 @@ final class PrintCacheTests: XCTestCase {
         addTeardownBlock { try? FileManager.default.removeItem(at: dir) }
         let url = dir.appending(path: "frame.tif")
         try Data().write(to: url)
+        try Sidecar().save(for: url)
         let diagnostics = try diagnostics()
         let store = try DiskCacheStore(
             root: FileManager.default.temporaryDirectory
@@ -211,6 +213,7 @@ final class PrintCacheTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: root) }
         let url = root.appending(path: "frame.tif")
         try Data().write(to: url)
+        try Sidecar().save(for: url)
         let session = Session(diagnostics: try diagnostics(),
                               diskCache: try DiskCacheStore(root: root.appending(path: "cache")))
         try await waitUntil("engine version") { session.diagnostics.engineVersion != nil }

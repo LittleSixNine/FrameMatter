@@ -17,6 +17,22 @@ final class ViewportStateTests: XCTestCase {
         XCTAssertEqual(v.zoomPercent, 40)
     }
 
+    func testNavigatorRequiresActualCanvasOverflow() {
+        var v = makeVP()
+        XCTAssertFalse(v.imageOverflowsCanvas)
+        v.zoom(by: 0.5, about: .zero)
+        XCTAssertFalse(v.isFit)
+        XCTAssertFalse(v.imageOverflowsCanvas)
+        v.zoom(by: 3, about: .zero)
+        XCTAssertTrue(v.imageOverflowsCanvas)
+        v.resize(viewport: CGSize(width: 2000, height: 1500))
+        XCTAssertFalse(v.imageOverflowsCanvas)
+        v.resize(viewport: CGSize(width: 800, height: 2000))
+        XCTAssertTrue(v.imageOverflowsCanvas)
+        v.fit()
+        XCTAssertFalse(v.imageOverflowsCanvas)
+    }
+
     func testZoomKeepsAnchorFixed() {
         var v = makeVP()
         let anchor = CGPoint(x: 200, y: 150)

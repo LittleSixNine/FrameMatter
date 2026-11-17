@@ -169,6 +169,7 @@
 		2C3EFD7B5DE8EA57D406BDBB /* CurveMath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CurveMath.swift"; sourceTree = "<group>"; };
 		1FBA54A8DDF9F7C6003FE5D2 /* DecodeResidency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DecodeResidency.swift"; sourceTree = "<group>"; };
 		8D09A6A4DAA786A635404B54 /* FeatureFlags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FeatureFlags.swift"; sourceTree = "<group>"; };
+		1F22502E3D3154815EE04ABB /* FilmArtwork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FilmArtwork.swift"; sourceTree = "<group>"; };
 		D4397AB5CB17C72C8113A0E3 /* FilmEdge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FilmEdge.swift"; sourceTree = "<group>"; };
 		1FD42235BD294C6BC7257371 /* Frame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Frame.swift"; sourceTree = "<group>"; };
 		57946CF0E400CB6362643819 /* FrameFraming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FrameFraming.swift"; sourceTree = "<group>"; };
@@ -178,6 +179,7 @@
 		D9A5D4FB130D7DA5C1364A10 /* Latitude.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Latitude.swift"; sourceTree = "<group>"; };
 		92B323B5F485830133567446 /* LightLeaks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LightLeaks.swift"; sourceTree = "<group>"; };
 		BD3FA299D7EB9C019C5EB676 /* Mask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Mask.swift"; sourceTree = "<group>"; };
+		3F2C9BA27FFBE8EB37617301 /* OpticalEffects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OpticalEffects.swift"; sourceTree = "<group>"; };
 		2AFE54D96D2505F69D272CBC /* Params.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Params.swift"; sourceTree = "<group>"; };
 		EAFEC317CB9BAF9E218E0DB3 /* RawPerspective.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RawPerspective.swift"; sourceTree = "<group>"; };
 		7CF62F1A128C34E4124DFC38 /* Scratch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Scratch.swift"; sourceTree = "<group>"; };
@@ -197,6 +199,7 @@
 				2C3EFD7B5DE8EA57D406BDBB /* CurveMath.swift */,
 				1FBA54A8DDF9F7C6003FE5D2 /* DecodeResidency.swift */,
 				8D09A6A4DAA786A635404B54 /* FeatureFlags.swift */,
+				1F22502E3D3154815EE04ABB /* FilmArtwork.swift */,
 				D4397AB5CB17C72C8113A0E3 /* FilmEdge.swift */,
 				1FD42235BD294C6BC7257371 /* Frame.swift */,
 				57946CF0E400CB6362643819 /* FrameFraming.swift */,
@@ -206,6 +209,7 @@
 				D9A5D4FB130D7DA5C1364A10 /* Latitude.swift */,
 				92B323B5F485830133567446 /* LightLeaks.swift */,
 				BD3FA299D7EB9C019C5EB676 /* Mask.swift */,
+				3F2C9BA27FFBE8EB37617301 /* OpticalEffects.swift */,
 				2AFE54D96D2505F69D272CBC /* Params.swift */,
 				EAFEC317CB9BAF9E218E0DB3 /* RawPerspective.swift */,
 				7CF62F1A128C34E4124DFC38 /* Scratch.swift */,
@@ -226,6 +230,7 @@
 		773B97297FE5E4580B7CE70F /* CropSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CropSection.swift"; sourceTree = "<group>"; };
 		85BB0BF741B4E4A037E0A9AE /* DateBackSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DateBackSection.swift"; sourceTree = "<group>"; };
 		B729AD2EB5E7519FE5499F61 /* EnlargerSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EnlargerSection.swift"; sourceTree = "<group>"; };
+		A21C48AA4B7D3374576BCEB3 /* FilmArtworkGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FilmArtworkGrid.swift"; sourceTree = "<group>"; };
 		FA440EFCACD5AEE5DC29AC7B /* FilmEdgeSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FilmEdgeSection.swift"; sourceTree = "<group>"; };
 		D683EAE35F9582121B7AA62C /* FilmSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FilmSection.swift"; sourceTree = "<group>"; };
 		A16627B3ED33AA97A8BDE08D /* GrainSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GrainSection.swift"; sourceTree = "<group>"; };
@@ -233,6 +238,7 @@
 		32FAE04AFF5B4F692F5AE6D1 /* LightLeakSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LightLeakSection.swift"; sourceTree = "<group>"; };
 		D8C62B445BB801BDB4827701 /* MasksSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MasksSection.swift"; sourceTree = "<group>"; };
 		AAE77600C4DB8964A93036B8 /* NavigatorSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NavigatorSection.swift"; sourceTree = "<group>"; };
+		D02DD6CF75007A3D25713E77 /* OpticalEffectsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OpticalEffectsSection.swift"; sourceTree = "<group>"; };
 		6F4A151AC41077EF596D04AE /* PairSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PairSection.swift"; sourceTree = "<group>"; };
 		31604E276003EFAFDCC77A76 /* ParameterSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ParameterSections.swift"; sourceTree = "<group>"; };
 		CBC3A4A2D1A91A9075EFE386 /* PrintProfileSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PrintProfileSection.swift"; sourceTree = "<group>"; };
@@ -247,6 +253,7 @@
 				773B97297FE5E4580B7CE70F /* CropSection.swift */,
 				85BB0BF741B4E4A037E0A9AE /* DateBackSection.swift */,
 				B729AD2EB5E7519FE5499F61 /* EnlargerSection.swift */,
+				A21C48AA4B7D3374576BCEB3 /* FilmArtworkGrid.swift */,
 				FA440EFCACD5AEE5DC29AC7B /* FilmEdgeSection.swift */,
 				D683EAE35F9582121B7AA62C /* FilmSection.swift */,
 				A16627B3ED33AA97A8BDE08D /* GrainSection.swift */,
@@ -254,6 +261,7 @@
 				32FAE04AFF5B4F692F5AE6D1 /* LightLeakSection.swift */,
 				D8C62B445BB801BDB4827701 /* MasksSection.swift */,
 				AAE77600C4DB8964A93036B8 /* NavigatorSection.swift */,
+				D02DD6CF75007A3D25713E77 /* OpticalEffectsSection.swift */,
 				6F4A151AC41077EF596D04AE /* PairSection.swift */,
 				31604E276003EFAFDCC77A76 /* ParameterSections.swift */,
 				CBC3A4A2D1A91A9075EFE386 /* PrintProfileSection.swift */,
@@ -321,6 +329,7 @@
 		1314FC9749243D900B18259C /* CollapseTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CollapseTab.swift"; sourceTree = "<group>"; };
 		ADC8065A5E52A589C2F6AE42 /* EditorWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EditorWindow.swift"; sourceTree = "<group>"; };
 		F67B2F725579EC801242F867 /* ExportWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExportWindow.swift"; sourceTree = "<group>"; };
+		54BE49FD6CFD6F5A3DA48F09 /* FilmArtworkSettingsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FilmArtworkSettingsPage.swift"; sourceTree = "<group>"; };
 		E24ECFF23445AA5E689E9456 /* SettingsWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingsWindow.swift"; sourceTree = "<group>"; };
 		70E6C16EAA039CB5BD2F90EA /* TopBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TopBar.swift"; sourceTree = "<group>"; };
 		AE0AED7BA06FE8D91BD0CAB3 /* TrafficLights.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TrafficLights.swift"; sourceTree = "<group>"; };
@@ -334,6 +343,7 @@
 				1314FC9749243D900B18259C /* CollapseTab.swift */,
 				ADC8065A5E52A589C2F6AE42 /* EditorWindow.swift */,
 				F67B2F725579EC801242F867 /* ExportWindow.swift */,
+				54BE49FD6CFD6F5A3DA48F09 /* FilmArtworkSettingsPage.swift */,
 				E24ECFF23445AA5E689E9456 /* SettingsWindow.swift */,
 				70E6C16EAA039CB5BD2F90EA /* TopBar.swift */,
 				AE0AED7BA06FE8D91BD0CAB3 /* TrafficLights.swift */,
@@ -402,6 +412,7 @@
 		824997C1D857995E47EB764F /* ExportRecipeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExportRecipeTests.swift"; sourceTree = "<group>"; };
 		1920F483AE58DDBD5EF17E71 /* ExportUserMetadataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExportUserMetadataTests.swift"; sourceTree = "<group>"; };
 		1AB7E7C55B43414411D9AA7A /* FactoryLetteringTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FactoryLetteringTests.swift"; sourceTree = "<group>"; };
+		3F09E2B02485A93ED1191201 /* FilmArtworkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FilmArtworkTests.swift"; sourceTree = "<group>"; };
 		A2A814FBE11E6DDDF9B2D859 /* FilmEdgeSectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FilmEdgeSectionTests.swift"; sourceTree = "<group>"; };
 		6AC63F4336C3AEFE6BB7B4B9 /* FilmEdgeSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FilmEdgeSessionTests.swift"; sourceTree = "<group>"; };
 		E6C239066E0480AD5221C860 /* FilmEdgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FilmEdgeTests.swift"; sourceTree = "<group>"; };
@@ -421,6 +432,7 @@
 		8D2BF696F94ED8B714C5BBD3 /* LightLeakTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LightLeakTests.swift"; sourceTree = "<group>"; };
 		CF61BA9413EC99F2810BB4DE /* MaskTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MaskTests.swift"; sourceTree = "<group>"; };
 		FEC7699D811DD42DBF704EEE /* OpenPathTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OpenPathTests.swift"; sourceTree = "<group>"; };
+		AE021EE750D6EEF5A0272698 /* OpticalEffectsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OpticalEffectsTests.swift"; sourceTree = "<group>"; };
 		7D4B68041F25E6391CDA5225 /* PanelResizeWiringTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PanelResizeWiringTests.swift"; sourceTree = "<group>"; };
 		670BA02F66C2FB67FF1B53EE /* ParamsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ParamsTests.swift"; sourceTree = "<group>"; };
 		1F7D493E10C34B077E04183D /* PerspectiveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PerspectiveTests.swift"; sourceTree = "<group>"; };
@@ -485,6 +497,7 @@
 				824997C1D857995E47EB764F /* ExportRecipeTests.swift */,
 				1920F483AE58DDBD5EF17E71 /* ExportUserMetadataTests.swift */,
 				1AB7E7C55B43414411D9AA7A /* FactoryLetteringTests.swift */,
+				3F09E2B02485A93ED1191201 /* FilmArtworkTests.swift */,
 				A2A814FBE11E6DDDF9B2D859 /* FilmEdgeSectionTests.swift */,
 				6AC63F4336C3AEFE6BB7B4B9 /* FilmEdgeSessionTests.swift */,
 				E6C239066E0480AD5221C860 /* FilmEdgeTests.swift */,
@@ -504,6 +517,7 @@
 				8D2BF696F94ED8B714C5BBD3 /* LightLeakTests.swift */,
 				CF61BA9413EC99F2810BB4DE /* MaskTests.swift */,
 				FEC7699D811DD42DBF704EEE /* OpenPathTests.swift */,
+				AE021EE750D6EEF5A0272698 /* OpticalEffectsTests.swift */,
 				7D4B68041F25E6391CDA5225 /* PanelResizeWiringTests.swift */,
 				670BA02F66C2FB67FF1B53EE /* ParamsTests.swift */,
 				1F7D493E10C34B077E04183D /* PerspectiveTests.swift */,
@@ -602,6 +616,7 @@
 		215930583F367EC69222620A /* cam16.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = "cam16.cpp"; path = "../../engine/src/core/cam16.cpp"; sourceTree = SOURCE_ROOT; };
 		6DC1D74BE67AD1075040BAA8 /* colour.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = "colour.cpp"; path = "../../engine/src/core/colour.cpp"; sourceTree = SOURCE_ROOT; };
 		77D9C5C0A25442DE67A9B1DE /* curves.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = "curves.cpp"; path = "../../engine/src/core/curves.cpp"; sourceTree = SOURCE_ROOT; };
+		E41B7DCBD1B8F3D71E68B539 /* diffusion_psf.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = "diffusion_psf.cpp"; path = "../../engine/src/core/diffusion_psf.cpp"; sourceTree = SOURCE_ROOT; };
 		EA8352F54C0DA5761E29342C /* digital_intermediate.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = "digital_intermediate.cpp"; path = "../../engine/src/core/digital_intermediate.cpp"; sourceTree = SOURCE_ROOT; };
 		9F7B85F45EBDF1CE3728F27D /* hanatos.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = "hanatos.cpp"; path = "../../engine/src/core/hanatos.cpp"; sourceTree = SOURCE_ROOT; };
 		9DFC1577C6F351347984BBA6 /* json.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = "json.cpp"; path = "../../engine/src/core/json.cpp"; sourceTree = SOURCE_ROOT; };
@@ -628,6 +643,7 @@
 				215930583F367EC69222620A /* cam16.cpp */,
 				6DC1D74BE67AD1075040BAA8 /* colour.cpp */,
 				77D9C5C0A25442DE67A9B1DE /* curves.cpp */,
+				E41B7DCBD1B8F3D71E68B539 /* diffusion_psf.cpp */,
 				EA8352F54C0DA5761E29342C /* digital_intermediate.cpp */,
 				9F7B85F45EBDF1CE3728F27D /* hanatos.cpp */,
 				9DFC1577C6F351347984BBA6 /* json.cpp */,
@@ -733,6 +749,7 @@
 		E886BD4074E7E3786311553F /* CurveMath.swift */ = {isa = PBXBuildFile; fileRef = 2C3EFD7B5DE8EA57D406BDBB; };
 		4DBB0A11BA317C74BFCD4D8E /* DecodeResidency.swift */ = {isa = PBXBuildFile; fileRef = 1FBA54A8DDF9F7C6003FE5D2; };
 		3F5E047EB998D3EA8BF03709 /* FeatureFlags.swift */ = {isa = PBXBuildFile; fileRef = 8D09A6A4DAA786A635404B54; };
+		B7BE7F48314C1D2889B2362A /* FilmArtwork.swift */ = {isa = PBXBuildFile; fileRef = 1F22502E3D3154815EE04ABB; };
 		86884419644A89FE72E55543 /* FilmEdge.swift */ = {isa = PBXBuildFile; fileRef = D4397AB5CB17C72C8113A0E3; };
 		4B575E99E7B877393ED8E8AF /* Frame.swift */ = {isa = PBXBuildFile; fileRef = 1FD42235BD294C6BC7257371; };
 		4929D57DD6BEC9A3CC4127A5 /* FrameFraming.swift */ = {isa = PBXBuildFile; fileRef = 57946CF0E400CB6362643819; };
@@ -742,6 +759,7 @@
 		BAAAC48691BBE6D8BA752FD5 /* Latitude.swift */ = {isa = PBXBuildFile; fileRef = D9A5D4FB130D7DA5C1364A10; };
 		3BD68BB443433158F8AC33B1 /* LightLeaks.swift */ = {isa = PBXBuildFile; fileRef = 92B323B5F485830133567446; };
 		A19ACBE78BD64D5DB3012243 /* Mask.swift */ = {isa = PBXBuildFile; fileRef = BD3FA299D7EB9C019C5EB676; };
+		D4556ABCEBD8CCB46DD3A83C /* OpticalEffects.swift */ = {isa = PBXBuildFile; fileRef = 3F2C9BA27FFBE8EB37617301; };
 		6822B6E3426D49DCE0044D28 /* Params.swift */ = {isa = PBXBuildFile; fileRef = 2AFE54D96D2505F69D272CBC; };
 		DB15DC05164D69139BDE5A4C /* RawPerspective.swift */ = {isa = PBXBuildFile; fileRef = EAFEC317CB9BAF9E218E0DB3; };
 		D0FDAFBDB9AD3B9BB4B23176 /* Scratch.swift */ = {isa = PBXBuildFile; fileRef = 7CF62F1A128C34E4124DFC38; };
@@ -758,6 +776,7 @@
 		15B6AEDCC3FE5FBED0DC689E /* CropSection.swift */ = {isa = PBXBuildFile; fileRef = 773B97297FE5E4580B7CE70F; };
 		CE54C8D5E0EA18CEE4F77D99 /* DateBackSection.swift */ = {isa = PBXBuildFile; fileRef = 85BB0BF741B4E4A037E0A9AE; };
 		4F90354FBA400C8FB06C657D /* EnlargerSection.swift */ = {isa = PBXBuildFile; fileRef = B729AD2EB5E7519FE5499F61; };
+		66FFB26EA54C411A00B12DC2 /* FilmArtworkGrid.swift */ = {isa = PBXBuildFile; fileRef = A21C48AA4B7D3374576BCEB3; };
 		C0F821BE082BEBCE918561DA /* FilmEdgeSection.swift */ = {isa = PBXBuildFile; fileRef = FA440EFCACD5AEE5DC29AC7B; };
 		3A77169194DAFBA07FFC2E92 /* FilmSection.swift */ = {isa = PBXBuildFile; fileRef = D683EAE35F9582121B7AA62C; };
 		58B195CD4228960E56D20D86 /* GrainSection.swift */ = {isa = PBXBuildFile; fileRef = A16627B3ED33AA97A8BDE08D; };
@@ -765,6 +784,7 @@
 		FB5CF196E82DAD4087463A4C /* LightLeakSection.swift */ = {isa = PBXBuildFile; fileRef = 32FAE04AFF5B4F692F5AE6D1; };
 		3A4E60CE3031E48A48519664 /* MasksSection.swift */ = {isa = PBXBuildFile; fileRef = D8C62B445BB801BDB4827701; };
 		0CCA806D2F95EB2D2949855E /* NavigatorSection.swift */ = {isa = PBXBuildFile; fileRef = AAE77600C4DB8964A93036B8; };
+		5EF3A853BBCEC5AB36949321 /* OpticalEffectsSection.swift */ = {isa = PBXBuildFile; fileRef = D02DD6CF75007A3D25713E77; };
 		6D4F7CDBC30F2321A525E63F /* PairSection.swift */ = {isa = PBXBuildFile; fileRef = 6F4A151AC41077EF596D04AE; };
 		1009C9B8473A8FBBE2957EAD /* ParameterSections.swift */ = {isa = PBXBuildFile; fileRef = 31604E276003EFAFDCC77A76; };
 		384534AC4F4E049FF3365CE8 /* PrintProfileSection.swift */ = {isa = PBXBuildFile; fileRef = CBC3A4A2D1A91A9075EFE386; };
@@ -786,6 +806,7 @@
 		9F226DBBF6D9A09997010B68 /* CollapseTab.swift */ = {isa = PBXBuildFile; fileRef = 1314FC9749243D900B18259C; };
 		30D807F890E0D613B37D2F53 /* EditorWindow.swift */ = {isa = PBXBuildFile; fileRef = ADC8065A5E52A589C2F6AE42; };
 		4254A1EA9E8977408D6035DD /* ExportWindow.swift */ = {isa = PBXBuildFile; fileRef = F67B2F725579EC801242F867; };
+		5662A378A7E704EE3B8E33EC /* FilmArtworkSettingsPage.swift */ = {isa = PBXBuildFile; fileRef = 54BE49FD6CFD6F5A3DA48F09; };
 		D49716FD05732E27DBDFFF79 /* SettingsWindow.swift */ = {isa = PBXBuildFile; fileRef = E24ECFF23445AA5E689E9456; };
 		9D0538240A70E96E63507B06 /* TopBar.swift */ = {isa = PBXBuildFile; fileRef = 70E6C16EAA039CB5BD2F90EA; };
 		48D483F6B3F3E8CEACE48D45 /* TrafficLights.swift */ = {isa = PBXBuildFile; fileRef = AE0AED7BA06FE8D91BD0CAB3; };
@@ -795,6 +816,7 @@
 		0F30A014F4BA62E1C14EB021 /* cam16.cpp */ = {isa = PBXBuildFile; fileRef = 215930583F367EC69222620A; };
 		2B521A13252EB54427CCCF01 /* colour.cpp */ = {isa = PBXBuildFile; fileRef = 6DC1D74BE67AD1075040BAA8; };
 		AB8C3928053AAB9AB77EA40D /* curves.cpp */ = {isa = PBXBuildFile; fileRef = 77D9C5C0A25442DE67A9B1DE; };
+		5136AF2DF7D9DD75BA2EC5A2 /* diffusion_psf.cpp */ = {isa = PBXBuildFile; fileRef = E41B7DCBD1B8F3D71E68B539; };
 		86B6D04E6F59871A2E4744D8 /* digital_intermediate.cpp */ = {isa = PBXBuildFile; fileRef = EA8352F54C0DA5761E29342C; };
 		4B244FF0BD1A80C0B7D36387 /* hanatos.cpp */ = {isa = PBXBuildFile; fileRef = 9F7B85F45EBDF1CE3728F27D; };
 		405222C6C44FB7336C0C5250 /* json.cpp */ = {isa = PBXBuildFile; fileRef = 9DFC1577C6F351347984BBA6; };
@@ -878,6 +900,7 @@
 				E886BD4074E7E3786311553F /* CurveMath.swift */,
 				4DBB0A11BA317C74BFCD4D8E /* DecodeResidency.swift */,
 				3F5E047EB998D3EA8BF03709 /* FeatureFlags.swift */,
+				B7BE7F48314C1D2889B2362A /* FilmArtwork.swift */,
 				86884419644A89FE72E55543 /* FilmEdge.swift */,
 				4B575E99E7B877393ED8E8AF /* Frame.swift */,
 				4929D57DD6BEC9A3CC4127A5 /* FrameFraming.swift */,
@@ -887,6 +910,7 @@
 				BAAAC48691BBE6D8BA752FD5 /* Latitude.swift */,
 				3BD68BB443433158F8AC33B1 /* LightLeaks.swift */,
 				A19ACBE78BD64D5DB3012243 /* Mask.swift */,
+				D4556ABCEBD8CCB46DD3A83C /* OpticalEffects.swift */,
 				6822B6E3426D49DCE0044D28 /* Params.swift */,
 				DB15DC05164D69139BDE5A4C /* RawPerspective.swift */,
 				D0FDAFBDB9AD3B9BB4B23176 /* Scratch.swift */,
@@ -903,6 +927,7 @@
 				15B6AEDCC3FE5FBED0DC689E /* CropSection.swift */,
 				CE54C8D5E0EA18CEE4F77D99 /* DateBackSection.swift */,
 				4F90354FBA400C8FB06C657D /* EnlargerSection.swift */,
+				66FFB26EA54C411A00B12DC2 /* FilmArtworkGrid.swift */,
 				C0F821BE082BEBCE918561DA /* FilmEdgeSection.swift */,
 				3A77169194DAFBA07FFC2E92 /* FilmSection.swift */,
 				58B195CD4228960E56D20D86 /* GrainSection.swift */,
@@ -910,6 +935,7 @@
 				FB5CF196E82DAD4087463A4C /* LightLeakSection.swift */,
 				3A4E60CE3031E48A48519664 /* MasksSection.swift */,
 				0CCA806D2F95EB2D2949855E /* NavigatorSection.swift */,
+				5EF3A853BBCEC5AB36949321 /* OpticalEffectsSection.swift */,
 				6D4F7CDBC30F2321A525E63F /* PairSection.swift */,
 				1009C9B8473A8FBBE2957EAD /* ParameterSections.swift */,
 				384534AC4F4E049FF3365CE8 /* PrintProfileSection.swift */,
@@ -931,6 +957,7 @@
 				9F226DBBF6D9A09997010B68 /* CollapseTab.swift */,
 				30D807F890E0D613B37D2F53 /* EditorWindow.swift */,
 				4254A1EA9E8977408D6035DD /* ExportWindow.swift */,
+				5662A378A7E704EE3B8E33EC /* FilmArtworkSettingsPage.swift */,
 				D49716FD05732E27DBDFFF79 /* SettingsWindow.swift */,
 				9D0538240A70E96E63507B06 /* TopBar.swift */,
 				48D483F6B3F3E8CEACE48D45 /* TrafficLights.swift */,
@@ -940,6 +967,7 @@
 				0F30A014F4BA62E1C14EB021 /* cam16.cpp */,
 				2B521A13252EB54427CCCF01 /* colour.cpp */,
 				AB8C3928053AAB9AB77EA40D /* curves.cpp */,
+				5136AF2DF7D9DD75BA2EC5A2 /* diffusion_psf.cpp */,
 				86B6D04E6F59871A2E4744D8 /* digital_intermediate.cpp */,
 				4B244FF0BD1A80C0B7D36387 /* hanatos.cpp */,
 				405222C6C44FB7336C0C5250 /* json.cpp */,
@@ -1013,6 +1041,7 @@
 		9BFFB230A984011249109B04 /* ExportRecipeTests.swift */ = {isa = PBXBuildFile; fileRef = 824997C1D857995E47EB764F; };
 		BBA867C9B6E07FAA33BA2F36 /* ExportUserMetadataTests.swift */ = {isa = PBXBuildFile; fileRef = 1920F483AE58DDBD5EF17E71; };
 		F8CB16B4E77074A023ADD8C5 /* FactoryLetteringTests.swift */ = {isa = PBXBuildFile; fileRef = 1AB7E7C55B43414411D9AA7A; };
+		2D451B6ACFC85B3AA30EB8EB /* FilmArtworkTests.swift */ = {isa = PBXBuildFile; fileRef = 3F09E2B02485A93ED1191201; };
 		7A004520735087D47A8D4124 /* FilmEdgeSectionTests.swift */ = {isa = PBXBuildFile; fileRef = A2A814FBE11E6DDDF9B2D859; };
 		0DE470F90581B57C9AE4F659 /* FilmEdgeSessionTests.swift */ = {isa = PBXBuildFile; fileRef = 6AC63F4336C3AEFE6BB7B4B9; };
 		731231102EBB9262A19B894C /* FilmEdgeTests.swift */ = {isa = PBXBuildFile; fileRef = E6C239066E0480AD5221C860; };
@@ -1032,6 +1061,7 @@
 		C30A1F29D1EAA8457B067F8F /* LightLeakTests.swift */ = {isa = PBXBuildFile; fileRef = 8D2BF696F94ED8B714C5BBD3; };
 		6FA174F7F62365ED82151A39 /* MaskTests.swift */ = {isa = PBXBuildFile; fileRef = CF61BA9413EC99F2810BB4DE; };
 		DB25777DBD5A1C4613A4AB95 /* OpenPathTests.swift */ = {isa = PBXBuildFile; fileRef = FEC7699D811DD42DBF704EEE; };
+		547ABD6DC1B1E1E6F5E70143 /* OpticalEffectsTests.swift */ = {isa = PBXBuildFile; fileRef = AE021EE750D6EEF5A0272698; };
 		CCB54740C6B298D2CB260013 /* PanelResizeWiringTests.swift */ = {isa = PBXBuildFile; fileRef = 7D4B68041F25E6391CDA5225; };
 		039B6FFCF4BFB676662323BD /* ParamsTests.swift */ = {isa = PBXBuildFile; fileRef = 670BA02F66C2FB67FF1B53EE; };
 		91C5CDA806BF0F7698F4D7A9 /* PerspectiveTests.swift */ = {isa = PBXBuildFile; fileRef = 1F7D493E10C34B077E04183D; };
@@ -1121,6 +1151,7 @@
 		945B7C96E6D95C47077CA637 /* CurveMath.swift */ = {isa = PBXBuildFile; fileRef = 2C3EFD7B5DE8EA57D406BDBB; };
 		842D1F1ADDED2E0D85465F76 /* DecodeResidency.swift */ = {isa = PBXBuildFile; fileRef = 1FBA54A8DDF9F7C6003FE5D2; };
 		7E935B1DAB7134D9F7B1B2BC /* FeatureFlags.swift */ = {isa = PBXBuildFile; fileRef = 8D09A6A4DAA786A635404B54; };
+		5DF2D02445DE27E5947C1CA0 /* FilmArtwork.swift */ = {isa = PBXBuildFile; fileRef = 1F22502E3D3154815EE04ABB; };
 		305B3CE2187FD2365F059D0A /* FilmEdge.swift */ = {isa = PBXBuildFile; fileRef = D4397AB5CB17C72C8113A0E3; };
 		9819A2D3AAA591B64BF92E5A /* Frame.swift */ = {isa = PBXBuildFile; fileRef = 1FD42235BD294C6BC7257371; };
 		CA58A7F1CAC91F0BF0FB3355 /* FrameFraming.swift */ = {isa = PBXBuildFile; fileRef = 57946CF0E400CB6362643819; };
@@ -1130,6 +1161,7 @@
 		0A290D67F9F65D4D1C54E33A /* Latitude.swift */ = {isa = PBXBuildFile; fileRef = D9A5D4FB130D7DA5C1364A10; };
 		D8511DB6366DA94C7F73C7E6 /* LightLeaks.swift */ = {isa = PBXBuildFile; fileRef = 92B323B5F485830133567446; };
 		6B8029673A50DF9EFFE45066 /* Mask.swift */ = {isa = PBXBuildFile; fileRef = BD3FA299D7EB9C019C5EB676; };
+		FD597BA9BA8D3FB4FDF5E051 /* OpticalEffects.swift */ = {isa = PBXBuildFile; fileRef = 3F2C9BA27FFBE8EB37617301; };
 		E90F7C134FA143167A66ED5F /* Params.swift */ = {isa = PBXBuildFile; fileRef = 2AFE54D96D2505F69D272CBC; };
 		E882E26EF400B52CF04AA585 /* RawPerspective.swift */ = {isa = PBXBuildFile; fileRef = EAFEC317CB9BAF9E218E0DB3; };
 		4BD9D205D8843746F5730026 /* Scratch.swift */ = {isa = PBXBuildFile; fileRef = 7CF62F1A128C34E4124DFC38; };
@@ -1146,6 +1178,7 @@
 		3949D904607209196C68D6D2 /* CropSection.swift */ = {isa = PBXBuildFile; fileRef = 773B97297FE5E4580B7CE70F; };
 		D582B60EEA333A299CDB0884 /* DateBackSection.swift */ = {isa = PBXBuildFile; fileRef = 85BB0BF741B4E4A037E0A9AE; };
 		C14822118C80936D520410ED /* EnlargerSection.swift */ = {isa = PBXBuildFile; fileRef = B729AD2EB5E7519FE5499F61; };
+		0E2C6127A0C4CC911B2BACDB /* FilmArtworkGrid.swift */ = {isa = PBXBuildFile; fileRef = A21C48AA4B7D3374576BCEB3; };
 		B9AA6A2DE2DF32863C59F825 /* FilmEdgeSection.swift */ = {isa = PBXBuildFile; fileRef = FA440EFCACD5AEE5DC29AC7B; };
 		892D59704DF88006FFC3F195 /* FilmSection.swift */ = {isa = PBXBuildFile; fileRef = D683EAE35F9582121B7AA62C; };
 		54489B0F5D55ABFA2278A02B /* GrainSection.swift */ = {isa = PBXBuildFile; fileRef = A16627B3ED33AA97A8BDE08D; };
@@ -1153,6 +1186,7 @@
 		673CD577AF93279CA748CED4 /* LightLeakSection.swift */ = {isa = PBXBuildFile; fileRef = 32FAE04AFF5B4F692F5AE6D1; };
 		917B38BDBB45954BEDEC818C /* MasksSection.swift */ = {isa = PBXBuildFile; fileRef = D8C62B445BB801BDB4827701; };
 		6AAD8973CE3B98DD57053895 /* NavigatorSection.swift */ = {isa = PBXBuildFile; fileRef = AAE77600C4DB8964A93036B8; };
+		739CB15A09C15C0D0B7DC6E9 /* OpticalEffectsSection.swift */ = {isa = PBXBuildFile; fileRef = D02DD6CF75007A3D25713E77; };
 		E70873AE9A7409C519D329AB /* PairSection.swift */ = {isa = PBXBuildFile; fileRef = 6F4A151AC41077EF596D04AE; };
 		167E76A7FC4DDCE7012A39C0 /* ParameterSections.swift */ = {isa = PBXBuildFile; fileRef = 31604E276003EFAFDCC77A76; };
 		9476B966137052CD34C19AE8 /* PrintProfileSection.swift */ = {isa = PBXBuildFile; fileRef = CBC3A4A2D1A91A9075EFE386; };
@@ -1174,6 +1208,7 @@
 		47529647F3D60BBE8CE96974 /* CollapseTab.swift */ = {isa = PBXBuildFile; fileRef = 1314FC9749243D900B18259C; };
 		6BE641FE29553FD2270F5946 /* EditorWindow.swift */ = {isa = PBXBuildFile; fileRef = ADC8065A5E52A589C2F6AE42; };
 		451102DB41DB7EE46F2749EF /* ExportWindow.swift */ = {isa = PBXBuildFile; fileRef = F67B2F725579EC801242F867; };
+		932F9BD919FE57CEF6FBD5BC /* FilmArtworkSettingsPage.swift */ = {isa = PBXBuildFile; fileRef = 54BE49FD6CFD6F5A3DA48F09; };
 		DD739A4935AF06B66C19D2AE /* SettingsWindow.swift */ = {isa = PBXBuildFile; fileRef = E24ECFF23445AA5E689E9456; };
 		B3D386513DEDDEBD0B22E5D6 /* TopBar.swift */ = {isa = PBXBuildFile; fileRef = 70E6C16EAA039CB5BD2F90EA; };
 		6812CE43DD294C24BA4370E9 /* TrafficLights.swift */ = {isa = PBXBuildFile; fileRef = AE0AED7BA06FE8D91BD0CAB3; };
@@ -1182,6 +1217,7 @@
 		ECA0DD54952585BB6E1183F2 /* cam16.cpp */ = {isa = PBXBuildFile; fileRef = 215930583F367EC69222620A; };
 		61D521516170F106DD5E1A00 /* colour.cpp */ = {isa = PBXBuildFile; fileRef = 6DC1D74BE67AD1075040BAA8; };
 		5DC6EE808B8B0BFFF9804FCE /* curves.cpp */ = {isa = PBXBuildFile; fileRef = 77D9C5C0A25442DE67A9B1DE; };
+		788A9A6645DEC882A83020D6 /* diffusion_psf.cpp */ = {isa = PBXBuildFile; fileRef = E41B7DCBD1B8F3D71E68B539; };
 		B4EB984940511B4E30007EFC /* digital_intermediate.cpp */ = {isa = PBXBuildFile; fileRef = EA8352F54C0DA5761E29342C; };
 		846920E85821D5CB35A22269 /* hanatos.cpp */ = {isa = PBXBuildFile; fileRef = 9F7B85F45EBDF1CE3728F27D; };
 		962A62FDFE65F3D694D84DB2 /* json.cpp */ = {isa = PBXBuildFile; fileRef = 9DFC1577C6F351347984BBA6; };
@@ -1237,6 +1273,7 @@
 				9BFFB230A984011249109B04 /* ExportRecipeTests.swift */,
 				BBA867C9B6E07FAA33BA2F36 /* ExportUserMetadataTests.swift */,
 				F8CB16B4E77074A023ADD8C5 /* FactoryLetteringTests.swift */,
+				2D451B6ACFC85B3AA30EB8EB /* FilmArtworkTests.swift */,
 				7A004520735087D47A8D4124 /* FilmEdgeSectionTests.swift */,
 				0DE470F90581B57C9AE4F659 /* FilmEdgeSessionTests.swift */,
 				731231102EBB9262A19B894C /* FilmEdgeTests.swift */,
@@ -1256,6 +1293,7 @@
 				C30A1F29D1EAA8457B067F8F /* LightLeakTests.swift */,
 				6FA174F7F62365ED82151A39 /* MaskTests.swift */,
 				DB25777DBD5A1C4613A4AB95 /* OpenPathTests.swift */,
+				547ABD6DC1B1E1E6F5E70143 /* OpticalEffectsTests.swift */,
 				CCB54740C6B298D2CB260013 /* PanelResizeWiringTests.swift */,
 				039B6FFCF4BFB676662323BD /* ParamsTests.swift */,
 				91C5CDA806BF0F7698F4D7A9 /* PerspectiveTests.swift */,
@@ -1345,6 +1383,7 @@
 				945B7C96E6D95C47077CA637 /* CurveMath.swift */,
 				842D1F1ADDED2E0D85465F76 /* DecodeResidency.swift */,
 				7E935B1DAB7134D9F7B1B2BC /* FeatureFlags.swift */,
+				5DF2D02445DE27E5947C1CA0 /* FilmArtwork.swift */,
 				305B3CE2187FD2365F059D0A /* FilmEdge.swift */,
 				9819A2D3AAA591B64BF92E5A /* Frame.swift */,
 				CA58A7F1CAC91F0BF0FB3355 /* FrameFraming.swift */,
@@ -1354,6 +1393,7 @@
 				0A290D67F9F65D4D1C54E33A /* Latitude.swift */,
 				D8511DB6366DA94C7F73C7E6 /* LightLeaks.swift */,
 				6B8029673A50DF9EFFE45066 /* Mask.swift */,
+				FD597BA9BA8D3FB4FDF5E051 /* OpticalEffects.swift */,
 				E90F7C134FA143167A66ED5F /* Params.swift */,
 				E882E26EF400B52CF04AA585 /* RawPerspective.swift */,
 				4BD9D205D8843746F5730026 /* Scratch.swift */,
@@ -1370,6 +1410,7 @@
 				3949D904607209196C68D6D2 /* CropSection.swift */,
 				D582B60EEA333A299CDB0884 /* DateBackSection.swift */,
 				C14822118C80936D520410ED /* EnlargerSection.swift */,
+				0E2C6127A0C4CC911B2BACDB /* FilmArtworkGrid.swift */,
 				B9AA6A2DE2DF32863C59F825 /* FilmEdgeSection.swift */,
 				892D59704DF88006FFC3F195 /* FilmSection.swift */,
 				54489B0F5D55ABFA2278A02B /* GrainSection.swift */,
@@ -1377,6 +1418,7 @@
 				673CD577AF93279CA748CED4 /* LightLeakSection.swift */,
 				917B38BDBB45954BEDEC818C /* MasksSection.swift */,
 				6AAD8973CE3B98DD57053895 /* NavigatorSection.swift */,
+				739CB15A09C15C0D0B7DC6E9 /* OpticalEffectsSection.swift */,
 				E70873AE9A7409C519D329AB /* PairSection.swift */,
 				167E76A7FC4DDCE7012A39C0 /* ParameterSections.swift */,
 				9476B966137052CD34C19AE8 /* PrintProfileSection.swift */,
@@ -1398,6 +1440,7 @@
 				47529647F3D60BBE8CE96974 /* CollapseTab.swift */,
 				6BE641FE29553FD2270F5946 /* EditorWindow.swift */,
 				451102DB41DB7EE46F2749EF /* ExportWindow.swift */,
+				932F9BD919FE57CEF6FBD5BC /* FilmArtworkSettingsPage.swift */,
 				DD739A4935AF06B66C19D2AE /* SettingsWindow.swift */,
 				B3D386513DEDDEBD0B22E5D6 /* TopBar.swift */,
 				6812CE43DD294C24BA4370E9 /* TrafficLights.swift */,
@@ -1406,6 +1449,7 @@
 				ECA0DD54952585BB6E1183F2 /* cam16.cpp */,
 				61D521516170F106DD5E1A00 /* colour.cpp */,
 				5DC6EE808B8B0BFFF9804FCE /* curves.cpp */,
+				788A9A6645DEC882A83020D6 /* diffusion_psf.cpp */,
 				B4EB984940511B4E30007EFC /* digital_intermediate.cpp */,
 				846920E85821D5CB35A22269 /* hanatos.cpp */,
 				962A62FDFE65F3D694D84DB2 /* json.cpp */,

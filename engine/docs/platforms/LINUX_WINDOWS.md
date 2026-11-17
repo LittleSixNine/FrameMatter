@@ -11,8 +11,8 @@ Related documents:
 
 - `engine/docs/platforms/PORT_COVERAGE.md` -- what of the API spec runs on Vulkan, what is
   refused, what was verified and how.
-- `pravite/开发记录/engine/docs/platforms/PORT_PLAN.md` -- local-only handoff for the five refused features (not shipped).
-- `pravite/开发记录/engine/docs/platforms/PORT_NOTES.md` -- local-only running log of this port (not shipped).
+- `pravite/04-开发与故障记录/开发记录/engine/docs/platforms/PORT_PLAN.md` -- local-only handoff for the five refused features (not shipped).
+- `pravite/04-开发与故障记录/开发记录/engine/docs/platforms/PORT_NOTES.md` -- local-only running log of this port (not shipped).
 - `engine/docs/platforms/WINDOWS.md`, `WINDOWS_DESKTOP.md`, `WINDOWS_NATIVE_RAW.md`,
   `WINDOWS_FEATURE_COVERAGE.md` -- the original Windows port (native MSVC/MinGW
   builds with `build-windows.ps1`, the Win32 viewer, its acceptance on an RTX
@@ -138,7 +138,7 @@ A minimal client is `engine/tests/host_smoke.py` (`class Host`): write
 ## 6. What is not there
 
 - The five refused features (contrast mask, scene latitude mapping, Cineon
-  DI, overscan/film edge, date back): `pravite/开发记录/engine/docs/platforms/PORT_PLAN.md` (local-only).
+  DI, overscan/film edge, date back): `pravite/04-开发与故障记录/开发记录/engine/docs/platforms/PORT_PLAN.md` (local-only).
 - Lens correction at decode (LibRaw has no lens profiles).
 - Verified real-GPU runs on Linux, and runs on real Windows: only lavapipe
   and wine here. The original Windows port's RTX acceptance predates main's

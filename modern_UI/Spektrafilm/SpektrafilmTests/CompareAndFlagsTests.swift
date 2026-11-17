@@ -102,6 +102,24 @@ final class CompareAndFlagsTests: XCTestCase {
     }
 
 
+    func testHoldingOriginalByMousePreservesSplitAndOverlappingSpacePress() throws {
+        let session = Session()
+        session.renderer.original = try XCTUnwrap(session.renderer.store.makeWritable(width: 4, height: 2))
+        session.comparing = true
+        session.comparePosition = 0.7
+
+        session.holdOriginalButton(true)
+        XCTAssertTrue(session.renderer.showOriginal)
+        XCTAssertEqual(session.renderer.compareMode, .off)
+        session.toggledOriginal(true)
+        session.holdOriginalButton(false)
+        XCTAssertTrue(session.showingOriginal, "Space still holds the original")
+        session.toggledOriginal(false)
+        XCTAssertFalse(session.renderer.showOriginal)
+        XCTAssertEqual(session.renderer.compareMode, .split)
+        XCTAssertEqual(session.comparePosition, 0.7)
+    }
+
     // MARK: the crop keys
 
     func testReturnKeepsTheCropAndEscPutsItBack() {

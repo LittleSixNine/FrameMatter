@@ -695,9 +695,10 @@ fields. Design and measurements: RFC-032 §26–§29 and RFC-031 (the date back)
 |---|---|---|---|---|---|
 | `overscan_factory_separate_halation` | `film_render.overscan.factory_separate_halation` | bool | `false` | — | explicit independent factory-lettering exposure; missing/off keeps the original optical path. Date-back exposure stays with the scene. SHOOT, not live; see below. |
 | `overscan_active` | `film_render.overscan.active` | bool | `false` | — | the switch; `false` dispatches nothing (byte-identical to the pre-RFC build) |
-| `overscan_format` | `…overscan.format` | str | `"135"` | `135` \| `135_half` \| `120_645` \| `120_6x6` \| `120_6x7` \| `120_6x8` \| `120_6x9` \| `135_xpan` \| `135_full_67` \| `120_6x12` \| `120_6x17` | the film and its gate (`135_half`: 18 × 24 mm half frame, below). The panoramic long formats (2026-10-03, reversing "nothing larger than 6×9"): `135_xpan` 24 × 65 on 14 perforations, `120_6x12` 56 × 112, `120_6x17` 56 × 168; their gates are `square` until real strips are measured, and none carries a date |
+| `overscan_format` | `…overscan.format` | str | `"135"` | `135` \| `135_half` \| `120_645` \| `120_6x6` \| `120_6x7` \| `120_6x8` \| `120_6x9` \| `135_xpan` \| `135_full_67` \| `120_6x12` \| `120_6x17` \| `8_super` \| `16_super` \| `35_4perf` \| `65_5perf` \| `65_15perf` | the film and its gate (`135_half`: 18 × 24 mm half frame, below). The panoramic long formats (2026-10-03, reversing "nothing larger than 6×9"): `135_xpan` 24 × 65 on 14 perforations, `120_6x12` 56 × 112, `120_6x17` 56 × 168; their gates are `square` until real strips are measured, and none carries a date |
 | `overscan_mode` | `…overscan.mode` | str | `"strip"` | `strip` \| `filed` | the whole film width, or a filed-out carrier's sliver of rebate |
 | `overscan_gate` | `…overscan.gate` | str | `"auto"` | `auto` \| `square` \| `rounded` \| `eared` \| `shouldered` \| `kicked` | the gate's shape family (RFC-032 §29.2, §30.2); `auto` lets the camera seed pick one the format's real cameras have. `shouldered` (6×8) also seats the gate at the stock-name edge, with its ears ~1.2 mm from it and the edge print in the recess between them |
+| `overscan_perforation` | `…overscan.perforation` | str | `"none"` | `none` \| `ks65` | `ks65` adds two KS perforation rows on 120 film slit from 65 mm stock and suppresses the factory edge print. Valid only for 120 formats. Cine formats have their own perforations. |
 | `overscan_holes` | `…overscan.holes` | str | `"white"` | `white` \| `black` | what shows through the perforations (past the film's long edges is `overscan_carrier`'s). `white`: the picture's white (a scan's light). `black`: a black backing or a darkroom print. Either way the cut is not a perfectly vertical knife: a slight rounding of the base shows as a faint, patchy shoulder just outside each hole (1-6 % lift, ~0.03 mm), different on every hole, plus per-hole punch tolerances, roughness and burrs (RFC-032 §30.5, §31.5) |
 | `overscan_camera_seed` | `…overscan.camera_seed` | int | `1` | 0–2³¹−1 | **the body**: gate shape and radii, burrs, gate-to-emulsion gap, where the frame sits on the perforations, fog, flare |
 | `overscan_frame_seed` | `…overscan.frame_seed` | int | `1` | 0–2³¹−1 | **the advance and the scan**: weave, advance error, scan rotation, leaks, and which numbers are on the edge when `overscan_frame_number` is 0 |
@@ -1826,3 +1827,22 @@ engine wire unchanged. The host submits that metadata-only state, and the
 scheduler acknowledges it (`sent = wanted`) without an engine call. This
 prevents CLI/MCP previews and exports from remaining pending after a crop;
 it does not add a render, change geometry or alter the scene.
+
+### FrameMatter optical effects, 2026-11-17
+
+The camera diffusion filter uses the upstream 2.4.1 PSF families
+`black_pro_mist`, `pro_mist`, `glimmerglass`, and `cinebloom`.
+Shoot-layer fields are `diffusion_filter_active` (bool, false),
+`diffusion_filter_family` (string, black_pro_mist),
+`diffusion_filter_strength` (float, 0–2, default 0.5), and
+`diffusion_filter_spatial_scale` (float, 0.25–4, default 1).
+FrameMatter applies the PSF with its existing exponential Gaussian-mixture
+blur before lens blur and halation. The upstream pyramid optimization is
+not used. Disabled is an exact bypass.
+
+Double exposure is composed by the macOS host from decoded scene-linear
+images before handing pixels to the engine. The original photograph sets
+the output extent, the second photograph fills that extent with scale,
+translation, quarter-turn and horizontal-flip controls. Its fraction of
+light is 0.1–0.9. The second image remains an external file reference in
+the sidecar. A missing reference fails development visibly.

@@ -302,6 +302,27 @@ final class FilmEdgeTests: XCTestCase {
         }
     }
 
+    func testCineAndSlit120UseTheirOwnPerforations() async throws {
+        var p = FilmParams.default
+        p.grainActive = false
+        p.glareActive = false
+        p.filmEdge.active = true
+        p.filmEdge.slitFilmPerforations = true
+        p.filmEdge.format = .f6x6
+        XCTAssertEqual(p.fullDelta["overscan_perforation"], .string("ks65"))
+        for format in FilmEdgeFormat.allCases where format.group == .cine {
+            p.filmEdge.format = format
+            XCTAssertEqual(p.fullDelta["overscan_perforation"], .string("none"))
+            let width = Int((format.gateMM.long * 20).rounded())
+            let height = Int((format.gateMM.short * 20).rounded())
+            let output = try await render(p, width, height)
+            let estimate = FilmCanvasEstimate.size(picture: CGSize(width: width, height: height), format: format, view: .strip)
+            XCTAssertLessThanOrEqual(output.w, Int(estimate.width), format.rawValue)
+            XCTAssertLessThanOrEqual(output.h, Int(estimate.height), format.rawValue)
+            XCTAssertGreaterThan(output.w * output.h, width * height, format.rawValue)
+        }
+    }
+
     func testFullWidth135KeepsTheFilmWidthAndCropRatio() async throws {
         let format = FilmEdgeFormat.f135FullWidth
         XCTAssertEqual(format.gauge, "135")
@@ -344,7 +365,8 @@ final class FilmEdgeTests: XCTestCase {
                 if x < 300 || y < 200 { movedOutside += 1 }
             }
         } }
-        XCTAssertGreaterThan(moved, 200, "the date is a visible mark, not a rounding")
+        // The upstream two-scale base scatter softens the high-contrast core.
+        XCTAssertGreaterThan(moved, 150, "the date remains a visible mark after base scatter")
         XCTAssertEqual(movedOutside, 0, "the date is in the lower-right corner only")
     }
     /// The data face prints between frames (135) or in the margin (645), and
@@ -404,7 +426,7 @@ final class FilmEdgeTests: XCTestCase {
             return n
         }
         let gap = 12
-        XCTAssertGreaterThan(moved(bare.bytes, both.bytes, x0: bare.w / 2, x1: bare.w), 200, "no date in the frame")
+        XCTAssertGreaterThan(moved(bare.bytes, both.bytes, x0: bare.w / 2, x1: bare.w), 150, "no date in the frame after base scatter")
         XCTAssertGreaterThan(moved(bare.bytes, both.bytes, x0: 0, x1: gap), 30, "no data between the frames")
         XCTAssertEqual(moved(bare.bytes, dateOnly.bytes, x0: 0, x1: gap), 0, "the date alone prints nothing between the frames")
         // The data face still prints the data alone.
