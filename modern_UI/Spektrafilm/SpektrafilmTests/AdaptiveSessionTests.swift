@@ -296,8 +296,11 @@ final class AdaptiveSessionTests: XCTestCase {
         workspace.session.afterOpenDeltaForTesting = {
             workspace.session.afterOpenDeltaForTesting = nil
             workspace.session.aeMethod = .metered(.adaptive)
+            // A store notification can arrive before the meter edit is saved.
+            workspace.session.sidecarStoreChanged()
         }
         try await workspace.develop()
+        XCTAssertEqual(workspace.session.aeMethod, .metered(.adaptive))
         let sid = try XCTUnwrap(workspace.session.serviceSessionIDForExport)
         let solved = try await workspace.session.client.call(.solve,
             SolveRequest(sessionID: sid, target: "exposure"), as: SolveResponse.self)

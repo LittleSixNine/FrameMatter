@@ -48,11 +48,14 @@ import UniformTypeIdentifiers
 final class DecodeLifetime: @unchecked Sendable {
     private let lock = NSLock()
     private var faces: [String: String] = [:]
-    func faceEvidence(display: CIImage, key: String) throws -> String {
-        try lock.withLock {
-            if let cached = faces[key] { return cached }
-            let value = try FrameFaceDetector.evidence(display: display)
-            faces[key] = value
+    func faceEvidence(display: CIImage, key: String, frameExtent: CGRect? = nil) throws -> String {
+        let cacheKey = frameExtent.map { size in
+            key + ";\(size.integral.width)x\(size.integral.height)"
+        } ?? key
+        return try lock.withLock {
+            if let cached = faces[cacheKey] { return cached }
+            let value = try FrameFaceDetector.evidence(display: display, frameExtent: frameExtent)
+            faces[cacheKey] = value
             return value
         }
     }

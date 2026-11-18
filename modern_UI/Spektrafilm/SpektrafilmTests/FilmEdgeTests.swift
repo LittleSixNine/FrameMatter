@@ -43,6 +43,7 @@ final class FilmEdgeTests: XCTestCase {
         }
         let old = try JSONDecoder().decode(FilmEdgeSettings.self, from: Data(#"{"active":true,"frameSeed":15}"#.utf8))
         XCTAssertEqual(old.gateSeed, 0)
+        XCTAssertEqual(old.rollOffset, 0)
         XCTAssertEqual(old.gateSampleDivisor, 1)
         XCTAssertEqual(old.gateDepth, 1)
         let discrete = try JSONDecoder().decode(FilmEdgeSettings.self, from: Data(#"{"gateDepth":3}"#.utf8))
@@ -54,7 +55,9 @@ final class FilmEdgeTests: XCTestCase {
         source.params.filmEdge.gateSampleDivisor = 4
         source.params.filmEdge.gateDepth = 2.75
         source.params.filmEdge.gateSeed = 15
+        source.params.filmEdge.rollOffset = 3
         target.params.filmEdge.gateSeed = 21
+        target.params.filmEdge.rollOffset = -2
         var preset = DevelopPreset(name: "Gate", source: source)
         preset.settings = source
         preset.includesEffects = true
@@ -62,6 +65,7 @@ final class FilmEdgeTests: XCTestCase {
         XCTAssertEqual(result.params.filmEdge.gateSampleDivisor, target.params.filmEdge.gateSampleDivisor)
         XCTAssertEqual(result.params.filmEdge.gateDepth, 2.75)
         XCTAssertEqual(result.params.filmEdge.gateSeed, 21)
+        XCTAssertEqual(result.params.filmEdge.rollOffset, -2)
     }
 
     func testAnotherGateKeepsDepthAndRandomizesAllLengths() throws {
@@ -76,6 +80,28 @@ final class FilmEdgeTests: XCTestCase {
             lengths.insert(edge.gateSampleDivisor)
         }
         XCTAssertEqual(lengths, Set(1...4))
+        XCTAssertEqual(try JSONDecoder().decode(FilmEdgeSettings.self, from: JSONEncoder().encode(edge)), edge)
+    }
+
+    func testAnotherFrameChangesTheSaved135RollOffset() throws {
+        var edge = FilmEdgeSettings()
+        edge.active = true
+        for format in FilmEdgeFormat.allCases {
+            edge.format = format
+            let previous = edge.rollOffset
+            edge.randomizeFrame()
+            if format.gauge == "135" {
+                XCTAssertNotEqual(edge.rollOffset, previous, format.rawValue)
+                XCTAssertTrue(FilmEdgeSettings.rollOffsetRange.contains(edge.rollOffset))
+            } else {
+                XCTAssertEqual(edge.rollOffset, previous, format.rawValue)
+            }
+            let fields = Dictionary(uniqueKeysWithValues: edge.wire.map { ($0.name, $0.value) })
+            XCTAssertEqual(fields["overscan_roll_offset"], .double(format.gauge == "135" ? Double(edge.rollOffset) : 0))
+        }
+        let previous = edge.rollOffset
+        edge.randomizeFrame(paired: true)
+        XCTAssertNotEqual(edge.rollOffset, previous)
         XCTAssertEqual(try JSONDecoder().decode(FilmEdgeSettings.self, from: JSONEncoder().encode(edge)), edge)
     }
 

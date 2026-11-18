@@ -14,7 +14,8 @@
 //
 // Randomness has three levels (§26.1), kept apart on purpose:
 //   film data  -- fixed per stock and format: edge print text, its period,
-//                 numbering, markers, DX. Deterministic.
+//                 numbering, markers, DX. A saved roll offset registers it
+//                 against the aperture in whole perforations.
 //   camera     -- `camera_seed`: the machine. Gate corners and side wobble,
 //                 gate-to-emulsion gap (penumbra), where the frame sits on the
 //                 perforation grid, frame spacing, which spool side leaks.
@@ -80,7 +81,7 @@ constexpr double kCarrierMM = 0.40;
 // A half-frame camera advances 4 perforations between exposures.
 constexpr double kPairAdvanceMM = 19.0;
 constexpr int kMaxQuads = 8;
-// Ilford's 135 print: where its DX code starts, mm past `perf_phase` (see the layout).
+// Ilford's 135 print: where its DX code starts, mm past the registered print origin.
 constexpr double kIlfordCode = 2.85;
 constexpr double kMidGrey = 0.184;
 
@@ -1872,7 +1873,10 @@ void imprint_groups(const OverscanLayout& L, const Params& params, double frame_
         // to the perforations; `n0` is which frame this is.
         // The owner's number when set (`overscan_frame_number`), else the seed's.
         const int n0 = o.frame_number > 0 ? o.frame_number : 1 + int(uint64_t(uint32_t(o.frame_seed)) % 34u);
-        const double grid0 = L.perf_phase + 0.62;
+        // Whole holes change which marks land in the frame without moving the
+        // hole grid or its seeded rim, halo and wear.
+        const double print_origin = L.perf_phase + o.roll_offset * L.perf_pitch;
+        const double grid0 = print_origin + 0.62;
         // Discs 0.114 mm across on a 0.1155 x 0.0984 mm grid cover 0.9 of the
         // area a solid mark would (0.74 on 120's larger grid): a band that is all dots is exposed that much
         // more, so the print is as dense as the strip it was measured on.
@@ -2030,7 +2034,7 @@ void imprint_groups(const OverscanLayout& L, const Params& params, double frame_
                 // +3.5: with the camera's phase pinned (above) the number starts
                 // 0-1.5 mm into the frame, as "27" does on RDPIII.png (RVP50.png
                 // was shot on a camera loaded half a frame off; Provia's is used).
-                const double sn = L.perf_phase + 0.56 + 3.5 + 19.0 * m;
+                const double sn = print_origin + 0.56 + 3.5 + 19.0 * m;
                 if (!a_half) {
                     const std::string n = std::to_string(num);
                     dot_text(n, kFaceNumbers, kDotS, kDotT, kDot, 4.0, sn, 1.80, &top.ops);
@@ -2074,7 +2078,7 @@ void imprint_groups(const OverscanLayout& L, const Params& params, double frame_
                 // codes with their tops 1.95 mm from the edge. Their face (the
                 // name's, bold), "N" and "NA" and which gap holds which
                 // (Kodak's order, turned) are not measured.
-                const double c = L.perf_phase + kIlfordCode + 19.0 * (m + 1);   // where the code starts, in s
+                const double c = print_origin + kIlfordCode + 19.0 * (m + 1);   // where the code starts, in s
                 const size_t t0 = top.ops.size(), b0 = bot.ops.size();
                 dx_code(0.0, num, a_half, top.ops);
                 if (a_half) {
@@ -2120,7 +2124,7 @@ void imprint_groups(const OverscanLayout& L, const Params& params, double frame_
                 // 1.63 x 1.03, "12A" 1.12 tall, all within 0.1 mm of them.
                 const int f = (m >= 0) ? m / 2 : -((1 - m) / 2);   // floor(m / 2)
                 const bool numbered = (m - 2 * f) == 0;
-                const double sN = L.perf_phase + 6.34 + 19.0 * (2 * f);
+                const double sN = print_origin + 6.34 + 19.0 * (2 * f);
                 const int num = n0 + f;
                 auto mono = [&](const std::string& tx, double cap, double hs, double s0, double base) {
                     Op op;

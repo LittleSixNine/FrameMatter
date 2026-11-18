@@ -224,6 +224,69 @@ final class SurfaceAgreementTests: XCTestCase {
         XCTAssertEqual(max(pixels.width,pixels.height),512,accuracy:1)
     }
 
+    func testAnotherFrameWithPerforationLightSurvivesReopenAndTIFFExport() async throws {
+        let dir = FileManager.default.temporaryDirectory.appending(path: "spk-roll-offset-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let url = dir.appending(path: "strip.png")
+        addTeardownBlock {
+            Sidecar.remove(for: url)
+            try? FileManager.default.removeItem(at: dir)
+        }
+        let destination = try XCTUnwrap(CGImageDestinationCreateWithURL(url as CFURL, "public.png" as CFString, 1, nil))
+        CGImageDestinationAddImage(destination, try halvesImage(width: 900, height: 600), nil)
+        XCTAssertTrue(CGImageDestinationFinalize(destination))
+
+        var sidecar = Sidecar()
+        sidecar.params.grainActive = false
+        sidecar.params.glareActive = false
+        sidecar.params.autoExposure = false
+        sidecar.params.filmEdge.active = true
+        sidecar.params.filmEdge.seeded = true
+        sidecar.params.filmEdge.cameraSeed = 19
+        sidecar.params.filmEdge.frameNumber = 6
+        sidecar.params.lightLeaks.active = true
+        sidecar.params.lightLeaks.rimStrength = 0.9
+        sidecar.params.lightLeaks.rimCoverage = 1
+        try sidecar.save(for: url)
+
+        let (session, _) = try await developedSession(url)
+        let previousPrint = try XCTUnwrap(session.renderer.live)
+        var p = session.params
+        p.filmEdge.randomizeFrame()
+        session.params = p
+        try await waitUntil("the new roll alignment to develop", timeout: 60) {
+            session.renderer.live != nil && session.renderer.live !== previousPrint
+                && !session.busy && !session.scheduler.pending
+        }
+        session.flushSave()
+        XCTAssertNotEqual(p.filmEdge.rollOffset, 0)
+        XCTAssertEqual(Sidecar.load(for: url)?.params.filmEdge.rollOffset, p.filmEdge.rollOffset)
+        XCTAssertEqual(session.params.lightLeaks, sidecar.params.lightLeaks)
+
+        var recipe = ExportRecipe()
+        recipe.format = .tiff
+        recipe.colorSpace = .sRGB
+        recipe.folder = .fixed(path: dir.appending(path: "out").path)
+        recipe.subfolder = ""
+        recipe.outputSize = .longEdge(720)
+        let proof = await session.softProof(recipe: recipe)
+        let expected = try pixels(XCTUnwrap(proof).image)
+        await session.client.stop()
+
+        let reopened = Session()
+        reopened.open(urls: [url])
+        let reopenedID = await reopened.ensureDeveloped()
+        XCTAssertNotNil(reopenedID, reopened.status)
+        XCTAssertEqual(reopened.params.filmEdge.rollOffset, p.filmEdge.rollOffset)
+        let reopenedProof = await reopened.softProof(recipe: recipe)
+        XCTAssertEqual(try pixels(XCTUnwrap(reopenedProof).image), expected)
+        let file = try await export(reopened, url, recipe)
+        let source = try XCTUnwrap(CGImageSourceCreateWithURL(file as CFURL, nil))
+        let exported = try XCTUnwrap(CGImageSourceCreateImageAtIndex(source, 0, nil))
+        XCTAssertEqual(try pixels(exported), expected)
+        await reopened.client.stop()
+    }
+
     func testSharedSceneCurveOnPairSurvivesSelectionAndMatchesProofExport() async throws {
         let dir=FileManager.default.temporaryDirectory.appending(path:"spk-pair-tools-\(UUID())")
         try FileManager.default.createDirectory(at:dir,withIntermediateDirectories:true)
@@ -243,13 +306,6 @@ final class SurfaceAgreementTests: XCTestCase {
         try await waitUntil("pair baseline",timeout:60) { session.serviceSessionIDForExport != nil && !session.busy && !session.scheduler.pending }
         var recipe=ExportRecipe();recipe.format = .tiff;recipe.colorSpace = .sRGB
         recipe.folder = .fixed(path:dir.appending(path:"out").path);recipe.subfolder="";recipe.outputSize = .longEdge(512)
-        func pixels(_ image:CGImage) throws -> Data {
-            let c=try XCTUnwrap(CGContext(data:nil,width:image.width,height:image.height,bitsPerComponent:16,bytesPerRow:image.width*8,space:image.colorSpace!,bitmapInfo:CGImageAlphaInfo.noneSkipLast.rawValue|CGBitmapInfo.byteOrder16Little.rawValue))
-            c.draw(image,in:CGRect(x:0,y:0,width:image.width,height:image.height))
-            let p=try XCTUnwrap(c.data).assumingMemoryBound(to:UInt16.self)
-            for i in stride(from:3,to:image.width*image.height*4,by:4) {p[i]=0}
-            return Data(bytes:p,count:image.width*image.height*8)
-        }
         let neutralProof = await session.softProof(recipe:recipe)
         let neutralBytes=try pixels(XCTUnwrap(neutralProof).image)
         try session.applyAgentEdit(["params":["sceneCurve":["luma":["points":[[0,0],[0.5,0.55],[1,1]]]]],"adjustments":["vibrance":40,"channelMixer":["red":["green":20]]]])
@@ -349,6 +405,18 @@ final class SurfaceAgreementTests: XCTestCase {
     }
 
     // MARK: - fixtures and helpers
+
+    private func pixels(_ image: CGImage) throws -> Data {
+        let space = try XCTUnwrap(image.colorSpace)
+        let context = try XCTUnwrap(CGContext(data: nil, width: image.width, height: image.height,
+                                              bitsPerComponent: 16, bytesPerRow: image.width * 8, space: space,
+                                              bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+                                                | CGBitmapInfo.byteOrder16Little.rawValue))
+        context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        let values = try XCTUnwrap(context.data).assumingMemoryBound(to: UInt16.self)
+        for i in stride(from: 3, to: image.width * image.height * 4, by: 4) { values[i] = 0 }
+        return Data(bytes: values, count: image.width * image.height * 8)
+    }
 
     /// A frame whose left half is pure red and right half pure blue.
     private func halves(_ renderer: Renderer, width w: Int, height h: Int) throws -> MTLTexture {

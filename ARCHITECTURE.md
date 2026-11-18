@@ -553,7 +553,11 @@ the saved gate seed (zero falls back to the frame seed). Full/half/third/quarter
 sample lengths are drawn randomly on every refresh and saved with the gate seed.
 The visible slider continuously adjusts 1.0×–4.0× contour depth without changing
 the saved gate or scan. Another Frame retains depth and redraws the gate, sample
-length and film advance.
+length and film advance. On 135 film, it also draws a different saved roll
+offset in whole perforations. This shifts the factory print on both sides
+along the existing grid and can bring neighbouring frame numbers into view.
+The hole mask, perforation light and wear continue to use the same grid.
+Older sidecars start at zero offset, and presets keep the target's offset.
 Presets transfer depth but preserve the target photo’s seed and sample length. The square/rounded family picker and camera-number row
 are hidden. Assets live in `engine/resources_product/gate_edges`; compiled
 arrays in `pipeline/gate_edges.h` make runtime file loading unnecessary.
@@ -658,10 +662,17 @@ orientation, resource checks and local-only provenance.
 
 ### 7.13 The library: order, selection, sync
 
+- The photo strip's control row holds Import, the processing-status filter,
+  the filename or custom sort, and the selected and total counts. Collapsing
+  the thumbnails leaves the controls available. Export is on the top bar.
+- The strip and previous/next navigation follow the filter and sort.
+  Changing the filter keeps the open frame and picks. Select All picks the
+  visible frames, and export walks the picked frames in the chosen order.
 - **Order is the folder's.** A thumbnail dragged over another takes its place
   (`Session.moveFrame`); the order is one small file per folder under
   `Sidecars/Order` (`FrameOrder`), laid over the listing on open. Frames it
-  does not name stay after their neighbour.
+  does not name stay after their neighbour. Filename sorting leaves that
+  order intact until a thumbnail is dragged into a new custom position.
 - **One door for dropped files** (`Session.dropped(files:)`): files from
   outside are opened (one file is "edit this"); the strip's own thumbnail is
   ignored; a file of the open folder goes on the canvas with the folder still

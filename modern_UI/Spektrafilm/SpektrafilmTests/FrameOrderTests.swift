@@ -79,4 +79,51 @@ final class FrameOrderTests: XCTestCase {
         // Frames from two folders have no one order.
         XCTAssertNil(FrameOrder.folder(of: [URL(fileURLWithPath: "/tmp/x/a"), URL(fileURLWithPath: "/tmp/y/b")]))
     }
+
+    func testFilmstripSortControlsNavigationAndPreservesTheManualOrder() throws {
+        let (session, urls) = try folder(["a.png", "b.png", "c.png", "d.png"])
+        session.moveFrame(urls[0], onto: urls[2])
+        session.frameOrderChanged()
+        let manual = [urls[1], urls[2], urls[0], urls[3]]
+        XCTAssertEqual(session.filmstripSort, .manual)
+
+        session.filmstripSort = .fileNameDescending
+        XCTAssertEqual(session.filmstripFrames.map(\.id), Array(urls.reversed()))
+        session.click(urls[3])
+        session.selectRelative(1)
+        XCTAssertEqual(session.selection, urls[2])
+        session.selectAllFrames()
+        XCTAssertEqual(session.selectedFrames, Array(urls.reversed()))
+
+        session.filmstripSort = .manual
+        XCTAssertEqual(session.filmstripFrames.map(\.id), manual)
+        XCTAssertEqual(session.selectedFrames, manual)
+    }
+
+    func testFilterKeepsExistingPicksAndSelectAllUsesOnlyTheVisibleFrames() throws {
+        let (session, urls) = try folder(["a.png", "b.png", "c.png", "d.png"])
+        addTeardownBlock { urls.forEach { Sidecar.remove(for: $0) } }
+        var saved = Sidecar()
+        saved.state = .processed
+        try saved.save(for: urls[1])
+        try saved.save(for: urls[3])
+        saved.state = .stale
+        try saved.save(for: urls[2])
+        for url in urls { session.refreshState(for: url) }
+
+        session.click(urls[0])
+        session.click(urls[1], command: true)
+        session.filmstripFilter = .processed
+        XCTAssertEqual(session.filmstripFrames.map(\.id), [urls[1], urls[3]])
+        XCTAssertEqual(session.selectedFrames, [urls[0], urls[1]])
+        XCTAssertEqual(session.selection, urls[0])
+        session.selectAllFrames()
+        XCTAssertEqual(session.selectedFrames, [urls[1], urls[3]])
+        XCTAssertEqual(session.selection, urls[1])
+        session.selectRelative(1)
+        XCTAssertEqual(session.selection, urls[3])
+
+        session.filmstripFilter = .pending
+        XCTAssertEqual(session.filmstripFrames.map(\.id), [urls[0], urls[2]])
+    }
 }

@@ -10,7 +10,35 @@
 import CryptoKit
 import Foundation
 
+enum FilmstripFilter: CaseIterable {
+    case all, processed, pending
+
+    func includes(_ state: FrameState) -> Bool {
+        switch self {
+        case .all: true
+        case .processed: state == .processed
+        case .pending: state != .processed
+        }
+    }
+}
+
+enum FilmstripSort: CaseIterable {
+    case fileName, fileNameDescending, manual
+
+    func applied(to frames: [Frame]) -> [Frame] {
+        switch self {
+        case .fileName: frames.sorted { FrameOrder.byName($0.id, $1.id) }
+        case .fileNameDescending: frames.sorted { FrameOrder.byName($1.id, $0.id) }
+        case .manual: frames
+        }
+    }
+}
+
 enum FrameOrder {
+    nonisolated static func byName(_ left: URL, _ right: URL) -> Bool {
+        left.lastPathComponent.localizedStandardCompare(right.lastPathComponent) == .orderedAscending
+    }
+
     nonisolated static var storeDirectory: URL { Sidecar.storeDirectory.appending(path: "Order") }
 
     /// The one folder a set of frames is from, or nil for a set drawn from

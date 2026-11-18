@@ -50,6 +50,9 @@ struct GrainParams {
     /// and skips the mix, so a frame that never sets it is byte for byte what
     /// it was; 0 skips the node's work entirely.
     double amount = 1.0;
+    // FrameMatter's product rendering keeps only part of the colour variation.
+    // The upstream-compatible path uses the unmodified density samples.
+    bool reduce_chroma = false;
 };
 
 struct HalationParams {
@@ -193,6 +196,7 @@ struct OverscanParams {
     std::string mode = "strip";      // strip (the whole film width) | filed (a sliver of rebate)
     int camera_seed = 1;
     int frame_seed = 1;
+    int roll_offset = 0;             // whole perforations of 135 factory-print offset
     int gate_seed = 0, gate_sample_divisor = 1;
     double gate_depth = 1.0;
     double fog = 1.0;                // edge fog from the spool, 0 = none

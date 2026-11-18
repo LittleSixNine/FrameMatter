@@ -151,6 +151,49 @@ def main():
         same_shape = other.shape == on.shape
         check("another frame seed moves the film", not same_shape or not np.array_equal(on, other))
 
+        # Change only the roll position. The perforation grid and its lighting
+        # stay fixed while a different run of factory marks enters the scan.
+        roll = dict(overscan_active=True, overscan_format="135", overscan_edge_text="KODAK PORTRA 400",
+                    overscan_camera_seed=19, overscan_frame_seed=21, overscan_frame_number=6,
+                    overscan_fog=0., overscan_holes="white", output_color_space="sRGB",
+                    scratch_active=True, scratch_leak_enabled=1, scratch_leak_seed=17,
+                    scratch_leak_style="rim", scratch_leak_strength=1., scratch_leak_coverage=1.)
+        roll_frame = frame(1560, 1040)
+        shifted = dict(roll, overscan_roll_offset=2)
+        clean = render(e, roll_frame, dict(shifted, scratch_leak_strength=0.), tier="full")
+        with e.open(roll_frame, dict(BASE, **roll)) as s:
+            before, _ = s.render("full")
+            geometry = s.overscan_geometry()
+            delta = s.set_params({"overscan_roll_offset": 2})
+            after, _ = s.render("full")
+            check("roll offset invalidates the negative without moving the gate",
+                  delta["invalidated"] == "shoot" and geometry == s.overscan_geometry())
+            reprinted, _ = s.render("full", reprint=True)
+        px = geometry["mm_per_px"]
+        old_dx, new_dx = decode_dx(before, px), decode_dx(after, px)
+        check("moving two holes brings the previous half frame into view with valid DX",
+              old_dx is not None and new_dx is not None and old_dx[0] == new_dx[0]
+              and old_dx[1:] == (6, False, True) and new_dx[1:] == (5, True, True),
+              f"{old_dx} -> {new_dx}")
+        holes = np.all(clean[..., :3] > 65000, axis=2)
+        interior = holes.copy()
+        for axis in [0, 1]:
+            for shift in [-5, 5]:
+                interior &= np.roll(holes, shift, axis=axis)
+        check("roll offset preserves the grid and leaves lit hole interiors clear",
+              interior.sum() > 1000 and np.array_equal(before[interior], after[interior])
+              and np.array_equal(clean[interior], after[interior])
+              and np.max(after[~holes, 0].astype(int) - clean[~holes, 0]) > 2000)
+        check("the saved roll offset survives reopening and full reprint",
+              np.array_equal(after, reprinted)
+              and np.array_equal(after, render(e, roll_frame, shifted, tier="full")))
+        for offset in [-5, 4, 1.5]:
+            try:
+                render(e, roll_frame, dict(roll, overscan_roll_offset=offset))
+                check(f"invalid roll offset {offset} is refused", False)
+            except spk.EngineError as err:
+                check(f"invalid roll offset {offset} is refused", "overscan_roll_offset" in str(err))
+
         sq = frame(1000, 1000)
         m = render(e, sq, {"overscan_active": True, "overscan_format": "120_6x6", "overscan_edge_text": "KODAK 200"})
         px = 56.0 / 1000

@@ -145,6 +145,8 @@ struct FilmEdgeSettings: Codable, Equatable, Sendable {
     var cameraSeed = 1
     /// **The advance and the scan.** Per photo, stored with the edit.
     var frameSeed = 1
+    /// Offset of the 135 factory print along the perforation grid, in holes.
+    var rollOffset = 0
     /// **The frame's number** on the edge print (owner, 2026-10-03): 1…99;
     /// 0 is the frame seed's draw. A new frame takes its place in the session
     /// (`Session.seedFilmEdge`), so a roll reads 1, 2, 3… untouched.
@@ -174,6 +176,7 @@ struct FilmEdgeSettings: Codable, Equatable, Sendable {
     static let fogRange = 0.0...4.0
     static let leaksRange = 0.0...4.0
     static let seedRange = 0...Int(Int32.max)
+    static let rollOffsetRange = -4...3
     static let frameNumberRange = 0...99
 
     static let `default` = FilmEdgeSettings()
@@ -185,6 +188,15 @@ struct FilmEdgeSettings: Codable, Equatable, Sendable {
         gate = .auto
         let previous = gateSeed == 0 ? frameSeed : gateSeed
         repeat { gateSeed = Int.random(in: 1...Int(Int32.max)) } while gateSeed == previous
+    }
+
+    mutating func randomizeFrame(paired: Bool = false) {
+        randomizeGate()
+        let previousSeed = frameSeed
+        repeat { frameSeed = Int.random(in: 1...Int(Int32.max)) } while frameSeed == previousSeed
+        guard format.gauge == "135" || paired else { return }
+        let previousOffset = rollOffset
+        repeat { rollOffset = Int.random(in: Self.rollOffsetRange) } while rollOffset == previousOffset
     }
 
     /// Every key optional, so a sidecar from before a field existed decodes.
@@ -204,6 +216,7 @@ struct FilmEdgeSettings: Codable, Equatable, Sendable {
         holes = (try? c.decodeIfPresent(FilmEdgeHoles.self, forKey: .holes)) ?? d.holes
         cameraSeed = try c.decodeIfPresent(Int.self, forKey: .cameraSeed) ?? d.cameraSeed
         frameSeed = try c.decodeIfPresent(Int.self, forKey: .frameSeed) ?? d.frameSeed
+        rollOffset = try c.decodeIfPresent(Int.self, forKey: .rollOffset) ?? d.rollOffset
         frameNumber = try c.decodeIfPresent(Int.self, forKey: .frameNumber) ?? d.frameNumber
         fog = try c.decodeIfPresent(Double.self, forKey: .fog) ?? d.fog
         leaks = try c.decodeIfPresent(Double.self, forKey: .leaks) ?? d.leaks
@@ -260,6 +273,7 @@ struct FilmEdgeSettings: Codable, Equatable, Sendable {
             ("overscan_holes", .string(holes.rawValue), .shoot),
             ("overscan_camera_seed", .double(Double(cameraSeed.clamped(to: Self.seedRange))), .shoot),
             ("overscan_frame_seed", .double(Double(frameSeed.clamped(to: Self.seedRange))), .shoot),
+            ("overscan_roll_offset", .double(Double(format.gauge == "135" ? rollOffset.clamped(to: Self.rollOffsetRange) : 0)), .shoot),
             ("overscan_frame_number", .double(Double(frameNumber.clamped(to: Self.frameNumberRange))), .shoot),
             ("overscan_fog", .double(fog.clamped(to: Self.fogRange)), .shoot),
             ("overscan_leaks", .double(leaks.clamped(to: Self.leaksRange)), .shoot),

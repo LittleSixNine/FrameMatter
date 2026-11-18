@@ -71,11 +71,14 @@ enum FrameFaceDetector {
         return faces
     }
 
-    static func evidence(display: CIImage, checkpoint: () throws -> Void = {}) throws -> String {
+    static func evidence(display: CIImage, frameExtent: CGRect? = nil,
+                         checkpoint: () throws -> Void = {}) throws -> String {
         try checkpoint()
         guard !display.extent.isInfinite, !display.extent.isEmpty else { throw Failure.image }
         let extent = display.extent.integral
-        let source = try sourceSize(extent)
+        // The boxes are normalized. For a preview, report the resized engine
+        // frame's dimensions while detecting faces on the full display decode.
+        let source = try sourceSize(frameExtent?.integral ?? extent)
         let scale = min(1, 1600 / max(extent.width, extent.height))
         let width = Int((extent.width * scale).rounded()), height = Int((extent.height * scale).rounded())
         let preview = display.transformed(by: .init(translationX: -extent.minX, y: -extent.minY))

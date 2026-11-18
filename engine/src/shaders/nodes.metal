@@ -270,6 +270,40 @@ inline float cctf_encode_mode(float v, uint mode) {
     }
 }
 
+// Pull grain's chromaticity towards the ungrained image at the same Y.
+// XYZ arrives linear. Stock previews use the Display P3 transfer curve;
+// digital intermediates arrive in Cineon codes.
+kernel void spk_grain_chroma(device const packed_float3* grained [[buffer(0)]],
+                             device const packed_float3* reference [[buffer(1)]],
+                             device const uint* meta [[buffer(2)]],
+                             device const float* p [[buffer(3)]],
+                             device packed_float3* out [[buffer(4)]],
+                             uint i [[thread_position_in_grid]]) {
+    if (i >= meta[0]) return;
+    float3 grain = grained[i], clean = reference[i];
+    const uint encoding = meta[1];
+    if (encoding == 1u) {
+        for (uint c = 0; c < 3u; ++c) {
+            grain[c] = cctf_decode_mode(grain[c], 0u);
+            clean[c] = cctf_decode_mode(clean[c], 0u);
+        }
+    } else if (encoding == 2u) {
+        grain = max((pow(10.0f, (grain * p[3] - p[4]) / p[5]) - p[6]) / (1.0f - p[6]), 0.0f);
+        clean = max((pow(10.0f, (clean * p[3] - p[4]) / p[5]) - p[6]) / (1.0f - p[6]), 0.0f);
+    }
+    const float3 luma = float3(p[0], p[1], p[2]);
+    const float clean_y = dot(clean, luma);
+    if (clean_y <= 1e-8f) { out[i] = grained[i]; return; }
+    float3 mixed = mix(clean * (dot(grain, luma) / clean_y), grain, 0.30f);
+    if (encoding == 1u) {
+        for (uint c = 0; c < 3u; ++c) mixed[c] = cctf_encode_mode(mixed[c], 0u);
+    } else if (encoding == 2u) {
+        mixed = clamp((p[4] + p[5] * log10(max(mixed, 0.0f) * (1.0f - p[6]) + p[6])) / p[3],
+                      0.0f, 1.0f);
+    }
+    out[i] = packed_float3(mixed);
+}
+
 // The input transfer function, applied once at the door (`decode_input`).
 //
 // It is at the door and not inside `upsample` for a measured reason: a linear

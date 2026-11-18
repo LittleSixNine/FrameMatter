@@ -237,11 +237,10 @@ struct FilmEdgeSection: View {
         HStack(spacing: 0) {
             RowLabel(edge.format.group == .cine || edge.format == .f135FullWidth ? L(.edgeAdvance) : L(.edgeGate))
             DiceButton(title: L(.edgeAnotherFrame),
-                       help: L("Randomize edges, sample length, positions, advance and scan; keep depth",
-                               zh: "保留起伏深度，随机四条边、完整或1/2、1/3、1/4取样及位置，并更换过片与扫描"), fill: true) {
+                       help: L("Randomize the gate sample, advance, scan and 135 roll alignment; keep depth",
+                               zh: "保留起伏深度，重抽片门取样、过片与扫描，并更新 135 胶卷的装卷对位"), fill: true) {
                 var p = session.params
-                p.filmEdge.randomizeGate()
-                p.filmEdge.frameSeed = Self.another(than: edge.frameSeed, in: 1...Int(Int32.max))
+                p.filmEdge.randomizeFrame(paired: session.pair != nil)
                 session.params = p
             }
         }

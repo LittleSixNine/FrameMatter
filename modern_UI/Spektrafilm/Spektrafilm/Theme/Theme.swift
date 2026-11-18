@@ -277,7 +277,9 @@ enum Theme {
         /// only: the two vertical hairlines at `x 508.8` and `x 3263.6`
         /// (y 1895…2160) are what the drawing separates it from the rails
         /// with.
-        static let filmstripHeight: CGFloat = 132
+        static let filmstripControlsHeight: CGFloat = 34
+        static let filmstripThumbnailRowHeight = thumbHeight + 10
+        static let filmstripHeight = filmstripControlsHeight + filmstripThumbnailRowHeight
 
         /// **Left, 232 … 380.** The floor is the Camera section's AE Method
         /// row, which is the widest thing on the rail: a 74 pt label column,
@@ -517,7 +519,6 @@ enum Theme {
         /// v4's top bar: glyphs in a cluster 2 apart (import/export 30 pt
         /// centre to centre, select/crop 28), clusters 20 apart, and 60 from the
         /// tools to the Process capsule.
-        static let barIconGap: CGFloat = 2
         static let barClusterGap: CGFloat = 20
         static let barActionLeading: CGFloat = 60
         /// Camera's own label column. v3 puts its track and menu at x 86.35

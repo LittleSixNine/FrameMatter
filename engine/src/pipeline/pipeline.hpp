@@ -312,6 +312,17 @@ struct OverscanLayout {
     double wall_scatter = 0.02;           // light scattered in the base widens the wall, mm
 };
 
+struct FilmNegative {
+    Image density;
+    Image before_grain;
+};
+
+// Both the spectral and baked print paths mix in linear light.
+enum class GrainChromaEncoding : uint32_t { Linear, DisplayP3, Cineon };
+bool reduce_grain_chroma(gpu::Gpu& gpu, const Image& grained, const Image& reference,
+                         const float luma[3], GrainChromaEncoding encoding,
+                         Image& out, std::string& error);
+
 class Pipeline {
 public:
     Pipeline(gpu::Gpu* gpu, const Colour* colour, const Blob* blob, SetupCache* cache)
@@ -352,9 +363,9 @@ public:
     void set_source_long_edge(uint32_t long_edge, uint32_t frame_long_edge);
 
     // `Tap.RGB_IN` -> `Tap.CMY_FILM`. `out` is the developed negative.
-    bool run_film(const Image& in, Image& out, Progress* progress, std::string& error);
+    bool run_film(const Image& in, FilmNegative& out, Progress* progress, std::string& error);
     // `Tap.CMY_FILM` -> `Tap.RGB_OUT`.
-    bool run_print(const Image& cmy, Image& out, Progress* progress, std::string& error);
+    bool run_print(const FilmNegative& negative, Image& out, Progress* progress, std::string& error);
 
     // The reference's per-input meter: what `preprocess.auto_exposure` does
     // when no session EV was set (a standalone pipeline, `warm_up`), on a
@@ -416,6 +427,7 @@ public:
         Image factory_exposure; // overscan -> blurs only; whole-frame only; never retained on Pipeline
         Image cur;         // the running image: each stage's input and output
         Image log_e_film;  // film only: live from `log_and_curves` to `couplers`
+        Image before_grain; // retained from film_grain until print_spectral
     };
 
     // **A step 6 consequence, written down where the crossings are.** At the
@@ -562,8 +574,8 @@ public:
     /// and it is a scaffold, not the shipping shape. §4.4's topology is
     /// strip-outer within segments, with whole-frame nodes materialised once
     /// per run at a segment boundary -- step 5's shape, not this one.
-    bool run_film_striped(const Image& in, Image& out, Progress* progress, std::string& error);
-    bool run_print_striped(const Image& cmy, Image& out, Progress* progress, std::string& error);
+    bool run_film_striped(const Image& in, FilmNegative& out, Progress* progress, std::string& error);
+    bool run_print_striped(const FilmNegative& negative, Image& out, Progress* progress, std::string& error);
 
     // The film's pixel pitch for the frame most recently run through
     // `run_film`, in micrometres. Grain, halation and the DIR-coupler
@@ -608,13 +620,13 @@ private:
     /// is where a band first reaches a node, and where a pitch taken from one
     /// would first bend every grain size and blur radius in the picture.
     bool film_prefix(const Image& in, const FrameShape& frame, Image& cur, std::string& error);
-    bool film_segment(const Image& in, Image& out, std::string& error);
+    bool film_segment(const Image& in, FilmNegative& out, std::string& error);
     /// The print side's split. Its prefix is the enlarger's live-mutable
     /// constants, which are host constants rather than pixels, and its segment
     /// is dimension-preserving from end to end -- so the strips cut the
     /// negative's own rows.
     bool print_prefix(std::string& error);
-    bool print_segment(const Image& cmy, Image& out, std::string& error);
+    bool print_segment(const FilmNegative& negative, Image& out, std::string& error);
 
     // --- what a neighbourhood stage needs from a boundary ----------------
     // One demand per `Neighbourhood` stage, computed from **the same parameter
@@ -677,6 +689,8 @@ private:
     bool node_film_curves(const Image& in, Image& out, std::string& error);
     bool node_dir_couplers(const Image& cmy, const Image& log_raw, Image& out, std::string& error);
     bool node_grain(const Image& in, Image& out, std::string& error);
+    bool grain_chroma_wanted() const;
+    bool scan_negative(const Image& in, Image& out, std::string& error);
     /// The grain model itself; `node_grain` is this plus RFC-025's strength.
     bool grain_realise(const Image& in, Image& out, std::string& error);
     bool node_enlarger_spectral(const Image& in, Image& out, std::string& error);

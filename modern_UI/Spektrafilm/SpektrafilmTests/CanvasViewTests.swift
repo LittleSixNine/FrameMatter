@@ -204,55 +204,35 @@ final class CanvasViewTests: XCTestCase {
         XCTAssertEqual(widths.first! - widths.last!, 400, accuracy: 0.001)
     }
 
-    /// The hover band must be **centred on the pill it reveals**.
-    ///
-    /// They are hung off the same canvas edge but by different rules — the
-    /// band is 28 pt against the edge, the pill is 14 pt and inset — so
-    /// whichever way the arithmetic goes, one of them ends up off to a side.
-    /// Measured in a hosted window on the code this was written against:
-    ///
-    ///     leading   band x 343…371   pill x 343…357    centres 357 vs 350
-    ///     trailing  band x 1591…1619 pill x 1605…1619  centres 1605 vs 1612
-    ///     bottom    band y 914…942   pill y 918…932    centres 928 vs 925
-    ///
-    /// Seven points on the two vertical edges and three on the bottom, all of
-    /// the slack on the far side from where a person reaches: coming *from*
-    /// the panel or the filmstrip, the band was not there at all. The user's
-    /// words were that the bottom trigger sits above the bar it belongs to.
-    ///
-    /// The invariant is stated as "the pill is centred in the band" rather
-    /// than as three numbers, so it holds however the tokens move and does not
-    /// repeat the arithmetic it is checking.
-    func testTheHoverBandIsCentredOnThePillItReveals() throws {
+    func testCollapsingTheFilmstripKeepsItsControls() throws {
         let session = Session()
-        let host = NSHostingView(rootView: EditorWindow(session: session))
-        host.frame = CGRect(x: 0, y: 0, width: 1920, height: 1080)
-        let window = NSWindow(contentRect: host.frame, styleMask: [.titled], backing: .buffered, defer: false)
-        window.contentView = host
-        window.orderFront(nil)
-        defer { window.orderOut(nil) }
-        host.layoutSubtreeIfNeeded()
+        let original = session.filmstripCollapsed
+        defer { session.filmstripCollapsed = original }
 
-        func bands(in view: NSView) -> [HoverBand.Band] {
-            (view as? HoverBand.Band).map { [$0] } ?? view.subviews.flatMap(bands(in:))
+        func first<T: NSView>(_ type: T.Type, in view: NSView) -> T? {
+            if let match = view as? T { return match }
+            return view.subviews.lazy.compactMap { first(type, in: $0) }.first
         }
-        let found = bands(in: host)
-        // **One**, not three. The 2026-09-17 drawing folds the two rails with
-        // the `sidebar.left` / `sidebar.right` buttons in their own headers,
-        // so the leading and trailing bands are gone; the bottom one is the
-        // only tab the redraw left alone ("except the bottom gallery view
-        // remains unchanged").
-        XCTAssertEqual(found.count, 1, "the filmstrip's is the one hover tab left")
-        for band in found {
-            XCTAssertGreaterThan(band.bounds.width, 0)
-            XCTAssertGreaterThan(band.bounds.height, 0)
-            // The pill's rect is in the band's own coordinates, so "centred"
-            // is a statement about the band's bounds alone.
-            XCTAssertEqual(band.pillRect.midX, band.bounds.midX, accuracy: 0.5,
-                           "pill is \(band.pillRect.midX - band.bounds.midX) pt off centre across")
-            XCTAssertEqual(band.pillRect.midY, band.bounds.midY, accuracy: 0.5,
-                           "pill is \(band.pillRect.midY - band.bounds.midY) pt off centre down")
+
+        func canvasHeight(collapsed: Bool) throws -> CGFloat {
+            session.filmstripCollapsed = collapsed
+            let host = NSHostingView(rootView: EditorWindow(session: session))
+            let frame = CGRect(x: 0, y: 0, width: 1920, height: 1080)
+            host.frame = frame
+            let window = NSWindow(contentRect: frame, styleMask: [.titled], backing: .buffered, defer: false)
+            window.contentView = host
+            window.orderFront(nil)
+            defer { window.orderOut(nil) }
+            host.layoutSubtreeIfNeeded()
+            XCTAssertNil(first(HoverBand.Band.self, in: host),
+                         "the collapse control belongs to the filmstrip, not the canvas")
+            return try XCTUnwrap(first(CanvasNSView.self, in: host)).bounds.height
         }
+
+        let expanded = try canvasHeight(collapsed: false)
+        let collapsed = try canvasHeight(collapsed: true)
+        XCTAssertEqual(collapsed - expanded, Theme.Metric.filmstripThumbnailRowHeight, accuracy: 0.5,
+                       "only the thumbnail row should give its height back to the canvas")
     }
 
     /// The drawable must **cover** the layer it is drawn into.

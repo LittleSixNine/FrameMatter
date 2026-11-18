@@ -7,6 +7,38 @@ struct TopBar: View {
 
     var body: some View {
         HStack(spacing: 0) {
+            if session.tool == .crop {
+                HStack(spacing: 0) {
+                    titleContent
+                    dragSpace
+                }
+                .frame(minWidth: 0, maxWidth: .infinity)
+                cropActions
+                    .fixedSize()
+                    .padding(.horizontal, 8)
+                HStack(spacing: 0) {
+                    dragSpace
+                    exportButton.padding(.trailing, 12)
+                }
+                .frame(minWidth: 0, maxWidth: .infinity)
+            } else {
+                titleContent
+                dragSpace
+                exportButton.padding(.trailing, 12)
+            }
+        }
+        .frame(height: Theme.Metric.topBarHeight)
+        .barCard()
+        // The custom title bar doubles as the window's drag surface.
+        .background(WindowDragHandle())
+    }
+
+    private var dragSpace: some View {
+        WindowDragHandle().frame(minWidth: 8, maxWidth: .infinity)
+    }
+
+    private var titleContent: some View {
+        HStack(spacing: 0) {
             Spacer().frame(width: Theme.Metric.barLeadingWithButtons)
             Image("BootTitle")
                 .resizable()
@@ -33,21 +65,40 @@ struct TopBar: View {
                     .padding(.leading, 8)
                     .help("The render service is not running. Start it again.")
             }
-            // The empty middle of the bar is the window's drag surface: the
-            // titlebar is hidden, and this is where a toolbar would be.
-            WindowDragHandle().frame(minWidth: 8, maxWidth: .infinity)
-            transferButton(importing: true, title: L("Import", zh: "导入"), help: L(.helpOpen) + " (⌘O)") { session.openPanel() }
-            transferButton(importing: false, title: L("Export", zh: "导出"), help: L(.helpExport) + " (⌘E)", disabled: session.selection == nil) {
-                session.showExport = true
-            }
-            .padding(.leading, Theme.Metric.barIconGap)
-            Spacer().frame(width: 12)
         }
-        .frame(height: Theme.Metric.topBarHeight)
-        .barCard()
-        // The whole bar is a window drag surface behind its controls: with the
-        // titlebar hidden this row *is* where a titlebar would be.
-        .background(WindowDragHandle())
+    }
+
+    private var cropActions: some View {
+        HStack(spacing: 6) {
+            Button { session.cancelCrop() } label: {
+                Text(L("Cancel", zh: "取消"))
+                    .foregroundStyle(Theme.text)
+                    .padding(.horizontal, 12)
+                    .frame(height: 28)
+                    .background(Color(hex: 0x383837), in: RoundedRectangle(cornerRadius: 6))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 6).strokeBorder(Theme.rule, lineWidth: 1)
+                            .allowsHitTesting(false)
+                    }
+            }
+            .accessibilityIdentifier("toolbar.crop.cancel")
+            .help(L("Cancel Crop", zh: "取消裁剪") + " (Esc)")
+
+            Button { session.commitCrop() } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "checkmark").accessibilityHidden(true)
+                    Text(L("Apply Crop", zh: "确认裁剪"))
+                }
+                .foregroundStyle(Color(hex: 0x252016))
+                .padding(.horizontal, 12)
+                .frame(height: 28)
+                .background(Theme.accent, in: RoundedRectangle(cornerRadius: 6))
+            }
+            .accessibilityIdentifier("toolbar.crop.apply")
+            .help(L("Apply Crop", zh: "确认裁剪") + " (↩)")
+        }
+        .buttonStyle(.plain)
+        .font(Theme.Font.body)
     }
 
     private var statusText: String {
@@ -58,36 +109,50 @@ struct TopBar: View {
         return String(format: "%@ · %.1f s", session.status, session.workSeconds)
     }
 
-    private func transferButton(importing: Bool, title: String, help: String, disabled: Bool = false,
-                                action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 5) {
-                PhotoTransferIcon(importing: importing).stroke(style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
+    private var exportButton: some View {
+        let title = L("Export", zh: "导出")
+        return Button { session.showExport = true } label: {
+            HStack(spacing: 6) {
+                PhotoTransferIcon(importing: false)
+                    .stroke(style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
                     .frame(width: 24, height: 24)
-                Text(title).font(Theme.Font.caption)
+                Text(title).font(Theme.Font.body)
             }
-            .foregroundStyle(disabled ? Theme.secondaryText : Theme.text)
-            .padding(.horizontal, 8).frame(height: 30)
-            .contentShape(Rectangle())
+            .foregroundStyle(.white)
+            .padding(.horizontal, 11)
+            .frame(height: 30)
+            .background(Color(hex: 0xA82E13), in: RoundedRectangle(cornerRadius: 6))
         }
         .buttonStyle(.plain)
-        .disabled(disabled)
+        .disabled(session.selection == nil)
+        .opacity(session.selection == nil ? 0.45 : 1)
         .accessibilityLabel(title)
-        .help(help)
+        .accessibilityIdentifier("toolbar.export")
+        .help(L(.helpExport) + " (⌘E)")
     }
 }
 
-private struct PhotoTransferIcon: Shape {
+struct PhotoTransferIcon: Shape {
     let importing: Bool
     func path(in rect: CGRect) -> Path {
         var p = Path()
-        let x: CGFloat = importing ? 8 : 2
-        p.addRoundedRect(in: CGRect(x: x, y: 3, width: 14, height: 18), cornerSize: CGSize(width: 2, height: 2))
-        p.move(to: CGPoint(x: x + 3, y: 17)); p.addLines([CGPoint(x: x + 7, y: 13), CGPoint(x: x + 11, y: 17)])
-        let tip: CGFloat = importing ? 12 : 22
-        p.move(to: CGPoint(x: tip - 10, y: 10)); p.addLine(to: CGPoint(x: tip, y: 10))
-        p.move(to: CGPoint(x: tip - 4, y: 6)); p.addLines([CGPoint(x: tip, y: 10), CGPoint(x: tip - 4, y: 14)])
-        return p.applying(CGAffineTransform(scaleX: rect.width / 24, y: rect.height / 24))
+        p.move(to: CGPoint(x: 3.5, y: 13.6))
+        p.addLine(to: CGPoint(x: 3.5, y: 18.5))
+        p.addQuadCurve(to: CGPoint(x: 5, y: 20), control: CGPoint(x: 3.5, y: 20))
+        p.addLine(to: CGPoint(x: 19, y: 20))
+        p.addQuadCurve(to: CGPoint(x: 20.5, y: 18.5), control: CGPoint(x: 20.5, y: 20))
+        p.addLine(to: CGPoint(x: 20.5, y: 13.6))
+
+        let tip: CGFloat = importing ? 14.5 : 3.5
+        let base: CGFloat = importing ? 3.5 : 14.5
+        let shoulder: CGFloat = importing ? 10.75 : 7.25
+        p.move(to: CGPoint(x: 12, y: base))
+        p.addLine(to: CGPoint(x: 12, y: tip))
+        p.move(to: CGPoint(x: 8.25, y: shoulder))
+        p.addLine(to: CGPoint(x: 12, y: tip))
+        p.addLine(to: CGPoint(x: 15.75, y: shoulder))
+        return p.applying(CGAffineTransform(a: rect.width / 24, b: 0, c: 0, d: rect.height / 24,
+                                            tx: rect.minX, ty: rect.minY))
     }
 }
 

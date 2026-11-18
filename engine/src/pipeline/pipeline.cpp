@@ -480,6 +480,11 @@ bool Pipeline::build(const Params& params, std::string& error) {
     node_count_ += 1;                                                    // develop.curves
     node_count_ += params_.film_render.dir_couplers.active ? 1 : 0;      // dir_couplers
     node_count_ += params_.film_render.grain.active ? 1 : 0;             // grain
+    if (grain_chroma_wanted()) {
+        // One more spectral read of the same negative before grain, then the mix.
+        node_count_ += 2 + (overscan_wanted() ? 1 : 0);
+        if (!di_active_ && !params_.io.scan_film) node_count_ += 3;
+    }
     if (di_active_) {
         node_count_ += 1;                                                // digital_intermediate
     } else {
@@ -1654,6 +1659,24 @@ bool Pipeline::node_print_curves(const Image& in, Image& out, std::string& error
 // scanning
 // ---------------------------------------------------------------------------
 
+bool reduce_grain_chroma(gpu::Gpu& gpu, const Image& grained, const Image& reference,
+                         const float luma[3], GrainChromaEncoding encoding,
+                         Image& out, std::string& error) {
+    out.h = grained.h;
+    out.w = grained.w;
+    out.c = grained.c;
+    out.buf = gpu.alloc(out.bytes(), error);
+    if (!out.buf) return false;
+    const float constants[] = {luma[0], luma[1], luma[2], float(kDiCineonMax),
+                               float(kDiCineonWhite), float(kDiCineonPerDecade),
+                               float(di_cineon_black_offset())};
+    const uint32_t meta[] = {uint32_t(grained.pixels()), uint32_t(encoding)};
+    return gpu.dispatch("spk_grain_chroma",
+                        {gpu::Arg::buf(grained.buf), gpu::Arg::buf(reference.buf),
+                         gpu::Arg::inline_bytes(meta, 2), gpu::Arg::inline_bytes(constants, 7),
+                         gpu::Arg::buf(out.buf)}, grained.pixels(), error);
+}
+
 bool Pipeline::node_scan_spectral(const Image& in, Image& out, std::string& error) {
     Timer t(this, "scanning.scan_spectral");
     double gain[3], offset[3];
@@ -2041,20 +2064,25 @@ bool Pipeline::film_grain(const Chain& in, Chain& out, std::string& error) {
     // step 6 with F and R. See the §9 note in the commit.
     SPK_NODE(node_grain(in.cur, out.cur, error));
     out.log_e_film = Image{};
+    if (grain_chroma_wanted()) out.before_grain = in.cur;
     return true;
 }
 
-bool Pipeline::print_spectral(const Chain& in, Chain& out, std::string& error) {
-    Image cur = in.cur, next;
+bool Pipeline::grain_chroma_wanted() const {
+    const auto& grain = params_.film_render.grain;
+    return grain.reduce_chroma && grain.active && grain.amount > 0.0 &&
+           params_.film.info.channel_model == "color";
+}
+
+bool Pipeline::scan_negative(const Image& in, Image& out, std::string& error) {
+    Image cur = in, next;
     // RFC-032 §27 before RFC-028: where there is no film the DI encodes the
     // hole's density, not the frame's. `node_overscan_light` (the scan's view
     // of the holes, output RGB) has no DI counterpart yet, so a DI of an
     // overscan canvas carries flat holes without the cut wall.
     if (overscan_wanted()) { SPK_NODE(node_overscan_film_present(cur, next, error)); cur = next; }
     if (di_active_) {
-        SPK_NODE(node_digital_intermediate(cur, next, error)); cur = next;
-        out = in;
-        out.cur = cur;
+        SPK_NODE(node_digital_intermediate(cur, out, error));
         return true;
     }
     if (!params_.io.scan_film) {
@@ -2063,10 +2091,29 @@ bool Pipeline::print_spectral(const Chain& in, Chain& out, std::string& error) {
         SPK_NODE(node_print_exposure(cur, next, error)); cur = next;
         SPK_NODE(node_print_curves(cur, next, error)); cur = next;
     }
-    SPK_NODE(node_scan_spectral(cur, next, error)); cur = next;
-    SPK_NODE(node_bw_correction(cur, next, error)); cur = next;
-    out = in;
-    out.cur = cur;
+    SPK_NODE(node_scan_spectral(cur, out, error));
+    return true;
+}
+
+bool Pipeline::print_spectral(const Chain& in, Chain& out, std::string& error) {
+    Image scan;
+    if (!scan_negative(in.cur, scan, error)) return false;
+    if (in.before_grain.buf) {
+        Image reference, mixed;
+        if (!scan_negative(in.before_grain, reference, error)) return false;
+        float luma[3] = {0.0f, 1.0f, 0.0f};
+        if (di_active_) {
+            const Colour::Colourspace* space = nullptr;
+            if (!colour_->colourspace(params_.io.output_color_space, space, error)) return false;
+            for (int c = 0; c < 3; ++c) luma[c] = float(space->rgb_to_xyz.m[1][c]);
+        }
+        const auto encoding = di_active_ ? GrainChromaEncoding::Cineon : GrainChromaEncoding::Linear;
+        Timer t(this, "scanning.grain_chroma");
+        SPK_NODE(reduce_grain_chroma(*gpu_, scan, reference, luma, encoding, mixed, error));
+        scan = mixed;
+    }
+    if (di_active_) out.cur = scan;
+    else SPK_NODE(node_bw_correction(scan, out.cur, error));
     return true;
 }
 
@@ -2152,7 +2199,7 @@ const char* Pipeline::class_name(StageClass klass) {
 }
 const size_t Pipeline::kPrintStageCount = sizeof(kPrintStages) / sizeof(kPrintStages[0]);
 
-bool Pipeline::film_segment(const Image& in, Image& out, std::string& error) {
+bool Pipeline::film_segment(const Image& in, FilmNegative& out, std::string& error) {
     // The straight-line chain, unchanged in every node and in every order; the
     // stages are the same calls grouped at the class boundaries.
     Chain cur;
@@ -2162,7 +2209,7 @@ bool Pipeline::film_segment(const Image& in, Image& out, std::string& error) {
         if (!(this->*kFilmStages[i].run)(cur, next, error)) return false;
         cur = next;
     }
-    out = cur.cur;
+    out = {cur.cur, cur.before_grain};
     return true;
 }
 
@@ -2192,7 +2239,7 @@ std::vector<StripSpan> Pipeline::strip_plan(uint32_t plane_h) const {
     return plan;
 }
 
-bool Pipeline::run_film(const Image& in, Image& out, Progress* progress, std::string& error) {
+bool Pipeline::run_film(const Image& in, FilmNegative& out, Progress* progress, std::string& error) {
     if (!built_) { error = "pipeline was not built"; return false; }
     progress_ = progress;
     if (progress_) { progress_->total_nodes = node_count_; progress_->fired = 0; }
@@ -2272,6 +2319,10 @@ bool Pipeline::run_stages_striped(const Stage* stages, size_t count, Chain& chai
                 if (!band_from(chain.cur, span, halo, read, band_in.cur, error)) return false;
                 if (chain.log_e_film.buf &&
                     !band_from(chain.log_e_film, span, halo, read, band_in.log_e_film, error)) return false;
+                // The film's final stage produces this plane whole. Only the
+                // first print stage reads it, so it needs no band assembly.
+                if (chain.before_grain.buf &&
+                    !band_from(chain.before_grain, span, halo, read, band_in.before_grain, error)) return false;
 
                 Chain cur = band_in;
                 band_row0_ = read.y0;
@@ -2395,7 +2446,7 @@ bool Pipeline::band_into(const Image& band, const BandRead& read, Image& plane,
                       size_t(span.rows) * row * sizeof(float), error);
 }
 
-bool Pipeline::run_film_striped(const Image& in, Image& out, Progress* progress,
+bool Pipeline::run_film_striped(const Image& in, FilmNegative& out, Progress* progress,
                                std::string& error) {
     if (!built_) { error = "pipeline was not built"; return false; }
     progress_ = progress;
@@ -2415,7 +2466,7 @@ bool Pipeline::run_film_striped(const Image& in, Image& out, Progress* progress,
     }
     if (progress_) progress_->strips.push_back(std::move(report));
     progress_ = nullptr;
-    out = chain.cur;
+    out = {chain.cur, chain.before_grain};
     return true;
 }
 
@@ -2434,9 +2485,10 @@ bool Pipeline::print_prefix(std::string& error) {
     return true;
 }
 
-bool Pipeline::print_segment(const Image& cmy, Image& out, std::string& error) {
+bool Pipeline::print_segment(const FilmNegative& negative, Image& out, std::string& error) {
     Chain cur;
-    cur.cur = cmy;
+    cur.cur = negative.density;
+    cur.before_grain = negative.before_grain;
     for (size_t i = 0; i < kPrintStageCount; ++i) {
         Chain next;
         if (!(this->*kPrintStages[i].run)(cur, next, error)) return false;
@@ -2446,7 +2498,7 @@ bool Pipeline::print_segment(const Image& cmy, Image& out, std::string& error) {
     return true;
 }
 
-bool Pipeline::run_print(const Image& cmy, Image& out, Progress* progress, std::string& error) {
+bool Pipeline::run_print(const FilmNegative& negative, Image& out, Progress* progress, std::string& error) {
     if (!built_) { error = "pipeline was not built"; return false; }
     progress_ = progress;
     if (pixel_size_um_ <= 0.0) {
@@ -2457,8 +2509,8 @@ bool Pipeline::run_print(const Image& cmy, Image& out, Progress* progress, std::
         return false;
     }
     if (!print_prefix(error)) { progress_ = nullptr; return false; }
-    if (!prepare_contrast_mask(cmy, error)) { progress_ = nullptr; return false; }
-    const bool ok = print_segment(cmy, out, error);
+    if (!prepare_contrast_mask(negative.density, error)) { progress_ = nullptr; return false; }
+    const bool ok = print_segment(negative, out, error);
     release_contrast_mask();
     if (!ok) return false;
     if (progress_) progress_->done = true;
@@ -2466,7 +2518,7 @@ bool Pipeline::run_print(const Image& cmy, Image& out, Progress* progress, std::
     return true;
 }
 
-bool Pipeline::run_print_striped(const Image& cmy, Image& out, Progress* progress,
+bool Pipeline::run_print_striped(const FilmNegative& negative, Image& out, Progress* progress,
                                  std::string& error) {
     if (!built_) { error = "pipeline was not built"; return false; }
     progress_ = progress;
@@ -2475,13 +2527,14 @@ bool Pipeline::run_print_striped(const Image& cmy, Image& out, Progress* progres
         return false;
     }
     if (!print_prefix(error)) { progress_ = nullptr; return false; }
-    if (!prepare_contrast_mask(cmy, error)) { progress_ = nullptr; return false; }
+    if (!prepare_contrast_mask(negative.density, error)) { progress_ = nullptr; return false; }
 
     Chain chain;
-    chain.cur = cmy;
+    chain.cur = negative.density;
+    chain.before_grain = negative.before_grain;
     Progress::StripRun report;
     report.stage = "print";
-    report.plan = strip_plan(cmy.h);
+    report.plan = strip_plan(negative.density.h);
     const bool ok = run_stages_striped(kPrintStages, kPrintStageCount, chain, report.plan, report,
                                        error);
     release_contrast_mask();

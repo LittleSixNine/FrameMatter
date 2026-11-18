@@ -705,6 +705,7 @@ fields. Design and measurements: RFC-032 §26–§29 and RFC-031 (the date back)
 | `overscan_holes` | `…overscan.holes` | str | `"white"` | `white` \| `black` | what shows through the perforations (past the film's long edges is `overscan_carrier`'s). `white`: the picture's white (a scan's light). `black`: a black backing or a darkroom print. Either way the cut is not a perfectly vertical knife: a slight rounding of the base shows as a faint, patchy shoulder just outside each hole (1-6 % lift, ~0.03 mm), different on every hole, plus per-hole punch tolerances, roughness and burrs (RFC-032 §30.5, §31.5) |
 | `overscan_camera_seed` | `…overscan.camera_seed` | int | `1` | 0–2³¹−1 | **the body**: gate shape and radii, burrs, gate-to-emulsion gap, where the frame sits on the perforations, fog, flare |
 | `overscan_frame_seed` | `…overscan.frame_seed` | int | `1` | 0–2³¹−1 | **the advance and the scan**: weave, advance error, scan rotation, leaks, and which numbers are on the edge when `overscan_frame_number` is 0 |
+| `overscan_roll_offset` | `…overscan.roll_offset` | int | `0` | −4–3 | Saved 135 factory-print offset in whole perforations (4.75 mm each). A positive value moves both bands toward increasing film coordinates. Applicable to 135, half frame including pairs, XPan and full-width 135. The print shares the hole grid's origin, with the offset applied only to the factory marks. The holes, their light and wear, the image gate, and the scan keep their existing coordinates. Legacy values resolve to 0. Shoot, non-live, rejects fractions. |
 | `overscan_frame_number` | `…overscan.frame_number` | int | `0` | 0–99 | **the frame's number on the edge print** (2026-10-03). `0`: the frame seed's draw, byte for byte. Set: this frame's own mark — the 135 `N`/`NA` pair, the digit by Kodak 120's triangle, Fujifilm 120's number — with its neighbours counting from it and nothing drawn below 1. Kodak 120's counting-edge numbers ("51 / 52") are the roll's, not the frame's, and stay seeded. The last native field, after `antihalation_removed` |
 | `overscan_carrier` | `…overscan.carrier` | str | `"none"` | `none` \| `black` \| `open` | **what a strip scan shows past the film's long edges.** `none` (the default since 1.3.1): nothing — the canvas ends at the film's edges, and where the scan's tilt carries a corner past the edge the film is drawn on, so there is no band and no wedge. `black` / `open` (2026-10-03): the canvas reaches 0.40 mm past each edge and shows a carrier, or the scan's light. Nothing on the film changes with it. `filed` never reaches the edge |
 | `overscan_pair` | `…overscan.pair` | bool | `false` | — | **a half-frame pair on one strip** (2026-10-03). `135_half` only (another format is refused), held level or turned. The input carries both pictures at the gate's height: the first 18 mm wide, the second starting **19.00 mm** (one advance of 4 perforations) along, so the frame is 37 × 24. The gate is exposed twice; the gap between is unexposed film; the edge print, fog, leaks and halation run across both as on one piece of film |
@@ -1109,6 +1110,15 @@ Both values are persisted inside `FilmParams.effects`, default on legacy
 sidecars, participate in the wire stamp, and travel with the film-effects
 clipboard group. Reset Grain restores only grain settings and enables grain.
 No schema-version bump: these are additive native-product wire fields.
+
+On macOS, `product_defaults: true` retains 30% of the colour deviations
+produced by colour film grain. The negative cache also keeps the density
+from before grain. The print and scan paths use its chromaticity at the
+grained pixel's luminance, then mix 30% of the original grained colour
+back in linear light. The stock LUT preview and Cineon render apply the
+same rule in their own colour spaces. Monochrome grain and the raw
+density export for the companion print LUT retain the original model.
+This behaviour has no wire field or sidecar setting.
 
 
 ## 17. Date Back: DSEG fonts, capture clock and diagonal margin

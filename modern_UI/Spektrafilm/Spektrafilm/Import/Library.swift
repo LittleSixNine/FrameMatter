@@ -16,7 +16,7 @@ enum Library {
             options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants])) ?? []
         return items
             .filter { ImageDecoder.openable.contains($0.pathExtension.lowercased()) }
-            .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+            .sorted(by: FrameOrder.byName)
             .map { Frame(id: $0) }
     }
 

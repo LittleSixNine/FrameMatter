@@ -59,7 +59,9 @@ final class LayoutTests: XCTestCase {
         // The three regions.
         XCTAssertEqual(m.leftPanelWidth, 507.36 / 2, accuracy: 1)      // rail fill ends x 507.36
         XCTAssertEqual(m.rightPanelWidth, 288.07, accuracy: 0.1)       // x 3263.86, width 288.07
-        XCTAssertEqual(m.filmstripHeight, 132.35, accuracy: 0.4)       // y 1895.30, height 132.35
+        XCTAssertEqual(m.filmstripControlsHeight, 34)
+        XCTAssertEqual(m.filmstripThumbnailRowHeight - m.thumbHeight, 10)
+        XCTAssertEqual(m.filmstripHeight, m.filmstripControlsHeight + m.filmstripThumbnailRowHeight)
         XCTAssertEqual(m.panelHeaderHeight, 75.59 / 2, accuracy: 0.3)  // first hairline, y 75.59
         // The right rail's x falls out of the two widths.
         XCTAssertEqual(1920 - m.rightPanelWidth, 3263.86 / 2, accuracy: 0.1)

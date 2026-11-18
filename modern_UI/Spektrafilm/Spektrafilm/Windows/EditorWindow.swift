@@ -87,12 +87,10 @@ struct EditorWindow: View {
                 InspectorTabs(session: session)
             }
             .animation(reduceMotion ? nil : .easeOut(duration: 0.18), value: session.rightCollapsed)
-            if !session.filmstripCollapsed {
-                Hairline(tier: .region)
-                Filmstrip(session: session)
-                    .frame(height: Theme.Metric.filmstripHeight)
-                    .transition(.move(edge: .bottom))
-            }
+            Hairline(tier: .region)
+            Filmstrip(session: session)
+                .frame(height: session.filmstripCollapsed ? Theme.Metric.filmstripControlsHeight
+                                                          : Theme.Metric.filmstripHeight)
         }
     }
 }
@@ -147,14 +145,6 @@ struct CanvasArea: View {
         // edge rather than spilling, and why the crop tool's view is fitted to
         // the picture: `Renderer.fitRotatedPhoto`). This is the overlay half.
         .clipped()
-        // **One edge, not three.** The left and right tabs are gone: the
-        // drawing folds a rail with the `sidebar.left` / `sidebar.right`
-        // button in that rail's own header, and a second control that does
-        // the same thing is a control that will disagree with the first about
-        // being there. The bottom one is untouched — "except the bottom
-        // gallery view remains unchanged" — and is still the pill that
-        // appears when the pointer comes near the canvas's lower edge.
-        .overlay(alignment: .bottom) { HoverEdgeTab(edge: .bottom, collapsed: $session.filmstripCollapsed) }
         .overlay(alignment: .topLeading) {
             ZStack {
                 if showsNavigator {

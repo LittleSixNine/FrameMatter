@@ -12,6 +12,7 @@
 import Metal
 import XCTest
 import CoreImage
+import SwiftUI
 
 @MainActor
 final class SettingsClipboardSessionTests: XCTestCase {
@@ -414,6 +415,39 @@ final class SettingsClipboardSessionTests: XCTestCase {
         let center = 90 * thumbnail.bytesPerRow + 120 * 8
         XCTAssertNotEqual(Array(bytes.prefix(8)), Array(bytes[center..<(center + 8)]), "the preview must contain a photograph, not just the canvas surround")
         await client.stop()
+    }
+
+    func testAdaptivePresetCardsRenderARealRAWWithAndWithoutAFrameCut() async throws {
+        let url = try XCTUnwrap(copies(of: "A7m3/DSC03710.ARW").first)
+        let suite = "adaptive-preset-preview-" + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let session = Session(clipboardDefaults: defaults)
+        session.open(urls: [url])
+        try await waitUntil("the RAW to decode") { session.decoded != nil }
+        XCTAssertTrue(session.params.needsFaceEvidence)
+
+        let plain = DevelopPreset(name: "Plain", source: session.sidecar)
+        var bordered = DevelopPreset(name: "Square film", source: session.sidecar)
+        bordered.settings.params.filmEdge.active = true
+        bordered.settings.params.filmEdge.format = .f6x6
+        bordered.includedGroups = [.filmAndPaper, .filmEffects]
+        bordered.includesEffects = true
+        try session.storeDevelopPreset(plain)
+        try session.storeDevelopPreset(bordered)
+
+        let keys = [plain, bordered].map { preset in
+            PresetPreviewCache.key(for: preset, target: session.sidecar, url: url)
+        }
+        let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 320, height: 640),
+                              styleMask: [.titled], backing: .buffered, defer: false)
+        window.contentView = NSHostingView(rootView: DevelopPresetsSection(session: session))
+        window.orderFront(nil)
+        defer { window.orderOut(nil) }
+        try await waitUntil("both adaptive preset card images", timeout: 15) {
+            keys.allSatisfy { PresetPreviewCache.shared.image(for: $0) != nil }
+        }
+        XCTAssertTrue(session.params.needsFaceEvidence)
     }
 
     func testPresetPreviewResolvesBorderCropAndDateFromTargetPhoto() throws {

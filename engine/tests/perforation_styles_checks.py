@@ -9,7 +9,8 @@ from spk_ctypes import Engine, EngineError
 STYLES = ('rim', 'halo', 'shadow', 'band', 'streak', 'burn')
 OPTIONS = dict(auto_exposure=False, grain_active=False, glare_active=False,
                halation_active=False, overscan_active=True, overscan_format='135_full_67',
-               overscan_camera_seed=19, overscan_frame_seed=5, overscan_fog=0.,
+               overscan_camera_seed=19, overscan_frame_seed=5, overscan_roll_offset=-3,
+               overscan_edge_text='KODAK PORTRA 400', overscan_fog=0.,
                overscan_leaks=0., output_color_space='sRGB', scratch_active=True,
                scratch_strength=0., scratch_long_lines=0., scratch_edge_marks=0.,
                scratch_dust_amount=0., scratch_seed=17, scratch_leak_spread=.7)

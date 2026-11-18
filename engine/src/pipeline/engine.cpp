@@ -168,16 +168,15 @@ constexpr const char* kProductDefaultsKey = "product_defaults";
 /// What "the product's defaults" means, in one place both `spk_open` and
 /// `spk_set_params`'s stock rebuild call.
 ///
-/// Today it is one field. It is a function anyway because the rebuild path has
-/// to re-apply every one of them after `init_params` has reset the tree, and a
-/// second field added to one site and not the other would show up as a print
-/// that changes brightness the first time the user picks a different paper.
 static void apply_product_defaults(Params& params, bool product_defaults) {
     if (!product_defaults) return;
     // SpektraLab has no "Print auto compensation" switch, so Camera Exp. Comp.
     // has to move the finished print rather than only the negative's placement
     // on the film curve.
     params.enlarger.print_exposure_compensation = false;
+#ifdef __APPLE__
+    params.film_render.grain.reduce_chroma = true;
+#endif
 }
 
 struct spk_session {
@@ -220,7 +219,7 @@ struct spk_session {
         /// name alone would hand back a 1600 px image after the user asked
         /// for 2560 and render the wrong size without failing.
         uint32_t image_long_edge = 0;
-        Image negative;   // Tap.CMY_FILM
+        FilmNegative negative;   // Tap.CMY_FILM and its pre-grain reference, when needed
         bool has_negative = false;
         /// RFC-032 §27: the frame `negative`'s film canvas was laid out for,
         /// so a reprint can lay it out again. Zero without overscan.
@@ -432,8 +431,11 @@ struct spk_engine {
             size_t negatives = 0;
             int count = 0;
             for (const auto& kv : s->tiers) {
-                if (!kv.second.has_negative || !kv.second.negative.buf || !gpu) continue;
-                negatives += gpu->size_bytes(kv.second.negative.buf.get());
+                const auto& negative = kv.second.negative;
+                if (!kv.second.has_negative || !negative.density.buf || !gpu) continue;
+                negatives += gpu->size_bytes(negative.density.buf.get());
+                if (negative.before_grain.buf)
+                    negatives += gpu->size_bytes(negative.before_grain.buf.get());
                 ++count;
             }
             source_bytes += source;
@@ -758,7 +760,8 @@ spk_status spk_warm_up(spk_engine* engine, const char* film_stock, const char* p
             seed.c = 3;
             seed.buf = engine->gpu->upload(pixels.data(), pixels.size() * sizeof(float), warm_error);
             bool warmed = static_cast<bool>(seed.buf);
-            Image negative, rgb;
+            FilmNegative negative;
+            Image rgb;
             if (warmed) {
                 pipeline.set_source_long_edge(kLiveLongEdge, kLiveLongEdge);
                 warmed = pipeline.run_film(seed, negative, nullptr, warm_error) &&
@@ -1191,7 +1194,7 @@ bool ensure_meter(spk_session* session, std::string& error, bool require_adaptiv
 // rather than a flag inside the single-pass one (P3) -- the un-striped path
 // stays exactly what ships, which is what makes §6's hash comparison mean
 // anything -- and one call site each, so the graph cannot drift between them.
-bool run_film_for(spk_session* session, const Image& source, Image& negative,
+bool run_film_for(spk_session* session, const Image& source, FilmNegative& negative,
                   Progress* progress, std::string& error) {
     if (session->params.settings.striped) {
         return session->pipeline->run_film_striped(source, negative, progress, error);
@@ -1199,7 +1202,7 @@ bool run_film_for(spk_session* session, const Image& source, Image& negative,
     return session->pipeline->run_film(source, negative, progress, error);
 }
 
-bool run_print_for(spk_session* session, const Image& negative, Image& rgb,
+bool run_print_for(spk_session* session, const FilmNegative& negative, Image& rgb,
                    Progress* progress, std::string& error) {
     if (session->params.settings.striped) {
         return session->pipeline->run_print_striped(negative, rgb, progress, error);
@@ -1207,7 +1210,7 @@ bool run_print_for(spk_session* session, const Image& negative, Image& rgb,
     return session->pipeline->run_print(negative, rgb, progress, error);
 }
 
-bool negative_for(spk_session* session, const Tier& tier, Progress* progress, Image& out,
+bool negative_for(spk_session* session, const Tier& tier, Progress* progress, FilmNegative& out,
                   std::string& error) {
     spk_session::TierState& state = session->tiers[tier.name];
     if (state.has_negative) {
@@ -1223,7 +1226,7 @@ bool negative_for(spk_session* session, const Tier& tier, Progress* progress, Im
     session->pipeline->set_auto_exposure_ev(
         camera.auto_exposure ? std::optional<double>(session->meter.evs.of(camera.auto_exposure_method))
                              : std::nullopt);
-    Image negative;
+    FilmNegative negative;
     if (!run_film_for(session, source, negative, progress, error)) return false;
     state.applied_ev = session->pipeline->last_auto_exposure_ev();
     session->pipeline->overscan_frame(state.overscan_frame_w, state.overscan_frame_h);
@@ -1234,14 +1237,15 @@ bool negative_for(spk_session* session, const Tier& tier, Progress* progress, Im
     // never redrawn.
     gpu::Gpu* gpu = session->engine->gpu;
     if (!gpu->flush(error)) return false;
-    Image kept;
-    kept.h = negative.h; kept.w = negative.w; kept.c = 3;
-    // The cached negative is the other holding RFC-020 §4.7 names: every
-    // reprint reads it, it lives as long as the session, and at the full
-    // tier it is the second 1.22 GB plane.
-    kept.buf = gpu->alloc_file_backed(negative.bytes(), error);
-    if (!kept.buf || !gpu->copy(kept.buf.get(), 0, negative.buf.get(), 0,
-                                negative.bytes(), error)) return false;
+    auto keep_plane = [&](const Image& plane, Image& kept) {
+        if (!plane.buf) return true;
+        kept = plane;
+        kept.buf = gpu->alloc_file_backed(plane.bytes(), error);
+        return kept.buf && gpu->copy(kept.buf.get(), 0, plane.buf.get(), 0, plane.bytes(), error);
+    };
+    FilmNegative kept;
+    if (!keep_plane(negative.density, kept.density) ||
+        !keep_plane(negative.before_grain, kept.before_grain)) return false;
     state.negative = kept;
     state.has_negative = true;
     out = kept;
@@ -1327,10 +1331,11 @@ spk_status render_tier(spk_session* session, const char* tier_name, bool use_rep
         // negative and was identical to `spk_reprint` in everything but the
         // flag it reported -- which happened to look right, because a
         // shoot-layer `set_params` drops the negative before this is reached.
-        session->tiers[tier->name].negative = Image{};
+        session->tiers[tier->name].negative = FilmNegative{};
         session->tiers[tier->name].has_negative = false;
     }
-    Image negative, rgb;
+    FilmNegative negative;
+    Image rgb;
     // Before anything runs, and from the tier image rather than from whatever
     // the pipeline last saw: a print-layer rebuild hands us a fresh pipeline
     // that has never rendered a frame, and the negative it is about to reprint
@@ -1411,7 +1416,7 @@ Json film_mismatch_warning(const PrintLut& lut, const std::string& film) {
 // The half both LUT methods share: resolve the stock, take the session's
 // negative for `tier`, and leave the table on the device ready to index.
 const PrintLut* prepare_lut(spk_session* session, const char* print_stock, const Tier& tier,
-                            Image& negative, gpu::BufferRef& table, std::string& error) {
+                            FilmNegative& negative, gpu::BufferRef& table, std::string& error) {
     spk_engine* engine = session->engine;
     const std::string stock = (print_stock && *print_stock) ? print_stock
                                                             : session->params.print_stock;
@@ -1626,7 +1631,8 @@ spk_status spk_preview_stock_lut(spk_session* session, const char* print_stock,
 
     gpu->begin_frame();
     std::string error;
-    Image negative, rgb;
+    FilmNegative negative;
+    Image rgb;
     gpu::BufferRef table;
     const PrintLut* lut = prepare_lut(session, print_stock, *tier, negative, table, error);
     bool ok = lut != nullptr;
@@ -1637,18 +1643,33 @@ spk_status spk_preview_stock_lut(spk_session* session, const char* print_stock,
     double apply_ms = 0.0;
     if (ok) {
         const auto apply_started = std::chrono::steady_clock::now();
-        rgb.h = negative.h; rgb.w = negative.w; rgb.c = 3;
-        rgb.buf = gpu->alloc(rgb.bytes(), error);
-        ok = static_cast<bool>(rgb.buf);
-        if (ok) {
-            const uint32_t meta[2] = {uint32_t(rgb.pixels()), lut->size};
-            ok = gpu->dispatch("spk_lut3d_trilinear",
-                               {gpu::Arg::buf(negative.buf), gpu::Arg::buf(table),
+        auto apply = [&](const Image& density, Image& print) {
+            print = density;
+            print.buf = gpu->alloc(print.bytes(), error);
+            const uint32_t meta[2] = {uint32_t(print.pixels()), lut->size};
+            return print.buf && gpu->dispatch("spk_lut3d_trilinear",
+                               {gpu::Arg::buf(density.buf), gpu::Arg::buf(table),
                                 gpu::Arg::inline_bytes(lut->lo, 3),
                                 gpu::Arg::inline_bytes(lut->inv_span, 3),
-                                gpu::Arg::inline_bytes(meta, 2), gpu::Arg::buf(rgb.buf)},
-                               rgb.pixels(), error) && gpu->flush(error);
+                                gpu::Arg::inline_bytes(meta, 2), gpu::Arg::buf(print.buf)},
+                               print.pixels(), error);
+        };
+        ok = apply(negative.density, rgb);
+        if (ok && negative.before_grain.buf) {
+            // The bundled preview tables emit encoded Display P3.
+            const Colour::Colourspace* p3 = nullptr;
+            Image reference, mixed;
+            ok = apply(negative.before_grain, reference) &&
+                 session->engine->colour.colourspace("Display P3", p3, error);
+            if (ok) {
+                const float luma[] = {float(p3->rgb_to_xyz.m[1][0]), float(p3->rgb_to_xyz.m[1][1]),
+                                      float(p3->rgb_to_xyz.m[1][2])};
+                ok = reduce_grain_chroma(*gpu, rgb, reference, luma, GrainChromaEncoding::DisplayP3,
+                                         mixed, error);
+                if (ok) rgb = mixed;
+            }
         }
+        if (ok) ok = gpu->flush(error);
         apply_ms = std::chrono::duration<double, std::milli>(
             std::chrono::steady_clock::now() - apply_started).count();
     }
@@ -1699,20 +1720,21 @@ spk_status spk_export_di(spk_session* session, const char* print_stock, spk_resu
 
     gpu->begin_frame();
     std::string error;
-    Image negative, di;
+    FilmNegative negative;
+    Image di;
     gpu::BufferRef table;
     // Full tier: the DI file is the deliverable, not a preview.
     const PrintLut* lut = prepare_lut(session, print_stock, kTiers[2], negative, table, error);
     bool ok = lut != nullptr;
     if (ok) {
-        di.h = negative.h; di.w = negative.w; di.c = 3;
+        di.h = negative.density.h; di.w = negative.density.w; di.c = 3;
         di.buf = gpu->alloc(di.bytes(), error);
         ok = static_cast<bool>(di.buf);
     }
     if (ok) {
         const uint32_t n = uint32_t(di.elements());
         ok = gpu->dispatch("spk_di_normalise",
-                           {gpu::Arg::buf(negative.buf), gpu::Arg::inline_bytes(lut->lo, 3),
+                           {gpu::Arg::buf(negative.density.buf), gpu::Arg::inline_bytes(lut->lo, 3),
                             gpu::Arg::inline_bytes(lut->inv_span, 3),
                             gpu::Arg::inline_bytes(&n, 1), gpu::Arg::buf(di.buf)},
                            di.elements(), error) && gpu->flush(error);
@@ -1778,7 +1800,8 @@ spk_status spk_render_digital_intermediate(spk_session* session, spk_result* out
     params.print_render.aging.active = false;
     gpu->begin_frame();
     std::string error;
-    Image tier_source, negative, rgb;
+    FilmNegative negative;
+    Image tier_source, rgb;
     Pipeline pipeline(gpu, &engine->colour, &engine->blob, &engine->setup_cache);
     bool ok = tier_image(session, kTiers[2], tier_source, error);
     if (ok) {
@@ -1915,7 +1938,7 @@ spk_status spk_set_params(spk_session* session, const char* params_delta_json, c
             if (kv.second.has_negative) {
                 // Dropping the handle is the whole of it: the buffer goes back
                 // to the pool for the film side to reuse on the re-render.
-                kv.second.negative = Image{};
+                kv.second.negative = FilmNegative{};
                 kv.second.has_negative = false;
             }
         }
@@ -1996,7 +2019,8 @@ bool probe_medium(spk_session* session, slm::Medium& out, std::string& error) {
     if (!pipeline.build(probe, error)) return false;
     pipeline.set_source_long_edge(kRampSamples, kRampSamples);
     gpu::Gpu* gpu = engine->gpu;
-    Image in, negative, rgb;
+    FilmNegative negative;
+    Image in, rgb;
     in.h = kRampRows; in.w = kRampSamples; in.c = 3;
     in.buf = gpu->upload(ramp.data(), ramp.size() * sizeof(float), error);
     if (!in.buf || !pipeline.run_film(in, negative, nullptr, error) ||
@@ -2070,7 +2094,7 @@ spk_status spk_contrast_mask_field(spk_session* session, const char* tier, const
     gpu->begin_frame();
     std::string error;
     uint32_t gw = 0, gh = 0;
-    const bool ok = session->pipeline->contrast_mask_field(it->second.negative, session->mask_field,
+    const bool ok = session->pipeline->contrast_mask_field(it->second.negative.density, session->mask_field,
                                                            gw, gh, error);
     gpu->end_frame();
     if (!ok) { g_error = error; return SPK_ERR_GPU; }

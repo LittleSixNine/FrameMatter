@@ -166,6 +166,7 @@ const SchemaField kFields[] = {
     {"overscan_mode",            "film_render.overscan.mode",             S, SHOOT, false, 0, 0, false},
     {"overscan_camera_seed",     "film_render.overscan.camera_seed",      I, SHOOT, true, 0.0, 2147483647.0, false},
     {"overscan_frame_seed",      "film_render.overscan.frame_seed",       I, SHOOT, true, 0.0, 2147483647.0, false},
+    {"overscan_roll_offset",     "film_render.overscan.roll_offset",      I, SHOOT, true, -4, 3, false},
     {"overscan_gate_seed", "film_render.overscan.gate_seed", I, SHOOT, true, 0, 2147483647.0, false},
     {"overscan_gate_depth", "film_render.overscan.gate_depth", F, SHOOT, true, 1, 4, false},
     {"overscan_gate_sample_divisor", "film_render.overscan.gate_sample_divisor", I, SHOOT, true, 1, 4, false},
@@ -444,6 +445,7 @@ int* int_slot(Params& p, const std::string& path) {
     if (path == "settings.strip_budget_bytes") return &p.settings.strip_budget_bytes;
     if (path == "film_render.overscan.camera_seed") return &p.film_render.overscan.camera_seed;
     if (path == "film_render.overscan.frame_seed") return &p.film_render.overscan.frame_seed;
+    if (path == "film_render.overscan.roll_offset") return &p.film_render.overscan.roll_offset;
     if (path == "film_render.overscan.gate_seed") return &p.film_render.overscan.gate_seed;
     if (path == "film_render.overscan.gate_sample_divisor") return &p.film_render.overscan.gate_sample_divisor;
     if (path == "film_render.overscan.frame_number") return &p.film_render.overscan.frame_number;
@@ -574,6 +576,7 @@ bool validate_delta(const Json& delta, std::string& error, std::string& param) {
         if ((kv.first == "scratch_leak_enabled" || kv.first == "scratch_leak_seed" ||
              kv.first == "aging_rotation" || kv.first == "aging_flip" ||
              kv.first == "overscan_gate_seed" || kv.first == "overscan_gate_sample_divisor" ||
+             kv.first == "overscan_roll_offset" ||
              kv.first == "wide_leak_direction" || kv.first == "wide_leak_seed" || kv.first == "wide_leak_flip") &&
             v.as_double() != std::floor(v.as_double())) {
             error = kv.first + " must be an integer";

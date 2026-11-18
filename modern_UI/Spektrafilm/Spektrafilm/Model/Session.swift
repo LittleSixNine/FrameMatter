@@ -38,6 +38,12 @@ final class Session: CanvasHost {
     private(set) var frames: [Frame] = []
     private(set) var frameStates: [URL: FrameState] = [:]
     var selection: URL?
+    var filmstripFilter: FilmstripFilter = .all
+    var filmstripSort: FilmstripSort = .fileName
+
+    var filmstripFrames: [Frame] {
+        filmstripSort.applied(to: frames.filter { filmstripFilter.includes(frameStates[$0.id] ?? .unprocessed) })
+    }
 
     /// The picked frames, as a set. `selectedFrames` is the read side.
     ///
@@ -62,7 +68,7 @@ final class Session: CanvasHost {
     /// Deliberately *not* `selection`. That one is what is on the canvas, and
     /// ⌘-click must be able to grow this set without moving it (`notes.md`:
     /// "the viewed image stays as the one the user is previously on").
-    var selectedFrames: [URL] { frames.map(\.id).filter(picked.contains) }
+    var selectedFrames: [URL] { filmstripSort.applied(to: frames.filter { picked.contains($0.id) }).map(\.id) }
 
     /// Membership alone. The export page's grids want this and not `framing`:
     /// they draw every chosen frame the same way (`notes.md`) rather than
@@ -1410,6 +1416,8 @@ final class Session: CanvasHost {
         }
         ThumbnailCache.shared.clear()
         frames = new
+        filmstripFilter = .all
+        filmstripSort = new == FilmstripSort.fileName.applied(to: new) ? .fileName : .manual
         // One read per frame, for both things the library shows of it.
         let saved = new.map { ($0.id, Sidecar.load(for: $0.id)) }
         frameStates = Dictionary(uniqueKeysWithValues: saved.map { ($0.0, $0.1?.state ?? .unprocessed) })
@@ -1575,9 +1583,15 @@ final class Session: CanvasHost {
     /// A chevron or an arrow key: the same act as a plain click on the
     /// neighbouring frame, and it collapses the set for the same reason.
     func selectRelative(_ delta: Int) {
-        guard let selection, let i = frames.firstIndex(where: { $0.id == selection }) else { return }
-        let j = (i + delta).clamped(to: 0...(frames.count - 1))
-        if j != i { click(frames[j].id) }
+        guard !batchExporting, delta != 0 else { return }
+        let visible = filmstripFrames
+        guard !visible.isEmpty else { return }
+        if let i = visible.firstIndex(where: { $0.id == selection }) {
+            let j = (i + delta).clamped(to: 0...(visible.count - 1))
+            if j != i { click(visible[j].id) }
+        } else if let frame = delta < 0 ? visible.last : visible.first {
+            click(frame.id)
+        }
     }
 
     /// A left click on a thumbnail — the only thing the person can do that
@@ -1604,14 +1618,15 @@ final class Session: CanvasHost {
         togglePick(url)
     }
 
-    var canSelectAllFrames: Bool { !batchExporting && !frames.isEmpty }
+    var canSelectAllFrames: Bool { !batchExporting && !filmstripFrames.isEmpty }
 
-    /// Keep the current frame as the sync source. A folder with no open frame
-    /// starts with the first in display order; only that frame is loaded.
+    /// Keep the current frame as the sync source while it passes the filter.
     func selectAllFrames() {
-        guard canSelectAllFrames else { return }
-        picked = Set(frames.map(\.id))
-        if selection == nil, let first = frames.first { select(first.id) }
+        guard !batchExporting else { return }
+        let visible = filmstripFrames
+        guard let first = visible.first else { return }
+        picked = Set(visible.map(\.id))
+        if selection.map(picked.contains) != true { select(first.id) }
     }
 
     /// One frame in or out of the set, canvas unmoved.
@@ -1668,7 +1683,9 @@ final class Session: CanvasHost {
         developTask?.cancel(); developTask = nil
         renderer.dropFullRender()
         activeDevelopPresetID = nil
-        sidecar = Sidecar.load(for: url) ?? Sidecar.newPhoto
+        let saved = Sidecar.load(for: url)
+        sidecar = saved ?? Sidecar.newPhoto
+        lastSynced[url] = saved
         // The file this frame's edits live in: from here on, a write made
         // outside this window reaches the canvas (issue #29).
         sidecarWatch.watch(Sidecar.url(for: url))
@@ -2922,16 +2939,20 @@ final class Session: CanvasHost {
     /// left, after it when moving right — the dragged cell takes the place of
     /// the cell it is over, as the strip shows it while the drag is in flight.
     func moveFrame(_ id: URL, onto target: URL) {
-        guard id != target, !batchExporting,
-              let from = frames.firstIndex(where: { $0.id == id }),
-              let to = frames.firstIndex(where: { $0.id == target }) else { return }
-        let frame = frames.remove(at: from)
-        frames.insert(frame, at: to)
+        guard id != target, !batchExporting else { return }
+        var ordered = filmstripSort.applied(to: frames)
+        guard let from = ordered.firstIndex(where: { $0.id == id }),
+              let to = ordered.firstIndex(where: { $0.id == target }) else { return }
+        let frame = ordered.remove(at: from)
+        ordered.insert(frame, at: to)
+        frames = ordered
+        filmstripSort = .manual
     }
 
     /// The drag ended on the strip: its order is the folder's from now on.
     func frameOrderChanged() {
         draggedFrame = nil
+        guard filmstripSort == .manual, !batchExporting else { return }
         FrameOrder.save(frames.map(\.id))
     }
 

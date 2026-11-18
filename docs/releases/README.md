@@ -1,6 +1,7 @@
 # 发布说明索引
 
-- [Build 3](build-3.md)：本版发布说明。
+- [Build 4](build-4.md)：本版发布说明。
+- [Build 3](build-3.md)：正式发布说明。
 - [Build 2](build-2.md)：正式发布说明。
 - [Build 1](build-1.md)：正式发布说明。
 

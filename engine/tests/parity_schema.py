@@ -230,6 +230,10 @@ NATIVE_ONLY = {
         "path": "film_render.overscan.frame_seed", "type": "int", "layer": "shoot",
         "default": 1, "live": False, "range": [0, 2147483647],
     },
+    "overscan_roll_offset": {
+        "path": "film_render.overscan.roll_offset", "type": "int", "layer": "shoot",
+        "default": 0, "live": False, "range": [-4, 3],
+    },
     "overscan_fog": {
         "path": "film_render.overscan.fog", "type": "float", "layer": "shoot",
         "default": 1.0, "live": False, "range": [0.0, 4.0],

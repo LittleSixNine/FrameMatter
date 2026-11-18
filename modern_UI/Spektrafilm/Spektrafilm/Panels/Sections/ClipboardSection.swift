@@ -194,8 +194,8 @@ struct DevelopPresetsSection: View {
                                                                       choices: artworkChoices, alternate: alternateArtwork),
                                    let url = artwork.url, let image = NSImage(contentsOf: url) {
                                     let filmName = session.catalog.stock(artwork.stockID)?.name ?? artwork.title
-                                    Image(nsImage: image).resizable().scaledToFill()
-                                        .frame(width: 32, height: 36)
+                                    Image(nsImage: image).resizable().scaledToFit()
+                                        .frame(width: 36, height: 36)
                                         .clipShape(RoundedRectangle(cornerRadius: 2))
                                         .shadow(color: .black.opacity(0.4), radius: 3, x: 0, y: 2)
                                         .padding(7)
@@ -318,12 +318,19 @@ struct DevelopPresetsSection: View {
                     shooting: ShootingData(exif: decoded.sourceEXIF), stock: session.catalog.stock(applied.params.filmStock))
                 let settings = applied
                 let frame = try await Task.detached(priority: .utility) {
-                    var image = Session.engineImage(decoded.linear, size: decoded.pixelSize,
-                        cut: settings.params.cutsFrame ? settings.geometry : nil)
+                    let cut = settings.params.cutsFrame ? settings.geometry : nil
+                    var image = Session.engineImage(decoded.linear, size: decoded.pixelSize, cut: cut)
                     if settings.params.doubleExposure.active { image = try settings.params.doubleExposure.compose(image) }
                     let factor = min(1, CGFloat(DevelopPreset.previewLongEdge) / max(image.extent.width, image.extent.height))
                     image = image.transformed(by: CGAffineTransform(scaleX: factor, y: factor))
-                    return try ImageDecoder.engineFrame(from: image, device: device)
+                    var faces: String?
+                    if settings.params.needsFaceEvidence {
+                        let display = Session.engineImage(decoded.faceDisplay, size: decoded.pixelSize, cut: cut)
+                        let faceKey = FrameFaceDetector.identity + ";" + CacheKey.encodedConfiguration(cut)
+                        faces = try decoded.lifetime.faceEvidence(display: display, key: faceKey,
+                                                                  frameExtent: image.extent)
+                    }
+                    return try ImageDecoder.engineFrame(from: image, device: device, facesJSON: faces)
                 }.value
                 try Task.checkCancellation()
                 var delta = applied.params.fullDelta

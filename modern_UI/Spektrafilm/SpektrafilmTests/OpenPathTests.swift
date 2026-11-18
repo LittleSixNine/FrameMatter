@@ -154,6 +154,7 @@ final class OpenPathTests: XCTestCase {
             session.serviceSessionIDForExport != nil && session.frameStates[url] == .processed && !session.busy
         }
         let sid1 = try XCTUnwrap(session.serviceSessionIDForExport)
+        let firstPrint = session.renderer.live
         let before = try XCTUnwrap(printRB(session, url), "no engine print on the canvas after the solve")
 
         // Tungsten, 3200 K, against a daylight frame's as-shot white balance.
@@ -164,7 +165,8 @@ final class OpenPathTests: XCTestCase {
         // had to have made.
         let settled = await waitFor(timeout: 90) {
             session.serviceSessionIDForExport != sid1 && !session.busy
-                && session.renderer.store.print(for: url) != nil
+                && session.renderer.live != nil && session.renderer.live !== firstPrint
+                && session.renderer.live !== session.renderer.original
         }
         let sid2 = session.serviceSessionIDForExport
         let after = try printRB(session, url)
@@ -248,11 +250,14 @@ final class OpenPathTests: XCTestCase {
         try await waitUntil("the native render to land", timeout: 180) {
             session.renderer.showsFullRender && !session.fullPending
         }
+        let initialSession = try XCTUnwrap(session.serviceSessionIDForExport)
         let stamp = Session.printStamp(session.scheduler.sent)
         let first = try XCTUnwrap(session.renderer.store.fullRender(for: url, stamp: stamp),
                                   "the native render is not in the store")
         let firstRB = meanRB(try samples(first, session.renderer.device))
 
+        // The preview cache can be evicted while the native render is still visible.
+        session.renderer.store.invalidatePrint(for: url)
         session.setWhiteBalance(.tungsten)
 
         // The reopen has a 350 ms debounce, so right after the change the old
@@ -260,10 +265,10 @@ final class OpenPathTests: XCTestCase {
         // canvas" is true before anything has happened. Wait for the reopen to
         // have *started* first, or everything below runs against the old state.
         try await waitUntil("the reopen to start", timeout: 90) {
-            session.renderer.store.print(for: url) == nil
+            session.serviceSessionIDForExport != initialSession
         }
         try await waitUntil("the new native render to land", timeout: 180) {
-            session.renderer.store.fullRender(for: url, stamp: stamp) != nil && !session.fullPending
+            session.serviceSessionIDForExport != nil && session.renderer.showsFullRender && !session.fullPending
         }
         // The premise of the bug, asserted rather than assumed: if the white
         // balance ever reaches `printStamp`, the cache stops being fooled and
@@ -448,7 +453,8 @@ final class OpenPathTests: XCTestCase {
         try await waitUntil("the print to land", timeout: 180) {
             session.serviceSessionIDForExport != nil && session.frameStates[url] == .processed && !session.busy
         }
-        let print = try XCTUnwrap(session.renderer.store.print(for: url))
+        let print = try XCTUnwrap(session.renderer.live)
+        XCTAssertFalse(print === session.renderer.original, "the canvas is still showing the decode")
         XCTAssertEqual(print.width, 1080, "the interactive print is not at the preview resolution")
 
         try await waitUntil("the native render to land", timeout: 180) {
@@ -627,7 +633,10 @@ final class OpenPathTests: XCTestCase {
     /// supposedly the original of.
     func testTheCanvasDrawsTheNativeDecodeBeforeADevelop() async throws {
         let url = try rawFrame()
-        let session = Session()
+        // This case exercises the optional native decode when memory admits it.
+        // Other tests cover refusing that decode under pressure.
+        let sampler = MemorySampler(readFootprint: { 256_000_000 }, readFree: { 8_000_000_000 })
+        let session = Session(diagnostics: Diagnostics(sampler: sampler))
         session.open(urls: [url])
         try await waitUntil("the frame to decode", timeout: 120) { session.decoded != nil }
         let native = try XCTUnwrap(session.decoded?.pixelSize)
@@ -723,7 +732,10 @@ final class OpenPathTests: XCTestCase {
     ///
     /// nil when no print is resident for the frame.
     private func printRB(_ session: Session, _ url: URL) throws -> Double? {
-        guard let tex = session.renderer.store.print(for: url) else { return nil }
+        // Memory pressure can evict or refuse a cache entry. The live texture
+        // still holds the rendered print that the canvas draws.
+        guard session.selection == url, let tex = session.renderer.live,
+              tex !== session.renderer.original else { return nil }
         return meanRB(try samples(tex, session.renderer.device))
     }
 
