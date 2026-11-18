@@ -289,6 +289,8 @@ struct OverscanLayout {
     // (s+,t+), (s-,t+); convex quads added to (+1) or cut from (-1) the
     // opening, film mm; the machined edge's roughness.
     std::string gate_family;
+    int measured_edges[4] = {-1, -1, -1, -1};
+    double measured_starts[4] = {0, 0, 0, 0}, measured_span = 1.0;
     double gate_r[4] = {0, 0, 0, 0};
     struct Quad { double pts[8] = {0}; double round = 0; double sign = 1; };
     std::vector<Quad> quads;

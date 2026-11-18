@@ -37,6 +37,7 @@
 #include "spectral.hpp"
 #include "timer.hpp"
 #include "dust_atlas.h"
+#include "gate_edges.h"
 
 namespace spk {
 
@@ -69,7 +70,8 @@ enum OsP : int {
     P_PERF_LEAK_SOFTNESS = 275,
     P_PERF_LEAK_SEED = 276,
     P_PERF_DT = 277, P_PERF_SHAPE, P_PERF_ROWS, P_PERF_RMIN, P_PERF_RMAX, P_PERF_JIT, P_NB_PREV, P_NB_NEXT,
-    P_COUNT
+    P_MEASURED_GATE, P_GATE_EDGE_DATA,
+    P_COUNT = P_GATE_EDGE_DATA + 4 * kMeasuredGateSamples
 };
 constexpr double kStripeG = 2.83, kStripeGW = 0.33, kStripeR = 3.73, kStripeRW = 0.65, kStripePeriod = 38.0;
 constexpr int kMaxLeaks = 12;
@@ -742,9 +744,9 @@ bool Pipeline::overscan_layout(uint32_t frame_w, uint32_t frame_h, std::string& 
     const Format* fmt = find_format(o.format);
     if (!fmt) { error = "overscan: unknown format '" + o.format + "' (" + kFormatNames + ")"; return false; }
     if (o.mode != "strip" && o.mode != "filed") { error = "overscan: unknown mode '" + o.mode + "' (strip, filed)"; return false; }
-    bool family_ok = o.gate == "auto";
+    bool family_ok = o.gate == "auto" || o.gate == "sampled";
     for (const char* f : kGateFamilies) family_ok = family_ok || o.gate == f;
-    if (!family_ok) { error = "overscan: unknown gate '" + o.gate + "' (auto, square, rounded, eared, shouldered, kicked)"; return false; }
+    if (!family_ok) { error = "overscan: unknown gate '" + o.gate + "' (auto, sampled, square, rounded, eared, shouldered, kicked)"; return false; }
     if (o.holes != "white" && o.holes != "black") { error = "overscan: unknown holes '" + o.holes + "' (white, black)"; return false; }
     if (o.carrier != "none" && o.carrier != "black" && o.carrier != "open") {
         error = "overscan: unknown carrier '" + o.carrier + "' (none, black, open)";
@@ -842,7 +844,21 @@ bool Pipeline::overscan_layout(uint32_t frame_w, uint32_t frame_h, std::string& 
             }
             family = fams[size_t(rg.uni(0.0, double(fams.size()))) % fams.size()];
         }
-        if (L.format != "135_full_67") gate_shape(L, family, fmt->perforated, rg);
+        if (L.format != "135_full_67" && family == "sampled") {
+            L.gate_family = "sampled";
+            const uint64_t gate_seed = o.gate_seed == 0 ? frm : uint64_t(o.gate_seed);
+            Rng measured(stream(gate_seed, kFrame, 23)), windows(stream(gate_seed, kFrame, 24));
+            L.measured_span = 1.0 / o.gate_sample_divisor;
+            for (int side = 0; side < 4; ++side) {
+                std::vector<int> choices;
+                for (int i = 0; i < int(std::size(kMeasuredGateEdges)); ++i)
+                    if (kMeasuredGateEdges[i].side == side) choices.push_back(i);
+                L.measured_edges[side] = choices[size_t(measured.uni(0.0, double(choices.size()))) % choices.size()];
+                L.measured_starts[side] = windows.uni(0.0, 1.0 - L.measured_span);
+                L.gate_r[side] = 0.03 * std::min(L.gate_along / 36.0, L.gate_across / 24.0);
+                for (double& a : L.wob_a[side]) a = 0.0;
+            }
+        } else if (L.format != "135_full_67") gate_shape(L, family, fmt->perforated, rg);
         if (cine) {
             // A machined aperture plate at the gauge's own scale: the family's radii, roughness and
             // edge wobble times `mech` (Super 8's rounded 0.42-0.62 mm become 0.105-0.155, SMPTE's
@@ -1186,6 +1202,25 @@ void Pipeline::overscan_params_block(std::vector<float>& P) const {
     for (int c = 0; c < 3; ++c) P[P_HOLE_C + c] = float(L.hole_cmy[c]);
     P[P_FLARE_AMP] = float(L.flare_amp); P[P_FLARE_WIDTH] = float(L.flare_width);
     for (int k = 0; k < 4; ++k) P[P_GATE_R + k] = float(L.gate_r[k]);
+    if (L.measured_edges[0] >= 0) {
+        P[P_MEASURED_GATE] = 1.0f;
+        const float scale = float(std::min(L.gate_along / 36.0, L.gate_across / 24.0)) * float(params_.film_render.overscan.gate_depth);
+        for (int side = 0; side < 4; ++side) {
+            const auto& edge = kMeasuredGateEdges[L.measured_edges[side]];
+            for (int k = 0; k < kMeasuredGateSamples; ++k) {
+                if (L.measured_span == 1.0) {
+                    P[P_GATE_EDGE_DATA + side * kMeasuredGateSamples + k] = edge.offset[k] * scale;
+                    continue;
+                }
+                const double u = double(k) / (kMeasuredGateSamples - 1);
+                const double x = (L.measured_starts[side] + u * L.measured_span) * (kMeasuredGateSamples - 1);
+                const int a = std::min(int(x), kMeasuredGateSamples - 2);
+                const double v = edge.offset[a] + (edge.offset[a + 1] - edge.offset[a]) * (x - a);
+                const double join = std::clamp(std::min(u, 1.0 - u) / 0.02, 0.0, 1.0);
+                P[P_GATE_EDGE_DATA + side * kMeasuredGateSamples + k] = float(v * scale * join);
+            }
+        }
+    }
     const size_t nq = std::min<size_t>(L.quads.size(), kMaxQuads);
     P[P_N_Q] = float(nq);
     for (size_t k = 0; k < nq; ++k) {
@@ -2891,6 +2926,7 @@ bool Pipeline::node_aging_texture(const Image& in, Image& out, std::string& erro
 bool Pipeline::node_texture_overlay(const Image& in, Image& out, const WideLeakParams& look,
                                      OverlayTexture& texture, bool aging, int rotation, std::string& error) {
     if (!look.active || look.strength <= 0.0) { out = in; return true; }
+    if (aging && params_.print_render.aging.border_only && !overscan_wanted()) { out = in; return true; }
     if (!texture.pixels || texture.path != look.texture) {
         struct Header { char magic[4]; uint32_t version, w, h, local; float front; } header{};
         static_assert(sizeof(Header) == 24);
@@ -2916,8 +2952,9 @@ bool Pipeline::node_texture_overlay(const Image& in, Image& out, const WideLeakP
         texture.w = header.w; texture.h = header.h;
         texture.local = header.local; texture.front = header.front;
     }
-    std::vector<float> P(37, 0.0f);
+    std::vector<float> P(38, 0.0f);
     P[35] = aging ? 1.0f : 0.0f; P[36] = float(rotation);
+    P[37] = aging && params_.print_render.aging.border_only ? 1.0f : 0.0f;
     P[0] = float(in.w); P[1] = float(in.h);
     P[2] = float(texture.w); P[3] = float(texture.h);
     P[4] = float(look.strength); P[5] = float(look.depth); P[6] = float(look.scale);

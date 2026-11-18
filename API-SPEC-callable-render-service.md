@@ -697,7 +697,10 @@ fields. Design and measurements: RFC-032 §26–§29 and RFC-031 (the date back)
 | `overscan_active` | `film_render.overscan.active` | bool | `false` | — | the switch; `false` dispatches nothing (byte-identical to the pre-RFC build) |
 | `overscan_format` | `…overscan.format` | str | `"135"` | `135` \| `135_half` \| `120_645` \| `120_6x6` \| `120_6x7` \| `120_6x8` \| `120_6x9` \| `135_xpan` \| `135_full_67` \| `120_6x12` \| `120_6x17` \| `8_super` \| `16_super` \| `35_4perf` \| `65_5perf` \| `65_15perf` | the film and its gate (`135_half`: 18 × 24 mm half frame, below). The panoramic long formats (2026-10-03, reversing "nothing larger than 6×9"): `135_xpan` 24 × 65 on 14 perforations, `120_6x12` 56 × 112, `120_6x17` 56 × 168; their gates are `square` until real strips are measured, and none carries a date |
 | `overscan_mode` | `…overscan.mode` | str | `"strip"` | `strip` \| `filed` | the whole film width, or a filed-out carrier's sliver of rebate |
-| `overscan_gate` | `…overscan.gate` | str | `"auto"` | `auto` \| `square` \| `rounded` \| `eared` \| `shouldered` \| `kicked` | the gate's shape family (RFC-032 §29.2, §30.2); `auto` lets the camera seed pick one the format's real cameras have. `shouldered` (6×8) also seats the gate at the stock-name edge, with its ears ~1.2 mm from it and the edge print in the recess between them |
+| `overscan_gate` | `…overscan.gate` | str | `"auto"` | `auto` \| `sampled` \| `square` \| `rounded` \| `eared` \| `shouldered` \| `kicked` | `sampled` independently combines measured edge silhouettes using the saved gate seed, falling back to the frame seed when zero. Native `auto` retains the camera-family behaviour; the app maps its automatic still-photo setting to `sampled`. Explicit legacy values remain accepted. |
+| `overscan_gate_depth` | `…overscan.gate_depth` | float | `1` | 1–4 | Saved continuous measured-gate inward-offset multiplier, 1.0×–4.0×. Shoot, non-live; accepts fractions. Editing depth preserves the random seed, source edges, window starts and sample length. Does not affect legacy/cinema/full-width gates. |
+| `overscan_gate_seed` | `…overscan.gate_seed` | int | `0` | 0–2147483647 | Gate-only saved seed; zero follows `overscan_frame_seed` for existing photos. Independent streams select four source edges and four window starts. |
+| `overscan_gate_sample_divisor` | `…overscan.gate_sample_divisor` | int | `1` | 1–4 | `sampled` takes full / half / third / quarter of each edge; start is uniform in `[0,1−1/divisor]`. Depth is controlled independently by `overscan_gate_depth`; cropped endpoints taper over 2%. The UI randomizes this saved length with the gate seed on Another Frame only; presets keep the target photo’s seed and length. Seed and length are shoot, non-live and reject fractions. |
 | `overscan_perforation` | `…overscan.perforation` | str | `"none"` | `none` \| `ks65` | `ks65` adds two KS perforation rows on 120 film slit from 65 mm stock and suppresses the factory edge print. Valid only for 120 formats. Cine formats have their own perforations. |
 | `overscan_holes` | `…overscan.holes` | str | `"white"` | `white` \| `black` | what shows through the perforations (past the film's long edges is `overscan_carrier`'s). `white`: the picture's white (a scan's light). `black`: a black backing or a darkroom print. Either way the cut is not a perfectly vertical knife: a slight rounding of the base shows as a faint, patchy shoulder just outside each hole (1-6 % lift, ~0.03 mm), different on every hole, plus per-hole punch tolerances, roughness and burrs (RFC-032 §30.5, §31.5) |
 | `overscan_camera_seed` | `…overscan.camera_seed` | int | `1` | 0–2³¹−1 | **the body**: gate shape and radii, burrs, gate-to-emulsion gap, where the frame sits on the perforations, fog, flare |
@@ -1585,10 +1588,11 @@ complete 135 full width (6×7) name to fit the narrow rail at larger UI scales.
 ### 18.5 Negative-scan dust
 
 The Scratches card contains a Dust subsection with Amount, Size, Strength
-(0–100%) and Area (border only / whole film). App properties `dustAmount=0`,
+(0–100%, Amount extends to 400%) and Area (border only / whole film). App properties `dustAmount=0`,
 `dustSize=.5`, `dustStrength=.5`, `dustFullFrame=false` decode optionally for
 old edits. Native fields `scratch_dust_amount`, `scratch_dust_size`,
-`scratch_dust_strength` are shoot, non-live floats 0–1;
+`scratch_dust_strength` are shoot, non-live floats: amount 0–4, size/strength 0–1.
+The former amount range 0–1 retains identical density and seed placement;
 `scratch_dust_full_frame` is a shoot, non-live bool. They share `scratch_seed`
 and the existing full/half/full-width 135 availability rule. Zero amount or
 strength bypasses dust exactly. Amount thresholds a stable candidate population.
@@ -1630,6 +1634,7 @@ new disabled settings. The left-rail Aging Textures card follows Scratches & Dus
 | wire field | type / range / default | layer |
 |---|---|---|
 | `aging_active` | bool / false | print, non-live |
+| `aging_border_only` | bool / false | print, non-live |
 | `aging_texture` | string / empty, absolute SPKL resource path | print, non-live |
 | `aging_strength` | float / 0–1 / .5 | print, non-live |
 | `aging_rotation` | integer / 0–3 / 0, clockwise quarter-turns | print, non-live |
@@ -1640,6 +1645,11 @@ and are excluded from the settings clipboard like saved light-leak patterns.
 The resolved material ID, rotation and flip survive preview, reopening and export;
 there is no render-time randomness. Inactive or zero strength is a strict bypass,
 including resource reads. A selected missing or malformed texture reports an error.
+
+Border-only aging uses the existing film-present and unexposed-gate masks,
+leaving the exposed photograph and holes unchanged. With Film Edge disabled it
+is an exact bypass, including texture reads. Full-width exposed film has no
+unexposed rebate. Older saved settings default to whole-frame aging.
 
 Native print_output applies aging **after wide light leaks and before CCTF**,
 using the same checked SPKL loader and colour conversion helpers with a separate

@@ -38,6 +38,21 @@ struct AgingTextureSettings: Codable, Equatable, Sendable {
     /// Clockwise quarter-turns after automatic portrait alignment.
     var rotation = 0
     var flip = WideLeakFlip.original
+    var borderOnly = false
+
+    init() {}
+
+    private enum CodingKeys: String, CodingKey { case active, material, strength, rotation, flip, borderOnly }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let d = Self()
+        active = try c.decodeIfPresent(Bool.self, forKey: .active) ?? d.active
+        material = try c.decodeIfPresent(AgingTextureMaterial.self, forKey: .material) ?? d.material
+        strength = try c.decodeIfPresent(Double.self, forKey: .strength) ?? d.strength
+        rotation = try c.decodeIfPresent(Int.self, forKey: .rotation) ?? d.rotation
+        flip = try c.decodeIfPresent(WideLeakFlip.self, forKey: .flip) ?? d.flip
+        borderOnly = try c.decodeIfPresent(Bool.self, forKey: .borderOnly) ?? d.borderOnly
+    }
 
     func wire(digitalIntermediate: Bool) -> [(name: String, value: ParamValue, layer: ParamLayer)] {
         let on = active && !digitalIntermediate
@@ -48,6 +63,7 @@ struct AgingTextureSettings: Codable, Equatable, Sendable {
                 ("aging_strength", .double(strength.clamped(to: 0...1)), .print),
                 ("aging_rotation", .double(Double(rotation.clamped(to: 0...3))), .print),
                 ("aging_flip", .double(Double(flip.rawValue)), .print),
+                ("aging_border_only", .bool(borderOnly), .print),
             ]
         }
         return fields

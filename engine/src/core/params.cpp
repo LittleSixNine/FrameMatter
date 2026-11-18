@@ -166,6 +166,9 @@ const SchemaField kFields[] = {
     {"overscan_mode",            "film_render.overscan.mode",             S, SHOOT, false, 0, 0, false},
     {"overscan_camera_seed",     "film_render.overscan.camera_seed",      I, SHOOT, true, 0.0, 2147483647.0, false},
     {"overscan_frame_seed",      "film_render.overscan.frame_seed",       I, SHOOT, true, 0.0, 2147483647.0, false},
+    {"overscan_gate_seed", "film_render.overscan.gate_seed", I, SHOOT, true, 0, 2147483647.0, false},
+    {"overscan_gate_depth", "film_render.overscan.gate_depth", F, SHOOT, true, 1, 4, false},
+    {"overscan_gate_sample_divisor", "film_render.overscan.gate_sample_divisor", I, SHOOT, true, 1, 4, false},
     {"overscan_fog",             "film_render.overscan.fog",              F, SHOOT, true, 0.0, 4.0, false},
     {"overscan_leaks",           "film_render.overscan.leaks",            F, SHOOT, true, 0.0, 4.0, false},
     {"overscan_edge_text",       "film_render.overscan.edge_text",        S, SHOOT, false, 0, 0, false},
@@ -174,6 +177,7 @@ const SchemaField kFields[] = {
     {"overscan_holes",           "film_render.overscan.holes",            S, SHOOT, false, 0, 0, false},
     {"overscan_perforation",     "film_render.overscan.perforation",            S, SHOOT, false, 0, 0, false},
     {"aging_active", "print_render.aging.active", B, PRINT, false, 0, 0, false},
+    {"aging_border_only", "print_render.aging.border_only", B, PRINT, false, 0, 0, false},
     {"aging_texture", "print_render.aging.texture", S, PRINT, false, 0, 0, false},
     {"aging_strength", "print_render.aging.strength", F, PRINT, true, 0, 1, false},
     {"aging_rotation", "print_render.aging.rotation", I, PRINT, true, 0, 3, false},
@@ -201,7 +205,7 @@ const SchemaField kFields[] = {
     {"scratch_leak_spread",     "film_render.scratches.leak_spread",    F, SHOOT, true, 0, 1, false},
     {"scratch_leak_softness",   "film_render.scratches.leak_softness",  F, SHOOT, true, 0, 1, false},
     {"scratch_leak_coverage",   "film_render.scratches.leak_coverage",  F, SHOOT, true, 0, 1, false},
-    {"scratch_dust_amount", "film_render.scratches.dust_amount", F, SHOOT, true, 0, 1, false},
+    {"scratch_dust_amount", "film_render.scratches.dust_amount", F, SHOOT, true, 0, 4, false},
     {"scratch_dust_size", "film_render.scratches.dust_size", F, SHOOT, true, 0, 1, false},
     {"scratch_dust_strength", "film_render.scratches.dust_strength", F, SHOOT, true, 0, 1, false},
     {"scratch_dust_fiber_ratio", "film_render.scratches.dust_fiber_ratio", F, SHOOT, true, 0, 1, false},
@@ -340,6 +344,7 @@ double* float_slot(Params& p, const std::string& path) {
     if (path == "film_render.grain.particle_area_um2") return &p.film_render.grain.particle_area_um2;
     if (path == "film_render.grain.blur") return &p.film_render.grain.blur;
     if (path == "camera.diffusion_filter.strength") return &p.camera.diffusion_filter.strength;
+    if (path == "film_render.overscan.gate_depth") return &p.film_render.overscan.gate_depth;
     if (path == "film_render.overscan.fog") return &p.film_render.overscan.fog;
     if (path == "camera.diffusion_filter.spatial_scale") return &p.camera.diffusion_filter.spatial_scale;
     if (path == "film_render.overscan.leaks") return &p.film_render.overscan.leaks;
@@ -356,6 +361,7 @@ double* float_slot(Params& p, const std::string& path) {
 
 bool* bool_slot(Params& p, const std::string& path) {
     if (path == "print_render.aging.active") return &p.print_render.aging.active;
+    if (path == "print_render.aging.border_only") return &p.print_render.aging.border_only;
     if (path == "print_render.wide_leaks.active") return &p.print_render.wide_leaks.active;
     if (path == "print_render.wide_leaks.anchored") return &p.print_render.wide_leaks.anchored;
     if (path == "film_render.scratches.dust_full_frame") return &p.film_render.scratches.dust_full_frame;
@@ -438,6 +444,8 @@ int* int_slot(Params& p, const std::string& path) {
     if (path == "settings.strip_budget_bytes") return &p.settings.strip_budget_bytes;
     if (path == "film_render.overscan.camera_seed") return &p.film_render.overscan.camera_seed;
     if (path == "film_render.overscan.frame_seed") return &p.film_render.overscan.frame_seed;
+    if (path == "film_render.overscan.gate_seed") return &p.film_render.overscan.gate_seed;
+    if (path == "film_render.overscan.gate_sample_divisor") return &p.film_render.overscan.gate_sample_divisor;
     if (path == "film_render.overscan.frame_number") return &p.film_render.overscan.frame_number;
     return nullptr;
 }
@@ -565,6 +573,7 @@ bool validate_delta(const Json& delta, std::string& error, std::string& param) {
         // it; this, `contrast_mask_scheme` and `scene_latitude_norm` are the enumerated strings.
         if ((kv.first == "scratch_leak_enabled" || kv.first == "scratch_leak_seed" ||
              kv.first == "aging_rotation" || kv.first == "aging_flip" ||
+             kv.first == "overscan_gate_seed" || kv.first == "overscan_gate_sample_divisor" ||
              kv.first == "wide_leak_direction" || kv.first == "wide_leak_seed" || kv.first == "wide_leak_flip") &&
             v.as_double() != std::floor(v.as_double())) {
             error = kv.first + " must be an integer";

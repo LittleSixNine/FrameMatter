@@ -62,9 +62,13 @@ with Engine() as engine:
         print('PASS dust scope/zeros/seed/size/negative appearance/empty holes:',fmt,w,h,pair,flush=True)
     sparse,_=render(scratch_dust_amount=.4,scratch_dust_full_frame=True)
     dense,_=render(scratch_dust_amount=1.,scratch_dust_full_frame=True)
+    extra_dense,_=render(scratch_dust_amount=4.,scratch_dust_full_frame=True)
     bare,_=render()
     low=np.max(abs(sparse.astype(int)-bare.astype(int)),axis=2)>100
     high=np.max(abs(dense.astype(int)-bare.astype(int)),axis=2)>100
+    extra=np.max(abs(extra_dense.astype(int)-bare.astype(int)),axis=2)>100
+    assert extra.sum()>high.sum()*1.5, 'extended range did not visibly increase dust'
+    assert not (high & ~extra).any(), 'extended range moved existing dust'
     assert high.sum()>low.sum() and not (low & ~high).any(),'amount moved existing dust'
     with engine.open(np.full((800,1200,3),.18,np.float32),dict(BASE,scratch_dust_amount=1.,scratch_dust_full_frame=True)) as s:
         full,_=s.render('full');again,_=s.render('full',reprint=True)
@@ -109,7 +113,7 @@ with Engine() as engine:
     except EngineError:pass
     else:raise AssertionError('out-of-range fiber ratio accepted')
     print('PASS grayscale particles/fibers, visible long lines and ratio validation:',longest,flush=True)
-    try:render(scratch_dust_amount=1.1)
+    try:render(scratch_dust_amount=4.1)
     except EngineError:pass
     else:raise AssertionError('out-of-range dust accepted')
     print('PASS density nesting, reprint equality and validation',flush=True)

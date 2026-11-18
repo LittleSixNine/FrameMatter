@@ -87,6 +87,9 @@ enum ClipboardGroup: String, CaseIterable, Codable, Sendable, Identifiable {
         "params.filmEdge.format": "Film Edge: photograph-specific settings are not copied (F10)",
         "params.filmEdge.view": "Film Edge: photograph-specific settings are not copied (F10)",
         "params.filmEdge.gate": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.gateDepth": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.gateSampleDivisor": "Film Edge: photograph-specific settings are not copied (F10)",
+        "params.filmEdge.gateSeed": "Film Edge: photograph-specific settings are not copied (F10)",
         "params.filmEdge.holes": "Film Edge: photograph-specific settings are not copied (F10)",
         "params.filmEdge.cameraSeed": "Film Edge: photograph-specific settings are not copied (F10)",
         "params.filmEdge.frameSeed": "Film Edge: photograph-specific settings are not copied (F10)",
@@ -270,6 +273,8 @@ struct DevelopPreset: Identifiable, Codable {
             var edge = settings.params.filmEdge
             edge.cameraSeed = target.params.filmEdge.cameraSeed
             edge.frameSeed = target.params.filmEdge.frameSeed
+            edge.gateSeed = target.params.filmEdge.gateSeed
+            edge.gateSampleDivisor = target.params.filmEdge.gateSampleDivisor
             edge.frameNumber = target.params.filmEdge.frameNumber
             edge.edgeText = target.params.filmEdge.edgeText
             edge.framing = target.params.filmEdge.framing

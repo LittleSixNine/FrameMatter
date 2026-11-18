@@ -69,7 +69,7 @@ struct ScratchSettings: Codable, Equatable, Sendable {
             ("scratch_long_lines", .double(longLines.clamped(to: Self.amountRange)), .shoot),
             ("scratch_strength", .double(strength.clamped(to: Self.amountRange)), .shoot),
             ("scratch_edge_marks", .double(edgeMarks.clamped(to: Self.amountRange)), .shoot),
-            ("scratch_dust_amount", .double(dustAmount.clamped(to: Self.amountRange)), .shoot),
+            ("scratch_dust_amount", .double(dustAmount.clamped(to: 0...4)), .shoot),
             ("scratch_dust_size", .double(dustSize.clamped(to: Self.amountRange)), .shoot),
             ("scratch_dust_strength", .double(dustStrength.clamped(to: Self.amountRange)), .shoot),
             ("scratch_dust_fiber_ratio", .double(dustFiberRatio.clamped(to: Self.amountRange)), .shoot),

@@ -547,6 +547,20 @@ inside a field. `TypingKeyGuard` is a local key monitor that sends typing keys
 
 ### 7.11 Film Edge and Date Back (RFC-032, RFC-031)
 
+The still-photo gate control is now **Another Frame / 换一格**: it combines
+four measured edge silhouettes from two owner-supplied scan groups, selected by
+the saved gate seed (zero falls back to the frame seed). Full/half/third/quarter
+sample lengths are drawn randomly on every refresh and saved with the gate seed.
+The visible slider continuously adjusts 1.0×–4.0× contour depth without changing
+the saved gate or scan. Another Frame retains depth and redraws the gate, sample
+length and film advance.
+Presets transfer depth but preserve the target photo’s seed and sample length. The square/rounded family picker and camera-number row
+are hidden. Assets live in `engine/resources_product/gate_edges`; compiled
+arrays in `pipeline/gate_edges.h` make runtime file loading unnecessary.
+Reprint, reopening, previews and export share the same contour. Legacy explicit
+families remain readable until Another Frame restores the automatic measured
+gate; cinema-specific formats and full-width exposure keep their existing gates.
+
 - **The film is the canvas.** With a film edge on, the engine is handed the
   decode **cut by the crop** and returns the whole film canvas — gate, rebate,
   holes. The crop is therefore in the negative: `FilmParams.cutsFrame`
@@ -601,6 +615,9 @@ The independent **Aging Textures / 做旧纹理** card follows Scratches & Dust.
 Five local full-frame scuff/scratch textures have their own switch, strength,
 quarter-turn rotation and mirror state (`FilmParams.agingTextures`), require no
 Film Edge, and can coexist with the existing random density dust and light leaks.
+An optional border-only scope uses the existing unexposed-gate/film mask and
+bypasses without Film Edge; the exposed photo and holes remain protected.
+Dust amount extends to 400%, preserving the original 0–100% density and seed.
 Native print_output composites them after wide light and before encoding, in
 sRGB-encoded Screen with a linear 0–1 contribution and a separate texture cache.
 They share preview/export and per-photo persistence; DI excludes them. Source-canvas

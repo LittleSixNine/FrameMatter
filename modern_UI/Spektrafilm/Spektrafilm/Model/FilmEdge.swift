@@ -135,6 +135,10 @@ struct FilmEdgeSettings: Codable, Equatable, Sendable {
     var format = FilmEdgeFormat.f135
     var view = FilmEdgeView.strip
     var gate = FilmEdgeGate.auto
+    var gateSampleDivisor = 1
+    var gateDepth = 1.0
+    /// Zero retains the legacy frame-seed selection; explicit seeds affect only the gate.
+    var gateSeed = 0
     var holes = FilmEdgeHoles.black
     /// **The body.** Per user, not per photo: the same camera shot the roll.
     /// A new frame takes `FilmEdgeSettings.bodySeed`.
@@ -176,6 +180,13 @@ struct FilmEdgeSettings: Codable, Equatable, Sendable {
 
     init() {}
 
+    mutating func randomizeGate() {
+        gateSampleDivisor = Int.random(in: 1...4)
+        gate = .auto
+        let previous = gateSeed == 0 ? frameSeed : gateSeed
+        repeat { gateSeed = Int.random(in: 1...Int(Int32.max)) } while gateSeed == previous
+    }
+
     /// Every key optional, so a sidecar from before a field existed decodes.
     /// An unknown enum value (a newer build's format) falls back to the default.
     init(from decoder: Decoder) throws {
@@ -187,6 +198,9 @@ struct FilmEdgeSettings: Codable, Equatable, Sendable {
         format = (try? c.decodeIfPresent(FilmEdgeFormat.self, forKey: .format)) ?? d.format
         view = (try? c.decodeIfPresent(FilmEdgeView.self, forKey: .view)) ?? d.view
         gate = (try? c.decodeIfPresent(FilmEdgeGate.self, forKey: .gate)) ?? d.gate
+        gateSampleDivisor = try c.decodeIfPresent(Int.self, forKey: .gateSampleDivisor) ?? 1
+        gateSeed = try c.decodeIfPresent(Int.self, forKey: .gateSeed) ?? 0
+        gateDepth = try c.decodeIfPresent(Double.self, forKey: .gateDepth) ?? 1
         holes = (try? c.decodeIfPresent(FilmEdgeHoles.self, forKey: .holes)) ?? d.holes
         cameraSeed = try c.decodeIfPresent(Int.self, forKey: .cameraSeed) ?? d.cameraSeed
         frameSeed = try c.decodeIfPresent(Int.self, forKey: .frameSeed) ?? d.frameSeed
@@ -238,7 +252,10 @@ struct FilmEdgeSettings: Codable, Equatable, Sendable {
             ("overscan_factory_separate_halation", .bool(independentLetteringHalation), .shoot),
             ("overscan_format", .string(format.rawValue), .shoot),
             ("overscan_mode", .string(view.rawValue), .shoot),
-            ("overscan_gate", .string(format.group == .cine ? "auto" : gate.rawValue), .shoot),
+            ("overscan_gate", .string(format.group == .cine ? "auto" : gate == .auto ? "sampled" : gate.rawValue), .shoot),
+            ("overscan_gate_sample_divisor", .double(Double(gateSampleDivisor.clamped(to: 1...4))), .shoot),
+            ("overscan_gate_seed", .double(Double(gateSeed.clamped(to: Self.seedRange))), .shoot),
+            ("overscan_gate_depth", .double(Double(gateDepth.clamped(to: 1...4))), .shoot),
             ("overscan_perforation", .string(slitFilmPerforations && format.gauge == "120" ? "ks65" : "none"), .shoot),
             ("overscan_holes", .string(holes.rawValue), .shoot),
             ("overscan_camera_seed", .double(Double(cameraSeed.clamped(to: Self.seedRange))), .shoot),

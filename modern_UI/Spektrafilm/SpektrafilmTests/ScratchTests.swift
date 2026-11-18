@@ -18,6 +18,10 @@ final class ScratchTests: XCTestCase {
         p.lightLeaks.rimSoftness = 0.7
         XCTAssertEqual(p.fullDelta["scratch_leak_softness"], .double(0.7))
         XCTAssertEqual(p.delta(from: before).layers, [.shoot])
+        p.scratches.dustAmount = 4
+        XCTAssertEqual(p.fullDelta["scratch_dust_amount"], .double(4))
+        p.scratches.dustAmount = 5
+        XCTAssertEqual(p.fullDelta["scratch_dust_amount"], .double(4))
         XCTAssertEqual(try JSONDecoder().decode(FilmParams.self, from: JSONEncoder().encode(p)), p)
         p.lightLeaks.rimSoftness = 2
         XCTAssertEqual(p.fullDelta["scratch_leak_softness"], .double(1))

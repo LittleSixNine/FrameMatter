@@ -36,10 +36,8 @@ struct TopBar: View {
             // The empty middle of the bar is the window's drag surface: the
             // titlebar is hidden, and this is where a toolbar would be.
             WindowDragHandle().frame(minWidth: 8, maxWidth: .infinity)
-            toolButton("cursorarrow", .select, L(.helpSelect) + " (V)")
-            iconButton("square.and.arrow.down", L(.helpOpen) + " (⌘O)") { session.openPanel() }
-                .padding(.leading, 6)
-            iconButton("square.and.arrow.up", L(.helpExport) + " (⌘E)", disabled: session.selection == nil) {
+            transferButton(importing: true, title: L("Import", zh: "导入"), help: L(.helpOpen) + " (⌘O)") { session.openPanel() }
+            transferButton(importing: false, title: L("Export", zh: "导出"), help: L(.helpExport) + " (⌘E)", disabled: session.selection == nil) {
                 session.showExport = true
             }
             .padding(.leading, Theme.Metric.barIconGap)
@@ -60,16 +58,36 @@ struct TopBar: View {
         return String(format: "%@ · %.1f s", session.status, session.workSeconds)
     }
 
-    private func toolButton(_ name: String, _ tool: CanvasTool, _ help: String) -> some View {
-        Button { session.tool = tool } label: {
-            Image(systemName: name)
-                .font(.system(size: Theme.Metric.toolIcon, weight: .regular))
-                .foregroundStyle(session.tool == tool ? Theme.accent : Theme.text.opacity(0.55))
-                .frame(width: 28, height: 28)
-                .contentShape(Rectangle())
+    private func transferButton(importing: Bool, title: String, help: String, disabled: Bool = false,
+                                action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                PhotoTransferIcon(importing: importing).stroke(style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
+                    .frame(width: 24, height: 24)
+                Text(title).font(Theme.Font.caption)
+            }
+            .foregroundStyle(disabled ? Theme.secondaryText : Theme.text)
+            .padding(.horizontal, 8).frame(height: 30)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .disabled(disabled)
+        .accessibilityLabel(title)
         .help(help)
+    }
+}
+
+private struct PhotoTransferIcon: Shape {
+    let importing: Bool
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        let x: CGFloat = importing ? 8 : 2
+        p.addRoundedRect(in: CGRect(x: x, y: 3, width: 14, height: 18), cornerSize: CGSize(width: 2, height: 2))
+        p.move(to: CGPoint(x: x + 3, y: 17)); p.addLines([CGPoint(x: x + 7, y: 13), CGPoint(x: x + 11, y: 17)])
+        let tip: CGFloat = importing ? 12 : 22
+        p.move(to: CGPoint(x: tip - 10, y: 10)); p.addLine(to: CGPoint(x: tip, y: 10))
+        p.move(to: CGPoint(x: tip - 4, y: 6)); p.addLines([CGPoint(x: tip, y: 10), CGPoint(x: tip - 4, y: 14)])
+        return p.applying(CGAffineTransform(scaleX: rect.width / 24, y: rect.height / 24))
     }
 }
 

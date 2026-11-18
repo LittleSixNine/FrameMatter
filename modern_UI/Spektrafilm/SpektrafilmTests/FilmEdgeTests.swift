@@ -15,6 +15,70 @@ import XCTest
 
 final class FilmEdgeTests: XCTestCase {
 
+    func testAutomaticGateUsesMeasuredEdgesAndKeepsExplicitLegacyGates() {
+        var p = FilmParams.default
+        p.filmEdge.active = true
+        XCTAssertEqual(p.fullDelta["overscan_gate"], .string("sampled"))
+        p.filmEdge.gate = .rounded
+        XCTAssertEqual(p.fullDelta["overscan_gate"], .string("rounded"))
+    }
+
+    func testContinuousGateDepthPersistsWithoutChangingTheGate() throws {
+        var edge = FilmEdgeSettings()
+        edge.active = true
+        let camera = edge.cameraSeed, frame = edge.frameSeed
+        for depth in [1.0, 1.5, 2.75, 4.0] {
+            let previous = edge.gateSeed
+            edge.gateDepth = depth
+            XCTAssertEqual(edge.gateSeed, previous)
+            XCTAssertEqual(edge.gateDepth, depth)
+            XCTAssertTrue((1...4).contains(edge.gateSampleDivisor))
+            XCTAssertEqual(edge.cameraSeed, camera)
+            XCTAssertEqual(edge.frameSeed, frame)
+            XCTAssertEqual(try JSONDecoder().decode(FilmEdgeSettings.self, from: JSONEncoder().encode(edge)), edge)
+            let fields = Dictionary(uniqueKeysWithValues: edge.wire.map { ($0.name, $0.value) })
+            XCTAssertEqual(fields["overscan_gate_sample_divisor"], .double(Double(edge.gateSampleDivisor)))
+            XCTAssertEqual(fields["overscan_gate_depth"], .double(Double(depth)))
+            XCTAssertEqual(fields["overscan_gate_seed"], .double(Double(edge.gateSeed)))
+        }
+        let old = try JSONDecoder().decode(FilmEdgeSettings.self, from: Data(#"{"active":true,"frameSeed":15}"#.utf8))
+        XCTAssertEqual(old.gateSeed, 0)
+        XCTAssertEqual(old.gateSampleDivisor, 1)
+        XCTAssertEqual(old.gateDepth, 1)
+        let discrete = try JSONDecoder().decode(FilmEdgeSettings.self, from: Data(#"{"gateDepth":3}"#.utf8))
+        XCTAssertEqual(discrete.gateDepth, 3)
+    }
+
+    func testPresetTransfersGateDepthButKeepsThePhotosRandomResult() {
+        var source = Sidecar(), target = Sidecar()
+        source.params.filmEdge.gateSampleDivisor = 4
+        source.params.filmEdge.gateDepth = 2.75
+        source.params.filmEdge.gateSeed = 15
+        target.params.filmEdge.gateSeed = 21
+        var preset = DevelopPreset(name: "Gate", source: source)
+        preset.settings = source
+        preset.includesEffects = true
+        let result = preset.applied(to: target)
+        XCTAssertEqual(result.params.filmEdge.gateSampleDivisor, target.params.filmEdge.gateSampleDivisor)
+        XCTAssertEqual(result.params.filmEdge.gateDepth, 2.75)
+        XCTAssertEqual(result.params.filmEdge.gateSeed, 21)
+    }
+
+    func testAnotherGateKeepsDepthAndRandomizesAllLengths() throws {
+        var edge = FilmEdgeSettings()
+        edge.gateDepth = 2.75
+        var lengths = Set<Int>()
+        for _ in 0..<128 {
+            let seed = edge.gateSeed
+            edge.randomizeGate()
+            XCTAssertNotEqual(edge.gateSeed, seed)
+            XCTAssertEqual(edge.gateDepth, 2.75)
+            lengths.insert(edge.gateSampleDivisor)
+        }
+        XCTAssertEqual(lengths, Set(1...4))
+        XCTAssertEqual(try JSONDecoder().decode(FilmEdgeSettings.self, from: JSONEncoder().encode(edge)), edge)
+    }
+
     // MARK: - the wire
 
     /// The two seeds are `int` in the engine's schema and `ParamValue` has no

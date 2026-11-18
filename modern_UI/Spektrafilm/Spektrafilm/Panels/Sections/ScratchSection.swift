@@ -31,7 +31,8 @@ struct ScratchSection: View {
                 }
                 RailSubhead(L("Dust", zh: "灰尘"))
                 RailSubgroup {
-                    amount(L("Amount", zh: "数量"), \.dustAmount, zero: 0)
+                    ScrubSlider(label: L("Amount", zh: "数量"), value: bind(\.dustAmount), range: 0...4,
+                                zero: 0, snap: 0.01, format: { String(format: "%.0f%%", $0 * 100) })
                     amount(L("Size", zh: "大小"), \.dustSize, zero: 0.5)
                     amount(L("Fiber ratio", zh: "纤维比例"), \.dustFiberRatio, zero: 0.25)
                     amount(L("Strength", zh: "强度"), \.dustStrength, zero: 0.5)

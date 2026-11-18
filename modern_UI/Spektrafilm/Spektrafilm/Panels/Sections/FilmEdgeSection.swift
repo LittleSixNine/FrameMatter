@@ -70,13 +70,16 @@ struct FilmEdgeSection: View {
                         ToggleRow(label: L("65 mm perforations", zh: "65 mm 裁切齿孔"), isOn: bind(\.slitFilmPerforations),
                                   help: L("120 film slit from perforated 65 mm stock", zh: "模拟从 65 mm 电影胶片裁切的 120 胶卷"))
                     }
-                    if edge.format != .f135FullWidth && edge.format.group != .cine {
-                        PillMenu(label: L(.edgeGate), options: FilmEdgeGate.allCases, title: { L($0.key) },
-                                 selection: bind(\.gate))
-                    }
                     PillSwitchRow(label: L(.edgeHoles), options: FilmEdgeHoles.allCases,
                                   selection: bind(\.holes), title: { L($0.key) })
-                    bodyRow
+                    if edge.format.group != .cine && edge.format != .f135FullWidth {
+                        ScrubSlider(label: L("Gate depth", zh: "起伏深度"),
+                                    value: bind(\.gateDepth), range: 1...4, zero: 1, snap: 0.1,
+                                    format: { String(format: "%.2f×", $0) },
+                                    parse: { Double($0.replacingOccurrences(of: "×", with: "")) })
+                            .help(L("Adjust depth continuously without changing the gate. Another Frame redraws edges and sample lengths.",
+                                    zh: "连续调整凹凸深度，保持当前片门不变；换一格才刷新四边、截取长度和位置。"))
+                    }
                     advanceRow
                     if edge.hasFactoryMarkings {
                         // The frame's number on the edge print. 0 reads "Auto": the
@@ -228,34 +231,18 @@ struct FilmEdgeSection: View {
         .frame(height: Theme.Metric.rowHeight)
     }
 
-    /// **The body**: which camera shot the roll. Its number is the seed, so the
-    /// same number is the same gate, the same margins and the same holes.
-    private var bodyRow: some View {
-        HStack(spacing: 0) {
-            RowLabel(L(.edgeBody))
-            Text(L("No. \(edge.cameraSeed)", zh: "\(edge.cameraSeed) 号"))
-                .font(Theme.Font.value).foregroundStyle(Theme.text)
-                .lineLimit(1).fixedSize()
-            Spacer(minLength: 6)
-            DiceButton(title: L(.edgeAnother),
-                       help: L("Another camera body: a new gate, new margins and new holes",
-                               zh: "换一台机身：新的片门、边距与齿孔")) {
-                set(\.cameraSeed, Self.another(than: edge.cameraSeed, in: Self.bodyNumbers))
-            }
-            .frame(width: Theme.Metric.edgeAnotherWidth)
-        }
-        .frame(height: Theme.Metric.rowHeight)
-    }
-
     /// **The advance and the scan**: where this frame landed on the roll, and
     /// how the scanner held it. Per photo; it has no number worth showing.
     private var advanceRow: some View {
         HStack(spacing: 0) {
-            RowLabel(L(.edgeAdvance))
+            RowLabel(edge.format.group == .cine || edge.format == .f135FullWidth ? L(.edgeAdvance) : L(.edgeGate))
             DiceButton(title: L(.edgeAnotherFrame),
-                       help: L("Another frame of the same roll: a new advance and a new scan",
-                               zh: "同一卷里的另一格：新的过片位置与扫描"), fill: true) {
-                set(\.frameSeed, Self.another(than: edge.frameSeed, in: 1...Int(Int32.max)))
+                       help: L("Randomize edges, sample length, positions, advance and scan; keep depth",
+                               zh: "保留起伏深度，随机四条边、完整或1/2、1/3、1/4取样及位置，并更换过片与扫描"), fill: true) {
+                var p = session.params
+                p.filmEdge.randomizeGate()
+                p.filmEdge.frameSeed = Self.another(than: edge.frameSeed, in: 1...Int(Int32.max))
+                session.params = p
             }
         }
         .frame(height: Theme.Metric.rowHeight)
@@ -331,7 +318,6 @@ struct FilmEdgeSection: View {
     // MARK: helpers
 
     /// Body numbers stay short enough to read as a serial plate.
-    static let bodyNumbers = 1...999
 
     static func another(than current: Int, in range: ClosedRange<Int>) -> Int {
         var next = Int.random(in: range)

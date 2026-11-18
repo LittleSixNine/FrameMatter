@@ -193,6 +193,8 @@ struct OverscanParams {
     std::string mode = "strip";      // strip (the whole film width) | filed (a sliver of rebate)
     int camera_seed = 1;
     int frame_seed = 1;
+    int gate_seed = 0, gate_sample_divisor = 1;
+    double gate_depth = 1.0;
     double fog = 1.0;                // edge fog from the spool, 0 = none
     double leaks = 0.0;              // spool light leaks, 0 = none
     std::string edge_text;           // the manufacturer's edge print; the app decides real vs display names
@@ -314,6 +316,7 @@ struct WideLeakParams {
 
 struct AgingTextureParams {
     bool active = false;
+    bool border_only = false;
     std::string texture;
     double strength = 0.5;
     int rotation = 0, flip = 0;

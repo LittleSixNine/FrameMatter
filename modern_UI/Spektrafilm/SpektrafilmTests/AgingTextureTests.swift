@@ -25,10 +25,12 @@ final class AgingTextureTests: XCTestCase {
         p.agingTextures.strength = 0.8
         p.agingTextures.rotation = 3
         p.agingTextures.flip = .horizontal
+        p.agingTextures.borderOnly = true
         XCTAssertFalse(p.filmEdge.active)
         XCTAssertEqual(p.fullDelta["aging_active"], .bool(true))
         XCTAssertEqual(p.fullDelta["aging_rotation"], .double(3))
         XCTAssertEqual(p.fullDelta["aging_flip"], .double(1))
+        XCTAssertEqual(p.fullDelta["aging_border_only"], .bool(true))
         XCTAssertTrue(p.fullDelta["aging_texture"]?.stringValue?.hasSuffix("aging-004.spkleak") == true)
         XCTAssertEqual(p.delta(from: before).layers, [.print])
         XCTAssertEqual(p.scratches, before.scratches)
@@ -45,6 +47,12 @@ final class AgingTextureTests: XCTestCase {
         json.removeValue(forKey: "agingTextures")
         let old = try JSONDecoder().decode(FilmParams.self, from: JSONSerialization.data(withJSONObject: json))
         XCTAssertEqual(old.agingTextures, AgingTextureSettings())
+        let legacy = try JSONDecoder().decode(AgingTextureSettings.self,
+            from: Data(#"{"active":true,"material":"dust02","strength":0.72,"rotation":2,"flip":1}"#.utf8))
+        XCTAssertTrue(legacy.active)
+        XCTAssertEqual(legacy.material, .dust02)
+        XCTAssertEqual(legacy.strength, 0.72)
+        XCTAssertFalse(legacy.borderOnly)
         var bad = AgingTextureSettings()
         bad.active = true; bad.strength = 3; bad.rotation = -1
         let wire = Dictionary(uniqueKeysWithValues: bad.wire(digitalIntermediate: false).map { ($0.name, $0.value) })

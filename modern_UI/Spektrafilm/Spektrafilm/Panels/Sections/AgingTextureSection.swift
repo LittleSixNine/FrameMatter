@@ -27,6 +27,13 @@ struct AgingTextureSection: View {
                 ScrubSlider(label: L("Strength", zh: "强度"), value: bind(\.strength), range: 0...1,
                             zero: 0.5, snap: 0.01, format: { String(format: "%.0f%%", $0 * 100) })
                 HStack(spacing: 0) {
+                    RowLabel(L("Area", zh: "范围"))
+                    Picker(L("Aging area", zh: "做旧范围"), selection: bind(\.borderOnly)) {
+                        Text(L("Whole film", zh: "整幅")).tag(false)
+                        Text(L("Border only", zh: "仅片边")).tag(true)
+                    }.labelsHidden().pickerStyle(.menu)
+                }.frame(height: Theme.Metric.rowHeight)
+                HStack(spacing: 0) {
                     RowLabel(L("Mirror", zh: "镜像"))
                     Picker(L("Texture mirror", zh: "纹理镜像"), selection: bind(\.flip)) {
                         ForEach(WideLeakFlip.allCases, id: \.self) { flip in Text(flip.title).tag(flip) }
@@ -45,8 +52,11 @@ struct AgingTextureSection: View {
                             : L("Switch Aging Textures on in its header.", zh: "先在标题栏开启做旧纹理。"))
             Text(!settings.material.available
                  ? L("Bundled texture is missing. Reinstall FrameMatter.", zh: "内置纹理缺失，请重新安装 FrameMatter。")
-                 : L("Whole-frame wear; independent of dust and Film Edge. Portraits align automatically before rotation.",
-                     zh: "整幅做旧，独立于灰尘和片边；竖图先自动转向，再应用旋转。"))
+                 : settings.borderOnly
+                    ? L("Border only leaves the exposed photo untouched; enable Film Edge to show the unexposed border.",
+                        zh: "仅在未曝光片边做旧，需开启片边；照片区域保持不变。")
+                    : L("Whole-frame wear; portraits align automatically before rotation.",
+                        zh: "整幅做旧；竖图先自动转向，再应用旋转。"))
                 .font(Theme.Font.caption).foregroundStyle(Theme.Ink.tertiary).fixedSize(horizontal: false, vertical: true)
         }
     }

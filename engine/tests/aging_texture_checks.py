@@ -11,7 +11,7 @@ from spk_ctypes import Engine, EngineError
 BASE = dict(auto_exposure=False, grain_active=False, glare_active=False, halation_active=False,
             output_color_space='sRGB')
 with tempfile.TemporaryDirectory() as directory, Engine() as engine:
-    assert 'aging_active' in {f['name'] for f in engine.params_schema()['fields']}
+    assert 'aging_border_only' in {f['name'] for f in engine.params_schema()['fields']}
     folder = Path(directory)
     def texture(name, pixels):
         path = folder/name
@@ -25,12 +25,42 @@ with tempfile.TemporaryDirectory() as directory, Engine() as engine:
         with engine.open(source, {**BASE, "aging_texture": path, **extra}) as session:
             return session.render('full')[0][...,:3]
     clean=render()
+    assert np.array_equal(clean,render(aging_active=True,aging_border_only=True,aging_texture='/missing'))
     assert np.array_equal(clean,render(aging_active=True,aging_strength=0,aging_texture='/missing'))
     base=clean.astype(float)/65535
     for strength in [.1,.5,.7,1.]:
         actual=render(aging_active=True,aging_strength=strength).astype(float)/65535
         expected=base+(1-base)*solid[0,0]/65535*strength
         np.testing.assert_allclose(actual,expected,atol=4/65535)
+    for w,h,fmt,pair in [(600,400,'135',False),(400,600,'135',False),
+                          (740,480,'135_half',True),(400,400,'120_6x6',False),
+                          (695,350,'135_full_67',False)]:
+        options=dict(overscan_active=True,overscan_format=fmt,overscan_pair=pair,
+                     overscan_camera_seed=19,overscan_frame_seed=5,overscan_fog=0.,overscan_leaks=0.,overscan_holes='white')
+        bare=render(w,h,**options)
+        border=render(w,h,**options,aging_active=True,aging_strength=1.,aging_border_only=True)
+        with engine.open(np.full((h,w,3),.035,np.float32),{**BASE,**options}) as session:
+            session.render('full')
+            g=session.overscan_geometry()
+        changed=np.max(abs(border.astype(int)-bare.astype(int)),axis=2)>2
+        if fmt=='135_full_67':
+            assert not changed.any(), 'fully exposed film acquired an artificial rebate'
+            continue
+        assert changed.any(), 'border-only aging is invisible'
+        ys,xs=np.indices(bare.shape[:2]); px=np.stack([(xs+.5)/bare.shape[1],(ys+.5)/bare.shape[0]],axis=-1)
+        for gate in g['gates']:
+            q=np.array(gate).reshape(4,2);cr=[]
+            for i in range(4):
+                e=q[(i+1)%4]-q[i]
+                cr.append(((px[...,0]-q[i,0])*e[1]-(px[...,1]-q[i,1])*e[0])/np.linalg.norm(e))
+            cr=np.stack(cr); picture=np.all(cr>.02,axis=0)|np.all(cr<-.02,axis=0)
+            assert picture.any() and not changed[picture].any(), 'border-only aging entered the exposed photo'
+        holes=np.all(bare>65000,axis=2)
+        inside=holes.copy()
+        for axis in (0,1):
+            for shift in (-3,3): inside &= np.roll(holes,shift,axis=axis)
+        assert not changed[inside].any(), 'aging entered empty hole interiors'
+    print('PASS border-only aging protects landscape/portrait/pair/120 photos and holes; no-edge/full-width bypass')
     # Asymmetric smooth coordinates avoid relying on a private texture or a photographic baseline.
     y,x=np.mgrid[:96,:144]
     grid=np.stack([x/143*.8,y/95*.6,(x/143+y/95)*.2],axis=-1)

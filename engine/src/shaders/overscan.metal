@@ -42,7 +42,8 @@ enum : uint {
     P_PERF_LEAK_SOFTNESS = 275,
     P_PERF_LEAK_SEED = 276,
     P_PERF_DT = 277, P_PERF_SHAPE, P_PERF_ROWS, P_PERF_RMIN, P_PERF_RMAX, P_PERF_JIT, P_NB_PREV, P_NB_NEXT,
-    P_COUNT
+    P_MEASURED_GATE, P_GATE_EDGE_DATA,
+    P_COUNT = P_GATE_EDGE_DATA + 4 * 1024
 };
 constant uint kQStride = 10u;
 
@@ -100,6 +101,12 @@ static float gate_sdf(float2 st, device const float* P) {
     if (qs > qt) { side = ds > 0.0f ? 1u : 3u; along = dt + hh; len = 2.0f * hh; }
     else         { side = dt > 0.0f ? 2u : 0u; along = ds + hw; len = 2.0f * hw; }
     const float u = clamp(along / len, 0.0f, 1.0f);
+    if (P[P_MEASURED_GATE] > 0.5f) {
+        const float x = u * 1023.0f;
+        const uint k = min(uint(x), 1022u);
+        device const float* edge = P + P_GATE_EDGE_DATA + side * 1024u;
+        return d + mix(edge[k], edge[k + 1u], x - float(k));
+    }
     float w = 0.0f;
     for (uint k = 0; k < 3u; ++k)
         w += P[P_WOB_A + side * 3u + k] * sin(float(k + 1u) * M_PI_F * u + P[P_WOB_PH + side * 3u + k]);
@@ -769,6 +776,13 @@ kernel void spk_wide_light_leak(device const float* rgb [[buffer(0)]],
     float film=1.0f;
     if (P[12]>0.5f) film=film_alpha(canvas_to_film(pixel.x-0.5f,pixel.y-0.5f,geometry),geometry);
     const bool aging=P[35]>0.5f;
+    if (aging && P[37]>0.5f) {
+        const float2 st=canvas_to_film(pixel.x-0.5f,pixel.y-0.5f,geometry);
+        float gate=exposure_gate_sdf(st,geometry);
+        if (geometry[P_PAIR_ADV]>0.0f)
+            gate=min(gate,exposure_gate_sdf(st-float2(geometry[P_PAIR_ADV],0.0f),geometry));
+        film*=smoothstep(0.0f,max(geometry[P_PX],1e-6f),gate);
+    }
     float2 q=pixel, span=float2(w,h);
     if (aging) {
         const uint mirror=uint(P[34]);

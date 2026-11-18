@@ -6,9 +6,9 @@ struct FilmArtworkImage: View {
     let name: String
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 4).fill(Theme.ground)
             if let url = artwork?.url, let image = NSImage(contentsOf: url) {
-                Image(nsImage: image).resizable().scaledToFit().padding(3)
+                Image(nsImage: image).resizable().scaledToFit()
+                    .clipShape(RoundedRectangle(cornerRadius: 3))
             } else {
                 Text(name).font(Theme.Font.caption).multilineTextAlignment(.center).padding(8)
             }
@@ -37,17 +37,13 @@ struct FilmArtworkGrid: View {
                                 Button { select(stock.id) } label: {
                                     VStack(alignment: .leading, spacing: 5) {
                                         FilmArtworkImage(artwork: FilmArtwork.selected(for: stock.id, choices: choices, alternate: alternate), name: stock.name)
-                                            .overlay(RoundedRectangle(cornerRadius: 5).stroke(on ? Theme.accent : .clear, lineWidth: 2))
-                                            .overlay(alignment: .bottomTrailing) {
-                                                if on {
-                                                    Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.accent)
-                                                        .background(.black, in: Circle()).padding(5)
-                                                }
-                                            }
                                         Text(stock.name).font(Theme.Font.caption)
-                                            .foregroundStyle(on ? Theme.accent : Theme.text)
+                                            .foregroundStyle(Theme.text)
                                             .lineLimit(2).frame(height: 30, alignment: .topLeading)
-                                    }.contentShape(Rectangle())
+                                    }
+                                    .padding(5)
+                                    .background(on ? Theme.text.opacity(0.10) : .clear, in: RoundedRectangle(cornerRadius: 6))
+                                    .contentShape(Rectangle())
                                 }.buttonStyle(.plain).help(stock.name).id(stock.id)
                                     .focused($focusedStock, equals: stock.id)
                                     .accessibilityLabel(stock.name)
